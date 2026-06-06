@@ -5,9 +5,9 @@ import type { LibSQLDatabase } from 'drizzle-orm/libsql'
 import * as schema from './schema.ts'
 
 import { seedDatabase } from './seed'
-import { startBackgroundJobs } from './jobs'
+import { startBackgroundJobs, stopBackgroundJobs } from './jobs'
 
-type Database = LibSQLDatabase<typeof schema>
+export type Database = LibSQLDatabase<typeof schema>
 
 let dbInstance: Database | null = null
 let initPromise: Promise<Database> | null = null
@@ -74,4 +74,13 @@ export function getDatabaseStatus() {
     status: databaseStatus,
     lastError,
   }
+}
+
+export async function shutdownDatabase(): Promise<void> {
+  stopBackgroundJobs()
+
+  dbInstance = null
+  initPromise = null
+  lastError = null
+  databaseStatus = 'idle'
 }

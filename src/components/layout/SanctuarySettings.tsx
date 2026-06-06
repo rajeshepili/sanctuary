@@ -8,9 +8,12 @@ import {
   Globe,
   X as XIcon,
   RefreshCw,
+  Trash2,
 } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
 import { Switch } from '#/components/ui/switch'
 import { Button } from '#/components/ui/button'
+import { ScrollArea } from '#/components/ui/scroll-area'
 import {
   Drawer,
   DrawerClose,
@@ -75,6 +78,7 @@ export function SanctuarySettings({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [locLoading, setLocLoading] = useState(false)
   const { setLocked } = useUIStore()
+  const navigate = useNavigate()
 
   const handleGrantLocation = () => {
     setLocLoading(true)
@@ -148,280 +152,313 @@ export function SanctuarySettings({
         </DrawerTrigger>
 
         <DrawerContent className="max-h-[95vh] flex flex-col">
-          <div className="mx-auto w-full max-w-2xl p-6 md:p-8 space-y-8 overflow-y-auto">
-            <DrawerHeader className="p-0 space-y-2">
-              <DrawerTitle className="text-2xl font-bold">
-                Sanctuary Personalization
-              </DrawerTitle>
-              <DrawerDescription className="text-sm text-muted-foreground">
-                Tailor your dashboard to match your current season of life.
-              </DrawerDescription>
-            </DrawerHeader>
+          <ScrollArea className="w-full">
+            <div className="mx-auto w-full max-w-2xl p-6 md:p-8 space-y-8">
+              <DrawerHeader className="p-0 space-y-2">
+                <DrawerTitle className="text-2xl font-bold">
+                  Sanctuary Personalization
+                </DrawerTitle>
+                <DrawerDescription className="text-sm text-muted-foreground">
+                  Tailor your dashboard to match your current season of life.
+                </DrawerDescription>
+              </DrawerHeader>
 
-            {/* Widget Toggles */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground pb-2">
-                Modular Dashboard
-              </h3>
+              {/* Widget Toggles */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground pb-2">
+                  Modular Dashboard
+                </h3>
 
-              <div className="space-y-3">
-                {toggles.map(({ label, description, key }) => (
-                  <ToggleRow
-                    key={key}
-                    label={label}
-                    description={description}
-                    checked={!!prefs[key]}
-                    onChange={(val) => onUpdatePrefs({ [key]: val })}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Data & Privacy */}
-            <div className="pt-4 border-t border-border/10 space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground pb-2">
-                Data Management
-              </h3>
-
-              <div className="flex flex-col gap-2">
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    try {
-                      const result = await exportMarkdown()
-                      const blob = new Blob([result.content], {
-                        type: 'text/markdown',
-                      })
-                      const url = URL.createObjectURL(blob)
-                      const a = document.createElement('a')
-                      a.href = url
-                      a.download = `sanctuary-export-${new Date().toISOString().split('T')[0]}.md`
-                      a.click()
-                      URL.revokeObjectURL(url)
-                      toast.success(`Exported ${result.count} entries`)
-                    } catch (e) {
-                      toast.error('Failed to export data')
-                    }
-                  }}
-                  className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:bg-foreground/3 transition-colors text-left cursor-pointer h-auto"
-                >
-                  <div>
-                    <div className="text-sm font-bold flex items-center gap-2 text-foreground">
-                      <Download className="w-4 h-4 text-primary" /> Export
-                      Markdown
-                    </div>
-                    <div className="text-[11px] text-muted-foreground mt-1 font-normal">
-                      Save all entries as Markdown files to your Documents
-                      folder.
-                    </div>
-                  </div>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    try {
-                      const result = await exportAllData()
-                      const blob = new Blob([JSON.stringify(result, null, 2)], {
-                        type: 'application/json',
-                      })
-                      const url = URL.createObjectURL(blob)
-                      const a = document.createElement('a')
-                      a.href = url
-                      a.download = `sanctuary-backup-${new Date().toISOString().split('T')[0]}.json`
-                      a.click()
-                      URL.revokeObjectURL(url)
-                      toast.success(`Exported ${result.entries.length} entries`)
-                    } catch (e) {
-                      toast.error('Failed to export data')
-                    }
-                  }}
-                  className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:bg-foreground/3 transition-colors text-left cursor-pointer h-auto"
-                >
-                  <div>
-                    <div className="text-sm font-bold flex items-center gap-2 text-foreground">
-                      <Download className="w-4 h-4 text-primary" /> Export JSON
-                      Backup
-                    </div>
-                    <div className="text-[11px] text-muted-foreground mt-1 font-normal">
-                      Save a complete JSON backup of all entries and media.
-                    </div>
-                  </div>
-                </Button>
-              </div>
-            </div>
-
-            {/* Scene Location */}
-            <div className="pt-4 border-t border-border/10 space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground pb-2">
-                Scene Location
-              </h3>
-
-              {prefs.latitude && prefs.longitude ? (
-                <div className="flex items-start justify-between gap-3 p-3 rounded-xl border border-primary/20 bg-primary/5">
-                  <div className="flex items-start gap-2.5 min-w-0">
-                    <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                    <div className="min-w-0">
-                      <div className="text-sm font-bold truncate">
-                        {prefs.locationLabel ??
-                          `${prefs.latitude.toFixed(2)}°, ${prefs.longitude.toFixed(2)}°`}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
-                        Saved locally. Scenes follow astronomical sunrise &amp;
-                        sunset.
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <IconButton
-                      tooltip="Update location"
-                      onClick={handleGrantLocation}
-                      disabled={locLoading}
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors shrink-0 disabled:opacity-50"
-                    >
-                      <RefreshCw
-                        className={`w-3.5 h-3.5 ${locLoading ? 'animate-spin' : ''}`}
-                      />
-                    </IconButton>
-                    <IconButton
-                      tooltip="Clear location"
-                      onClick={() =>
-                        onUpdatePrefs({
-                          latitude: null,
-                          longitude: null,
-                          locationLabel: null,
-                        })
-                      }
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
-                    >
-                      <XIcon className="w-3.5 h-3.5" />
-                    </IconButton>
-                  </div>
+                <div className="space-y-3">
+                  {toggles.map(({ label, description, key }) => (
+                    <ToggleRow
+                      key={key}
+                      label={label}
+                      description={description}
+                      checked={!!prefs[key]}
+                      onChange={(val) => onUpdatePrefs({ [key]: val })}
+                    />
+                  ))}
                 </div>
-              ) : (
+              </div>
+
+              {/* Data & Privacy */}
+              <div className="pt-4 border-t border-border/10 space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground pb-2">
+                  Data Management
+                </h3>
+
+                <div className="flex flex-col gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        const result = await exportMarkdown()
+                        const blob = new Blob([result.content], {
+                          type: 'text/markdown',
+                        })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        a.download = `sanctuary-export-${new Date().toISOString().split('T')[0]}.md`
+                        a.click()
+                        URL.revokeObjectURL(url)
+                        toast.success(`Exported ${result.count} entries`)
+                      } catch (e) {
+                        toast.error('Failed to export data')
+                      }
+                    }}
+                    className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:bg-foreground/3 transition-colors text-left cursor-pointer h-auto"
+                  >
+                    <div>
+                      <div className="text-sm font-bold flex items-center gap-2 text-foreground">
+                        <Download className="w-4 h-4 text-primary" /> Export
+                        Markdown
+                      </div>
+                      <div className="text-[11px] text-muted-foreground mt-1 font-normal">
+                        Save all entries as Markdown files to your Documents
+                        folder.
+                      </div>
+                    </div>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        const result = await exportAllData()
+                        const blob = new Blob(
+                          [JSON.stringify(result, null, 2)],
+                          {
+                            type: 'application/json',
+                          },
+                        )
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        a.download = `sanctuary-backup-${new Date().toISOString().split('T')[0]}.json`
+                        a.click()
+                        URL.revokeObjectURL(url)
+                        toast.success(
+                          `Exported ${result.entries.length} entries`,
+                        )
+                      } catch (e) {
+                        toast.error('Failed to export data')
+                      }
+                    }}
+                    className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:bg-foreground/3 transition-colors text-left cursor-pointer h-auto"
+                  >
+                    <div>
+                      <div className="text-sm font-bold flex items-center gap-2 text-foreground">
+                        <Download className="w-4 h-4 text-primary" /> Export
+                        JSON Backup
+                      </div>
+                      <div className="text-[11px] text-muted-foreground mt-1 font-normal">
+                        Save a complete JSON backup of all entries and media.
+                      </div>
+                    </div>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Trash / Data */}
+              <div className="pt-4 border-t border-border/10 space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground pb-2">
+                  Trash & Recovery
+                </h3>
                 <button
-                  onClick={handleGrantLocation}
-                  disabled={locLoading}
-                  className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:bg-foreground/3 transition-colors text-left cursor-pointer disabled:opacity-60"
+                  onClick={() => {
+                    setIsDrawerOpen(false)
+                    navigate({ to: '/trash' })
+                  }}
+                  className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:bg-foreground/3 transition-colors text-left cursor-pointer"
                 >
                   <div>
                     <div className="text-sm font-bold flex items-center gap-2">
-                      <Globe className="w-4 h-4 text-primary" />
-                      {locLoading
-                        ? 'Detecting location…'
-                        : 'Enable Location-Aware Scenes'}
+                      <Trash2 className="w-4 h-4 text-primary" /> View Trash
                     </div>
                     <div className="text-[11px] text-muted-foreground mt-1">
-                      Sunrise &amp; sunset match your latitude. Falls back to
-                      timezone if denied.
+                      Recover deleted journal entries or empty the trash bin
+                      permanently.
                     </div>
                   </div>
                 </button>
-              )}
-            </div>
+              </div>
 
-            {/* Privacy Shield */}
-            <div className="pt-4 border-t border-border/10 space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground border-b border-border/10 pb-2">
-                Privacy Shield
-              </h3>
+              {/* Scene Location */}
+              <div className="pt-4 border-t border-border/10 space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground pb-2">
+                  Scene Location
+                </h3>
 
-              <div className="flex flex-col gap-2">
-                {!prefs.privacyPin ? (
-                  <button
-                    onClick={() => {
-                      setPinModalMode('enable')
-                      setIsDrawerOpen(false)
-                    }}
-                    className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:bg-foreground/3 transition-colors text-left cursor-pointer"
-                  >
-                    <div>
-                      <div className="text-sm font-bold flex items-center gap-2">
-                        <Lock className="w-4 h-4 text-primary" /> Enable App
-                        Lock
-                      </div>
-                      <div className="text-[11px] text-muted-foreground mt-1">
-                        Require a 4-digit PIN when opening Sanctuary.
+                {prefs.latitude && prefs.longitude ? (
+                  <div className="flex items-start justify-between gap-3 p-3 rounded-xl border border-primary/20 bg-primary/5">
+                    <div className="flex items-start gap-2.5 min-w-0">
+                      <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold truncate">
+                          {prefs.locationLabel ??
+                            `${prefs.latitude.toFixed(2)}°, ${prefs.longitude.toFixed(2)}°`}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                          Saved locally. Scenes follow astronomical sunrise
+                          &amp; sunset.
+                        </div>
                       </div>
                     </div>
-                  </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <IconButton
+                        tooltip="Update location"
+                        onClick={handleGrantLocation}
+                        disabled={locLoading}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors shrink-0 disabled:opacity-50"
+                      >
+                        <RefreshCw
+                          className={`w-3.5 h-3.5 ${locLoading ? 'animate-spin' : ''}`}
+                        />
+                      </IconButton>
+                      <IconButton
+                        tooltip="Clear location"
+                        onClick={() =>
+                          onUpdatePrefs({
+                            latitude: null,
+                            longitude: null,
+                            locationLabel: null,
+                          })
+                        }
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
+                      >
+                        <XIcon className="w-3.5 h-3.5" />
+                      </IconButton>
+                    </div>
+                  </div>
                 ) : (
                   <button
-                    onClick={() => {
-                      setPinModalMode('disable')
-                    }}
-                    className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:bg-foreground/3 transition-colors text-left cursor-pointer"
+                    onClick={handleGrantLocation}
+                    disabled={locLoading}
+                    className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:bg-foreground/3 transition-colors text-left cursor-pointer disabled:opacity-60"
                   >
                     <div>
                       <div className="text-sm font-bold flex items-center gap-2">
-                        <Unlock className="w-4 h-4 text-amber-500" /> Disable
-                        App Lock
+                        <Globe className="w-4 h-4 text-primary" />
+                        {locLoading
+                          ? 'Detecting location…'
+                          : 'Enable Location-Aware Scenes'}
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-1">
-                        Remove the PIN requirement on startup.
-                      </div>
-                    </div>
-                  </button>
-                )}
-                {prefs.privacyPin && (
-                  <button
-                    onClick={() => {
-                      setLocked(true)
-                      setIsDrawerOpen(false)
-                    }}
-                    className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:bg-foreground/3 transition-colors text-left cursor-pointer"
-                  >
-                    <div>
-                      <div className="text-sm font-bold flex items-center gap-2 text-primary">
-                        <Lock className="w-4 h-4 text-primary" /> Lock
-                        Application Now
-                      </div>
-                      <div className="text-[11px] text-muted-foreground mt-1">
-                        Immediately lock the application and require a PIN.
+                        Sunrise &amp; sunset match your latitude. Falls back to
+                        timezone if denied.
                       </div>
                     </div>
                   </button>
                 )}
               </div>
-            </div>
 
-            {/* Disclaimer */}
-            <div className="pt-4 border-t border-border/10">
-              <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                <ShieldAlert className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+              {/* Privacy Shield */}
+              <div className="pt-4 border-t border-border/10 space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground border-b border-border/10 pb-2">
+                  Privacy Shield
+                </h3>
 
-                <div className="text-xs flex-1">
-                  <div className="font-bold">Privacy & Therapy Disclaimer</div>
-                  <p className="opacity-90 mt-1">
-                    All data is stored locally on your device. This is not a
-                    substitute for professional mental health care.
-                  </p>
+                <div className="flex flex-col gap-2">
+                  {!prefs.privacyPin ? (
+                    <button
+                      onClick={() => {
+                        setPinModalMode('enable')
+                        setIsDrawerOpen(false)
+                      }}
+                      className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:bg-foreground/3 transition-colors text-left cursor-pointer"
+                    >
+                      <div>
+                        <div className="text-sm font-bold flex items-center gap-2">
+                          <Lock className="w-4 h-4 text-primary" /> Enable App
+                          Lock
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-1">
+                          Require a 4-digit PIN when opening Sanctuary.
+                        </div>
+                      </div>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setPinModalMode('disable')
+                      }}
+                      className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:bg-foreground/3 transition-colors text-left cursor-pointer"
+                    >
+                      <div>
+                        <div className="text-sm font-bold flex items-center gap-2">
+                          <Unlock className="w-4 h-4 text-amber-500" /> Disable
+                          App Lock
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-1">
+                          Remove the PIN requirement on startup.
+                        </div>
+                      </div>
+                    </button>
+                  )}
+                  {prefs.privacyPin && (
+                    <button
+                      onClick={() => {
+                        setLocked(true)
+                        setIsDrawerOpen(false)
+                      }}
+                      className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:bg-foreground/3 transition-colors text-left cursor-pointer"
+                    >
+                      <div>
+                        <div className="text-sm font-bold flex items-center gap-2 text-primary">
+                          <Lock className="w-4 h-4 text-primary" /> Lock
+                          Application Now
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-1">
+                          Immediately lock the application and require a PIN.
+                        </div>
+                      </div>
+                    </button>
+                  )}
                 </div>
-
-                {prefs.disclaimerAgreed ? (
-                  <span className="text-[10px] px-2 py-1 rounded bg-amber-500/20 shrink-0">
-                    Agreed
-                  </span>
-                ) : (
-                  <Button
-                    size="sm"
-                    onClick={() => onUpdatePrefs({ disclaimerAgreed: true })}
-                    className="shrink-0"
-                  >
-                    I Agree
-                  </Button>
-                )}
               </div>
-            </div>
 
-            <DrawerFooter className="p-0 mt-6">
-              <DrawerClose asChild>
-                <Button variant="outline" className="w-full">
-                  Close
-                </Button>
-              </DrawerClose>
-            </DrawerFooter>
-          </div>
+              {/* Disclaimer */}
+              <div className="pt-4 border-t border-border/10">
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                  <ShieldAlert className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+
+                  <div className="text-xs flex-1">
+                    <div className="font-bold">
+                      Privacy & Therapy Disclaimer
+                    </div>
+                    <p className="opacity-90 mt-1">
+                      All data is stored locally on your device. This is not a
+                      substitute for professional mental health care.
+                    </p>
+                  </div>
+
+                  {prefs.disclaimerAgreed ? (
+                    <span className="text-[10px] px-2 py-1 rounded bg-amber-500/20 shrink-0">
+                      Agreed
+                    </span>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={() => onUpdatePrefs({ disclaimerAgreed: true })}
+                      className="shrink-0"
+                    >
+                      I Agree
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <DrawerFooter className="p-0 mt-6">
+                <DrawerClose asChild>
+                  <Button variant="outline" className="w-full">
+                    Close
+                  </Button>
+                </DrawerClose>
+              </DrawerFooter>
+            </div>
+          </ScrollArea>
         </DrawerContent>
       </Drawer>
 

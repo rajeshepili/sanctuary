@@ -37,7 +37,7 @@ function AppShellContent({ prefs }: { prefs: UserPreferences }) {
       className={`relative min-h-dvh flex flex-col theme-${mood} bg-background text-foreground`}
     >
       <Background mood={mood} />
-      <div className="relative z-10">
+      <div className="relative z-50">
         <Navbar />
       </div>
       <Outlet />

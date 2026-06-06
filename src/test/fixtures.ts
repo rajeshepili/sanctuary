@@ -1,5 +1,4 @@
 import type {
-  ThemeMood,
   HabitFrequency,
   HabitCategory,
   HabitPriority,
@@ -9,7 +8,6 @@ import type {
 export const createEntryFixture = (
   overrides?: Partial<{
     content: string
-    mood: ThemeMood
     tags: string | null
     isPinned: boolean
     createdAt: Date
@@ -20,7 +18,6 @@ export const createEntryFixture = (
   const now = new Date()
   return {
     content: 'Test journal entry content',
-    mood: 'day' as ThemeMood,
     tags: 'test',
     isPinned: false,
     createdAt: now,

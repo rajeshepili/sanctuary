@@ -14,13 +14,12 @@ import { useJournalMutations } from '#/features/journal/journal.mutations'
 
 import { PAGE_DESCRIPTIONS, PAGE_TITLES } from '#/config/branding'
 
-import { DailyIntention } from '#/components/journal/DailyIntention'
-import { PromptInspireWidget } from '#/components/journal/PromptInspireWidget'
-import { JournalEditor } from '#/components/journal/JournalEditor'
-import { PastEntriesList } from '#/components/journal/PastEntriesList'
-import { TrashView } from '#/components/journal/TrashView'
-import { BreathingSpace } from '#/components/journal/BreathingSpace'
-import { HabitsSidebarWidget } from '#/components/journal/HabitsSidebarWidget'
+import { DailyIntention } from '#/components/dashboard/DailyIntention'
+import { PromptInspireWidget } from '#/components/dashboard/PromptInspireWidget'
+import { JournalEditor } from '#/components/journal/editor/JournalEditor'
+import { PastEntriesList } from '#/components/dashboard/PastEntriesList'
+import { BreathingSpace } from '#/components/dashboard/BreathingSpace'
+import { HabitsSidebarWidget } from '#/components/habits/HabitsSidebarWidget'
 import { FocusSection } from '#/components/layout/FocusSection'
 import { Hero } from '#/components/layout/Hero'
 import { injectPromptIntoContent } from '#/utils/journal'
@@ -95,17 +94,17 @@ function App() {
   return (
     <>
       <Hero
-        title={PAGE_TITLES.journal}
-        description={PAGE_DESCRIPTIONS.journal}
+        title={PAGE_TITLES.home}
+        description={PAGE_DESCRIPTIONS.home}
         greeting={greeting}
       >
         {prefs.showDailyIntention && <DailyIntention />}
       </Hero>
 
       <FocusSection>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
           <div
-            className={`${showSidebar ? 'lg:col-span-2' : 'lg:col-span-3'} space-y-8`}
+            className={`${showSidebar ? 'lg:col-span-3' : 'lg:col-span-4'} space-y-8`}
           >
             {prefs.showPromptInspire && (
               <PromptInspireWidget
@@ -119,7 +118,12 @@ function App() {
               setValue={setValue}
               onSave={handleSave}
               pendingMedia={pendingMedia}
-              setPendingMedia={setPendingMedia}
+              onAddMedia={(items) =>
+                setPendingMedia((prev) => [...prev, ...items])
+              }
+              onRemovePending={(idx) =>
+                setPendingMedia((prev) => prev.filter((_, i) => i !== idx))
+              }
               draftStatus={draftStatus}
               draftError={draftError}
               retryDraftSave={handleRetryDraftSave}
@@ -131,7 +135,6 @@ function App() {
               onUpdate={handleUpdateEntry}
               onTogglePin={handleTogglePin}
             />
-            <TrashView />
           </div>
 
           {/* Sidebar Section */}

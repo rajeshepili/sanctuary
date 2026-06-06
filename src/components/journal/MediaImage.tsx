@@ -3,7 +3,13 @@ import { useQuery, queryOptions } from '@tanstack/react-query'
 import { getMedia } from '#/features/media/media.api'
 import { withTimeout } from '#/lib/with-timeout'
 import { Image as ImageIcon, Loader2, Maximize2 } from 'lucide-react'
-import { Dialog, DialogContent, DialogTrigger } from '#/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+  DialogTitle,
+  DialogDescription,
+} from '#/components/ui/dialog'
 import { Skeleton } from '#/components/ui/skeleton'
 
 interface MediaImageProps {
@@ -73,6 +79,10 @@ export function MediaImage({ mediaId }: MediaImageProps) {
         </div>
       </DialogTrigger>
       <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto h-auto p-1 bg-transparent border-none shadow-none flex items-center justify-center">
+        <DialogTitle>View Image</DialogTitle>
+        <DialogDescription>
+          Full size view of the selected media image.
+        </DialogDescription>
         {fullLoading ? (
           <div className="w-32 h-32 flex items-center justify-center">
             <Loader2 className="w-8 h-8 text-white animate-spin" />

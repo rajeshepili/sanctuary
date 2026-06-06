@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from 'react'
+import { memo, useMemo, useState, useEffect, useRef } from 'react'
 import { useMood } from '#/hooks/use-mood'
 
 interface LiveClockProps {
@@ -27,96 +27,80 @@ const moodStyles = {
 export const LiveClock = memo(function LiveClockComponent({
   use24Hour = false,
 }: LiveClockProps) {
-  const [mounted, setMounted] = useState(false)
   const [time, setTime] = useState(() => new Date())
   const mood = useMood()
 
   const currentMoodStyle = moodStyles[mood]
 
-  useEffect(() => {
-    let interval: number
+  const scheduleNextRef = useRef<() => void>(() => {})
 
-    const sync = () => {
-      setTime(new Date())
-
-      interval = window.setInterval(() => {
-        setTime(new Date())
-      }, 60000)
-    }
-
+  const tick = () => {
     const now = new Date()
-    const delay = (60 - now.getSeconds()) * 1000 - now.getMilliseconds()
+    setTime(now)
 
-    const timeout = window.setTimeout(sync, delay)
+    const delay = getMsToNextMinute(now)
 
-    return () => {
-      clearTimeout(timeout)
-      clearInterval(interval)
+    scheduleNextRef.current = () => {
+      tick()
     }
-  }, [])
+
+    setTimeout(() => {
+      scheduleNextRef.current()
+    }, delay)
+  }
 
   useEffect(() => {
-    setMounted(true)
+    const now = new Date()
+    setTime(now)
+
+    const delay = getMsToNextMinute(now)
+
+    const id = setTimeout(() => tick(), delay)
+
+    return () => clearTimeout(id)
   }, [])
 
-  const dateFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(undefined, {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      }),
-    [],
-  )
+  const dateFormatter = useMemo(() => {
+    return new Intl.DateTimeFormat(undefined, {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  }, [])
 
-  const timeFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(undefined, {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: !use24Hour,
-      }),
-    [use24Hour],
-  )
+  const timeFormatter = useMemo(() => {
+    return new Intl.DateTimeFormat(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: !use24Hour,
+    })
+  }, [use24Hour])
 
   const formattedTime = timeFormatter.format(time)
-
   const formattedDate = dateFormatter.format(time)
 
-  if (!mounted) return <div className="h-[72px]" />
-
   return (
-    <div
-      className="
-        flex flex-col items-center
-        text-center
-        select-none
-        space-y-1
-    "
-    >
-      {/* Time */}
+    <div className="flex flex-col items-center text-center select-none space-y-1">
       <span
         className={`
-            font-black
-            text-3xl md:text-4xl
-            tracking-tight
-            ${currentMoodStyle.time}
-
+          font-black
+          text-3xl md:text-4xl
+          tracking-tight
+          ${currentMoodStyle.time}
         `}
       >
         {formattedTime}
       </span>
 
-      {/* Date */}
       <span
         className={`
-            text-xs
-            font-medium
-            tracking-wide
-            ${currentMoodStyle.date}
-            uppercase
-            drop-shadow-sm
+          text-xs
+          font-medium
+          tracking-wide
+          ${currentMoodStyle.date}
+          uppercase
+          drop-shadow-sm
         `}
       >
         {formattedDate}
@@ -124,3 +108,7 @@ export const LiveClock = memo(function LiveClockComponent({
     </div>
   )
 })
+
+function getMsToNextMinute(now: Date) {
+  return (60 - now.getSeconds()) * 1000 - now.getMilliseconds()
+}

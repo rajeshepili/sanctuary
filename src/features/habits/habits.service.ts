@@ -1,4 +1,5 @@
 import { getDb } from '#/database'
+import type { Database } from '#/database'
 import { habits, habitCompletions } from '#/database/schema'
 import { eq, and, gte } from 'drizzle-orm'
 import type {
@@ -9,6 +10,7 @@ import type {
 } from './habits.schema'
 
 import { computeHabitStreak } from '#/utils/streak'
+import type { Habit } from '#/types'
 
 export async function getAllHabitsService() {
   const db = await getDb()
@@ -128,8 +130,8 @@ export async function toggleHabitCompletionService(
 }
 
 export async function reactivateHabitsAndSyncStreaks(
-  db: any,
-  habitsList?: any[],
+  db: Database,
+  habitsList?: Habit[],
 ) {
   const allHabits = habitsList || (await db.select().from(habits))
   const now = new Date()

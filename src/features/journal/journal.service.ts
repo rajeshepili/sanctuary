@@ -39,7 +39,7 @@ export async function getAllEntriesService() {
     orderBy: [desc(journalEntries.isPinned), desc(journalEntries.createdAt)],
   })
 
-  return entries as any
+  return entries
 }
 
 export async function getDeletedEntriesService() {
@@ -51,7 +51,7 @@ export async function getDeletedEntriesService() {
     limit: 100,
   })
 
-  return entries as any
+  return entries
 }
 
 export async function createEntryService(data: CreateEntryInput) {

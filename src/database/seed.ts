@@ -15,13 +15,10 @@
  * dependency with database/index.ts.
  */
 
-import type { LibSQLDatabase } from 'drizzle-orm/libsql'
-import type * as schema from './schema'
+import type { Database } from '#/database'
 import { userPreferences } from './schema'
 
-type Db = LibSQLDatabase<typeof schema>
-
-export async function seedDatabase(db: Db): Promise<void> {
+export async function seedDatabase(db: Database): Promise<void> {
   await db
     .insert(userPreferences)
     .values({

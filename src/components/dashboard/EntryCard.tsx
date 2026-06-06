@@ -1,12 +1,13 @@
 import { memo, useState } from 'react'
 import { motion } from 'framer-motion'
+import { useNavigate } from '@tanstack/react-router'
 import { Card } from '#/components/ui/card'
-import { Pin, Maximize2, Edit3, Trash2 } from 'lucide-react'
+import { Pin, ArrowUpRight, Edit3, Trash2 } from 'lucide-react'
 import { formatEntryDate } from '#/utils/journal'
 import { IconButton } from '#/components/ui/icon-button'
-import { MarkdownRenderer } from '#/utils/markdown'
+import { MarkdownViewer } from '#/components/journal/MarkdownViewer'
 import { MediaGrid } from '#/components/journal/MediaGrid'
-import { EntryEditForm } from '#/components/journal/EntryEditForm'
+import { EntryEditForm } from '#/components/journal/editor/EntryEditForm'
 import type { Entry, EntryMedia } from '#/types'
 
 interface EntryCardProps {
@@ -19,7 +20,6 @@ interface EntryCardProps {
     removedMediaIds?: number[],
   ) => Promise<Omit<Entry, 'media'>>
   onTogglePin: (id: number) => Promise<Omit<Entry, 'media'>>
-  onReadEntry: (id: number) => void
   onTagClick: (tag: string) => void
 }
 
@@ -29,9 +29,9 @@ export const EntryCard = memo(
     onDelete,
     onUpdate,
     onTogglePin,
-    onReadEntry,
     onTagClick,
   }: EntryCardProps) {
+    const navigate = useNavigate()
     const [isEditing, setIsEditing] = useState(false)
     const [editContent, setEditContent] = useState('')
     const [editPendingMedia, setEditPendingMedia] = useState<
@@ -66,6 +66,10 @@ export const EntryCard = memo(
         .length === 0 &&
       editPendingMedia.length === 0
 
+    const handleReadEntry = () => {
+      navigate({ to: '/journal', search: { entryId: entry.id } })
+    }
+
     return (
       <>
         <motion.div
@@ -76,40 +80,44 @@ export const EntryCard = memo(
         >
           <Card
             className={`
-            p-5 rounded-xl border border-border/70
-            bg-card/90 backdrop-blur-md shadow-xs
-            transition-all duration-500 relative group overflow-hidden
-            ${isPinned ? 'ring-1 ring-amber-500/30' : ''}
-          `}
+              p-5 rounded-[1.2rem] border border-border/70
+              bg-card/90 backdrop-blur-md
+              transition-all duration-300 relative group overflow-hidden
+              ${isPinned ? '' : ''}
+            `}
             style={{
               boxShadow: isPinned
-                ? `0 10px 30px -15px var(--primary), 0 0 0 1px var(--primary)`
-                : undefined,
+                ? `0 0 0 1px var(--primary), 0 8px 24px -8px color-mix(in srgb, var(--primary) 30%, transparent)`
+                : '0 2px 12px rgba(0,0,0,0.06)',
               borderColor: isPinned ? 'var(--primary)' : undefined,
             }}
           >
             {/* Top metadata bar */}
-            <div className="flex items-center justify-between mb-3 text-xs text-muted-foreground/85 font-medium">
+            <div className="flex items-center justify-between mb-3 text-xs text-muted-foreground/70 font-medium">
               <div className="flex items-center gap-2">
-                <span className="capitalize font-semibold">Reflection</span>
                 {isPinned && (
-                  <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 text-[10px] font-bold tracking-wide uppercase">
+                  <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-500 text-[10px] font-bold tracking-wide uppercase">
                     <Pin className="w-2.5 h-2.5 fill-current" /> Pinned
                   </span>
                 )}
-                <span className="text-muted-foreground/40">•</span>
                 <span>{formatEntryDate(entry.createdAt)}</span>
+                {entry.media.length > 0 && (
+                  <span className="text-muted-foreground/40">
+                    · {entry.media.length} photo
+                    {entry.media.length > 1 ? 's' : ''}
+                  </span>
+                )}
               </div>
 
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 {/* Pin / Unpin */}
                 <IconButton
                   tooltip={isPinned ? 'Unpin entry' : 'Pin to top'}
                   onClick={() => onTogglePin(entry.id)}
                   className={
                     isPinned
-                      ? 'text-amber-500 bg-amber-500/10'
-                      : 'opacity-0 group-hover:opacity-100 text-muted-foreground/50 hover:text-amber-500 hover:bg-amber-500/10'
+                      ? 'text-amber-500 bg-amber-500/10 opacity-100'
+                      : 'text-muted-foreground/50 hover:text-amber-500 hover:bg-amber-500/10'
                   }
                 >
                   <Pin
@@ -117,13 +125,13 @@ export const EntryCard = memo(
                   />
                 </IconButton>
 
-                {/* Expand / Read full entry */}
+                {/* Open in Journal page */}
                 <IconButton
-                  tooltip="Read full reflection"
-                  onClick={() => onReadEntry(entry.id)}
-                  className="opacity-0 group-hover:opacity-100 hover:text-primary hover:bg-primary/10"
+                  tooltip="Open in journal"
+                  onClick={handleReadEntry}
+                  className="hover:text-primary hover:bg-primary/10"
                 >
-                  <Maximize2 className="w-3.5 h-3.5" />
+                  <ArrowUpRight className="w-3.5 h-3.5" />
                 </IconButton>
 
                 {/* Edit entry */}
@@ -131,7 +139,7 @@ export const EntryCard = memo(
                   <IconButton
                     tooltip="Edit entry"
                     onClick={startEdit}
-                    className="opacity-0 group-hover:opacity-100 hover:text-primary hover:bg-primary/10"
+                    className="hover:text-primary hover:bg-primary/10"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
                   </IconButton>
@@ -141,14 +149,13 @@ export const EntryCard = memo(
                   tooltip="Delete entry"
                   variant="danger"
                   onClick={() => onDelete(entry.id)}
-                  className="opacity-0 group-hover:opacity-100"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </IconButton>
               </div>
             </div>
 
-            {/* Inline edit vs read view */}
+            {/* Content */}
             {isEditing ? (
               <EntryEditForm
                 content={editContent}
@@ -170,31 +177,33 @@ export const EntryCard = memo(
                 onSave={handleSaveEdit}
                 onCancel={cancelEdit}
                 isSaveDisabled={isSaveDisabled}
+                entryId={entry.id}
               />
             ) : (
               <>
                 <div
-                  className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap line-clamp-6 cursor-pointer group-hover:text-foreground transition-colors"
-                  onClick={() => onReadEntry(entry.id)}
-                  title="Click to read full reflection"
+                  className="cursor-pointer"
+                  onClick={handleReadEntry}
+                  title="Open in journal to read full reflection"
                 >
-                  <MarkdownRenderer
+                  <MarkdownViewer
                     content={entry.content}
                     onTagClick={onTagClick}
+                    className="line-clamp-2 text-sm leading-relaxed text-foreground/85"
                   />
+                  {(entry.content.split('\n').length > 4 ||
+                    entry.content.length > 240) && (
+                    <p className="mt-2 text-xs font-semibold text-primary/60 hover:text-primary transition-colors">
+                      Open in journal
+                    </p>
+                  )}
                 </div>
 
-                {(entry.content.split('\n').length > 6 ||
-                  entry.content.length > 300) && (
-                  <div
-                    className="mt-2 text-xs font-semibold text-primary/70 hover:text-primary cursor-pointer transition-colors w-fit"
-                    onClick={() => onReadEntry(entry.id)}
-                  >
-                    Read full reflection
+                {entry.media.length > 0 && (
+                  <div className="mt-3">
+                    <MediaGrid media={entry.media} />
                   </div>
                 )}
-
-                <MediaGrid media={entry.media} />
               </>
             )}
           </Card>
@@ -205,7 +214,6 @@ export const EntryCard = memo(
   (prevProps, nextProps) => {
     return (
       prevProps.entry === nextProps.entry &&
-      prevProps.onReadEntry === nextProps.onReadEntry &&
       prevProps.onTagClick === nextProps.onTagClick
     )
   },

@@ -1,5 +1,6 @@
 import { AlertTriangle, GitBranchPlus, RefreshCw } from 'lucide-react'
 import { APP_REPO_URL } from '#/config/branding'
+import { ScrollArea } from '#/components/ui/scroll-area'
 
 export function GlobalErrorFallback({
   error,
@@ -49,13 +50,15 @@ export function GlobalErrorFallback({
           </p>
         </div>
 
-        <div className="w-full text-left p-4 rounded-xl bg-red-50 border border-red-200 overflow-x-auto shadow-sm max-h-[300px] overflow-y-auto">
-          <pre className="text-[11px] font-mono text-red-600 font-semibold">
-            {error.message}
-            {'\n'}
-            {error.stack}
-          </pre>
-        </div>
+        <ScrollArea className="w-full max-h-[300px] mt-2">
+          <div className="w-full text-left p-4 rounded-xl bg-red-50 border border-red-200 shadow-sm">
+            <pre className="text-[11px] font-mono text-red-600 font-semibold whitespace-pre-wrap break-all">
+              {error.message}
+              {'\n'}
+              {error.stack}
+            </pre>
+          </div>
+        </ScrollArea>
 
         <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
           <button
