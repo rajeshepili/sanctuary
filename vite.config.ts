@@ -10,6 +10,28 @@ import tailwindcss from '@tailwindcss/vite'
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
+  server: {
+    host: '127.0.0.1',
+  },
+  build: {
+    chunkSizeWarningLimit: 500,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: 'vendor-tiptap',
+              test: /@tiptap|prosemirror|marked/,
+            },
+            {
+              name: 'vendor-motion',
+              test: /framer-motion/,
+            },
+          ],
+        },
+      },
+    },
+  },
   plugins: [
     devtools(),
     tailwindcss(),

@@ -5,7 +5,7 @@
 
 Sanctuary is a local, private, single-user journal, habit tracking, and reflection app.
 
-Everything runs on your machine, stores data locally in SQLite, and is designed for a single user. There is no cloud sync, no login, and no remote backend.
+Everything runs on your machine, stores data locally in SQLite, and is designed for a single user. There is no cloud sync, no login, and no remote backend. See [docs/OFFLINE.md](docs/OFFLINE.md) for network and privacy guarantees.
 
 ## Key features
 
@@ -29,7 +29,7 @@ pnpm install
 pnpm dev
 ```
 
-Then open `http://localhost:3000` in your browser.
+Then open `http://127.0.0.1:3000` in your browser.
 
 ## Desktop development
 
@@ -182,22 +182,24 @@ pnpm build
 pnpm desktop:build
 ```
 
-Output is written to `dist-electron/`. Native modules (`better-sqlite3`, `sharp`) are compiled for your current OS — build on each target platform for best results, or rely on CI matrix builds for all three.
+Output is written to `dist-electron/`. Native modules (`@libsql/client`, `sharp`) are compiled for your current OS — build on each target platform for best results, or rely on CI matrix builds for all three.
 
 ## Project structure
 
 ```
 src/
-  routes/               TanStack Router pages
-  components/           UI (journal/, habits/, layout/, ui/)
-  features/             Domain logic per feature module
+  routes/               TanStack Router pages (thin wiring)
+  features/             Domain modules + co-located components/
+  components/           Shared layout, ui, errors
   database/             SQLite schema and initialization
   test/                 Shared test fixtures and DB helpers
-scripts/                Test runner and tooling
+server/                 Nitro middleware and API routes
+scripts/                Test runner, feature scaffold, bundle check
 drizzle/                Generated SQL migrations
+docs/                   Architecture, privacy, refactor report
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for naming conventions and feature module layout.
+See [docs/STRUCTURE.md](docs/STRUCTURE.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Notes for local consumer use
 

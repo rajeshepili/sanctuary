@@ -58,22 +58,14 @@ export function useMood(options?: UseMoodOptions): ThemeMood {
   useEffect(() => {
     latRef.current = options?.lat
     lngRef.current = options?.lng
+    const lat = options?.lat
+    const lng = options?.lng
+    if (lat != null && lng != null) {
+      setMood(deriveMoodFromSun(lat, lng))
+    } else {
+      setMood(deriveMoodFromTime())
+    }
   }, [options?.lat, options?.lng])
-
-  useEffect(() => {
-    if (hasPrefLocation) return
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        latRef.current = pos.coords.latitude
-        lngRef.current = pos.coords.longitude
-        setMood(deriveMoodFromSun(pos.coords.latitude, pos.coords.longitude))
-      },
-      () => {
-        setMood(deriveMoodFromTime())
-      },
-    )
-  }, [hasPrefLocation])
 
   useEffect(() => {
     const tick = () => {

@@ -9,8 +9,8 @@ import { Button } from '#/components/ui/button'
 import { habitsQueryOptions } from '#/features/habits/habits.options'
 import { useHabitsMutations } from '#/features/habits/habits.mutations'
 
-import { HabitsList } from '#/components/habits/HabitsList'
-import { HabitMetrics } from '#/components/habits/HabitMetrics'
+import { HabitsList } from '#/features/habits/components/HabitsList'
+import { HabitMetrics } from '#/features/habits/components/HabitMetrics'
 import { Hero } from '#/components/layout/Hero'
 import { FocusSection } from '#/components/layout/FocusSection'
 import {

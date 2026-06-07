@@ -26,7 +26,7 @@ import { formatScheduleLabel } from '#/utils/habits'
 
 import type { Habit, HabitStatus } from '#/types'
 
-import { HabitDayCell } from '#/components/habits/HabitDayCell'
+import { HabitDayCell } from '#/features/habits/components/HabitDayCell'
 
 interface HabitCardProps {
   habit: Habit

@@ -4,13 +4,13 @@ Sanctuary is a **local-first** TanStack Start application with an optional Elect
 
 ## Stack
 
-| Layer         | Technology                                                      |
-| ------------- | --------------------------------------------------------------- |
-| UI            | React 19, Tailwind CSS, Radix / Base UI                         |
-| Routing & SSR | TanStack Router, TanStack Start                                 |
-| Data          | TanStack Query, Drizzle ORM, SQLite (`better-sqlite3` / libsql) |
-| Desktop       | Electron 34, electron-builder                                   |
-| Tests         | Vitest                                                          |
+| Layer         | Technology                                             |
+| ------------- | ------------------------------------------------------ |
+| UI            | React 19, Tailwind CSS, Radix / Base UI                |
+| Routing & SSR | TanStack Router, TanStack Start                        |
+| Data          | TanStack Query, Drizzle ORM, SQLite (`@libsql/client`) |
+| Desktop       | Electron 34, electron-builder                          |
+| Tests         | Vitest                                                 |
 
 ## High-level flow
 
@@ -53,7 +53,12 @@ Each domain under `src/features/<name>/` typically includes:
 - `*.service.ts` — business logic and database access
 - `*.api.ts` — server functions exposed to the client
 - `*.queries.ts` / `*.mutations.ts` — React Query integration
-- `*.integration.test.ts` — database integration tests
+- `*.options.ts` / `*.cache.ts` / `*.keys.ts` — query wiring
+- `components/` — feature-specific UI (co-located with the module)
+- `*.service.test.ts` — service-layer accuracy tests (streaks, exports, purge, media, etc.)
+- `*.integration.test.ts` — database schema integration tests
+
+Scaffold new modules with `pnpm feature:create <name>`.
 
 ## Naming conventions
 

@@ -40,12 +40,13 @@ export async function prepareMediaAsset(
   }
 
   const buffer = Buffer.from(match[2], 'base64')
+  const bytes = new Uint8Array(buffer)
 
-  if (buffer.length > MAX_SIZE_BYTES) {
+  if (bytes.length > MAX_SIZE_BYTES) {
     throw new Error('Image exceeds 25MB limit')
   }
 
-  const fileType = await fileTypeFromBuffer(buffer)
+  const fileType = await fileTypeFromBuffer(bytes)
 
   if (!fileType || !fileType.mime.startsWith('image/')) {
     throw new Error('Only images are allowed as media.')
@@ -56,7 +57,7 @@ export async function prepareMediaAsset(
   const originalPath = path.join(mediaDir, `${id}.webp`)
   const thumbPath = path.join(mediaDir, `${id}_thumb.webp`)
 
-  const image = sharp(buffer, { failOn: 'none' }).rotate().withMetadata()
+  const image = sharp(bytes, { failOn: 'none' }).rotate().withMetadata()
 
   const originalBuffer = await image
     .withMetadata()
@@ -116,22 +117,13 @@ export async function getMediaService(
   mediaId: number,
   thumbnailOnly = false,
 ): Promise<string | null> {
+  const { resolveMediaFile } = await import('./media.files')
+  const resolved = await resolveMediaFile(mediaId, thumbnailOnly)
+  if (!resolved) return null
+
   try {
-    const db = await getDb()
-    const media = await db.query.entryMedia.findFirst({
-      where: eq(entryMedia.id, mediaId),
-    })
-
-    if (!media) return null
-
-    /**
-     * Defaults to serving the thumbnail representation to minimize memory overhead
-     * during list rendering. Full-resolution assets are explicitly requested via the lightbox.
-     */
-    const filePath = thumbnailOnly ? media.thumbnailPath : media.filePath
-    const buffer = await fs.readFile(filePath)
-
-    return `data:${media.mimeType};base64,${buffer.toString('base64')}`
+    const buffer = await fs.readFile(resolved.filePath)
+    return `data:${resolved.mimeType};base64,${buffer.toString('base64')}`
   } catch (error) {
     console.error('Failed to read media:', error)
     return null

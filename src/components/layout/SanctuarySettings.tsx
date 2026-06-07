@@ -32,8 +32,9 @@ import {
 } from '#/features/journal/journal.export'
 import { toast } from 'sonner'
 import { PinModal } from './PinModal'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { hashPin } from '#/utils/crypto'
+import { formatCoordinates } from '#/lib/format-coordinates'
 import { IconButton } from '#/components/ui/icon-button'
 import { useUIStore } from '#/stores/ui-store'
 
@@ -77,38 +78,59 @@ export function SanctuarySettings({
   )
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [locLoading, setLocLoading] = useState(false)
+  const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false)
+  const [updateCheckLoading, setUpdateCheckLoading] = useState(false)
+  const isDesktop = typeof window !== 'undefined' && !!window.sanctuary?.isDesktop
   const { setLocked } = useUIStore()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!window.sanctuary) return
+    void window.sanctuary.getAutoUpdateEnabled().then(setAutoUpdateEnabled)
+  }, [])
 
   const handleGrantLocation = () => {
     setLocLoading(true)
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
+      (pos) => {
         const { latitude, longitude } = pos.coords
-        let label = `${latitude.toFixed(2)}°, ${longitude.toFixed(2)}°`
-        try {
-          const res = await fetch(
-            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`,
-          )
-          if (res.ok) {
-            const data = await res.json()
-            const city = data.city || data.locality || ''
-            const country = data.countryName || ''
-            if (city || country)
-              label = [city, country].filter(Boolean).join(', ')
-          }
-        } catch {
-          /* no-op — keep coordinate label */
-        }
-        onUpdatePrefs({ latitude, longitude, locationLabel: label })
+        onUpdatePrefs({
+          latitude,
+          longitude,
+          locationLabel: formatCoordinates(latitude, longitude),
+        })
         setLocLoading(false)
       },
       () => {
-        toast.error('Location access denied. Using timezone as fallback.')
+        toast.error('Location access denied. Scenes use your local timezone instead.')
         setLocLoading(false)
       },
       { timeout: 8000 },
     )
+  }
+
+  const handleAutoUpdateToggle = async (enabled: boolean) => {
+    if (!window.sanctuary) return
+    await window.sanctuary.setAutoUpdateEnabled(enabled)
+    setAutoUpdateEnabled(enabled)
+    toast.success(
+      enabled
+        ? 'Automatic update checks enabled.'
+        : 'Automatic update checks disabled.',
+    )
+  }
+
+  const handleCheckForUpdates = async () => {
+    if (!window.sanctuary) return
+    setUpdateCheckLoading(true)
+    try {
+      await window.sanctuary.checkForUpdates()
+      toast.message('Update check complete.')
+    } catch {
+      toast.error('Could not check for updates.')
+    } finally {
+      setUpdateCheckLoading(false)
+    }
   }
 
   const toggles: Array<{
@@ -301,8 +323,8 @@ export function SanctuarySettings({
                             `${prefs.latitude.toFixed(2)}°, ${prefs.longitude.toFixed(2)}°`}
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
-                          Saved locally. Scenes follow astronomical sunrise
-                          &amp; sunset.
+                          Saved locally on your device. Coordinates are never sent
+                          over the network.
                         </div>
                       </div>
                     </div>
@@ -346,13 +368,36 @@ export function SanctuarySettings({
                           : 'Enable Location-Aware Scenes'}
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-1">
-                        Sunrise &amp; sunset match your latitude. Falls back to
-                        timezone if denied.
+                        Opt in to use your device location for sunrise &amp;
+                        sunset scenes. Uses the OS location API only — no
+                        internet lookup. Falls back to timezone if denied.
                       </div>
                     </div>
                   </button>
                 )}
               </div>
+
+              {isDesktop && (
+                <div className="pt-4 border-t border-border/10 space-y-4">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground pb-2">
+                    Updates
+                  </h3>
+                  <ToggleRow
+                    label="Automatic update checks"
+                    description="When enabled, Sanctuary checks GitHub for new releases on startup. Version metadata only — no journal data is sent."
+                    checked={autoUpdateEnabled}
+                    onChange={(val) => void handleAutoUpdateToggle(val)}
+                  />
+                  <Button
+                    variant="outline"
+                    disabled={updateCheckLoading}
+                    onClick={() => void handleCheckForUpdates()}
+                    className="w-full"
+                  >
+                    {updateCheckLoading ? 'Checking…' : 'Check for updates now'}
+                  </Button>
+                </div>
+              )}
 
               {/* Privacy Shield */}
               <div className="pt-4 border-t border-border/10 space-y-4">

@@ -3,8 +3,7 @@ import {
   Scripts,
   createRootRouteWithContext,
 } from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
+import { lazy, Suspense } from 'react'
 import { Toaster } from '#/components/ui/sonner'
 import type { QueryClient } from '@tanstack/react-query'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -14,6 +13,12 @@ import { TooltipProvider } from '#/components/ui/tooltip'
 
 import appCss from '../styles.css?url'
 import { APP_META_DESCRIPTION, APP_NAME } from '#/config/branding'
+
+const DevTools = import.meta.env.DEV
+  ? lazy(() =>
+      import('#/components/dev/DevTools').then((m) => ({ default: m.DevTools })),
+    )
+  : () => null
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
@@ -87,15 +92,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             </ErrorBoundary>
           </TooltipProvider>
 
-          <TanStackDevtools
-            config={{ position: 'bottom-left' }}
-            plugins={[
-              {
-                name: 'Tanstack Router',
-                render: <TanStackRouterDevtoolsPanel />,
-              },
-            ]}
-          />
+          {import.meta.env.DEV && (
+            <Suspense fallback={null}>
+              <DevTools />
+            </Suspense>
+          )}
 
           <Scripts />
           <Toaster />

@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { MediaImage } from '#/components/journal/MediaImage'
+import { MediaImage } from '#/features/journal/components/MediaImage'
 import type { EntryMedia } from '#/types'
 
 interface MediaGridProps {

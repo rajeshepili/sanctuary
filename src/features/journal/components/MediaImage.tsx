@@ -1,8 +1,6 @@
 import { useState } from 'react'
-import { useQuery, queryOptions } from '@tanstack/react-query'
-import { getMedia } from '#/features/media/media.api'
-import { withTimeout } from '#/lib/with-timeout'
-import { Image as ImageIcon, Loader2, Maximize2 } from 'lucide-react'
+import { getMediaAssetUrl } from '#/features/media/media.urls'
+import { Image as ImageIcon, Maximize2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -10,7 +8,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from '#/components/ui/dialog'
-import { Skeleton } from '#/components/ui/skeleton'
 
 interface MediaImageProps {
   mediaId: number
@@ -18,41 +15,12 @@ interface MediaImageProps {
 
 export function MediaImage({ mediaId }: MediaImageProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [thumbFailed, setThumbFailed] = useState(false)
 
-  const { data: thumbUrl, isLoading: thumbLoading } = useQuery(
-    queryOptions({
-      queryKey: ['media', mediaId, 'thumb'],
-      queryFn: () =>
-        withTimeout(
-          () => getMedia({ data: { mediaId, thumbnailOnly: true } }),
-          {
-            name: `getMedia(${mediaId}, thumb)`,
-          },
-        ),
-      staleTime: Infinity,
-    }),
-  )
+  const thumbUrl = getMediaAssetUrl(mediaId, true)
+  const fullUrl = getMediaAssetUrl(mediaId, false)
 
-  const { data: fullUrl, isLoading: fullLoading } = useQuery(
-    queryOptions({
-      queryKey: ['media', mediaId, 'full'],
-      queryFn: () =>
-        withTimeout(
-          () => getMedia({ data: { mediaId, thumbnailOnly: false } }),
-          {
-            name: `getMedia(${mediaId}, full)`,
-          },
-        ),
-      staleTime: Infinity,
-      enabled: lightboxOpen,
-    }),
-  )
-
-  if (thumbLoading) {
-    return <Skeleton className="w-full h-32 rounded-xl" />
-  }
-
-  if (!thumbUrl) {
+  if (thumbFailed) {
     return (
       <div className="w-full h-32 flex flex-col items-center justify-center bg-card/50 rounded-xl border border-dashed border-border/50 text-muted-foreground">
         <ImageIcon className="w-6 h-6 mb-2" />
@@ -68,6 +36,9 @@ export function MediaImage({ mediaId }: MediaImageProps) {
           <img
             src={thumbUrl}
             alt="Journal attachment"
+            loading="lazy"
+            decoding="async"
+            onError={() => setThumbFailed(true)}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             style={{ maxHeight: '400px' }}
           />
@@ -83,13 +54,9 @@ export function MediaImage({ mediaId }: MediaImageProps) {
         <DialogDescription>
           Full size view of the selected media image.
         </DialogDescription>
-        {fullLoading ? (
-          <div className="w-32 h-32 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-white animate-spin" />
-          </div>
-        ) : (
+        {lightboxOpen && (
           <img
-            src={fullUrl ?? thumbUrl}
+            src={fullUrl}
             alt="Journal attachment expanded"
             className="max-w-full max-h-[90vh] object-contain rounded-md"
           />

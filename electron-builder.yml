@@ -23,7 +23,6 @@ asarUnpack:
   - dist/**/*
   - .output/**/*
   - drizzle/**/*
-  - node_modules/better-sqlite3/**/*
   - node_modules/@libsql/**/*
   - node_modules/sharp/**/*
 

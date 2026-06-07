@@ -1,5 +1,5 @@
 import type { EntryMedia } from '#/types'
-import { JournalEditor } from '#/components/journal/editor/JournalEditor'
+import { JournalEditor } from '#/features/journal/components/editor/JournalEditor'
 
 type PendingMedia = { file: File; base64: string }
 

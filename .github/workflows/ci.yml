@@ -40,6 +40,9 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Check client bundle size
+        run: pnpm build:check-size
+
       - name: Typecheck
         run: pnpm typecheck
 

@@ -1,8 +1,10 @@
-import { app, BrowserWindow, session } from 'electron'
+import { app, BrowserWindow, ipcMain, session } from 'electron'
 import { join } from 'node:path'
 import { fork } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
 import net from 'node:net'
+import { randomBytes } from 'node:crypto'
+import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import electronUpdater from 'electron-updater'
 
 const { autoUpdater } = electronUpdater
@@ -19,6 +21,42 @@ const isDev = !app.isPackaged
 let serverProcess: ChildProcess | null = null
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
+let sessionToken: string | null = null
+
+interface ElectronPrefs {
+  autoUpdateEnabled: boolean
+}
+
+function getElectronPrefsPath() {
+  return join(app.getPath('userData'), 'electron-prefs.json')
+}
+
+async function loadElectronPrefs(): Promise<ElectronPrefs> {
+  try {
+    const raw = await readFile(getElectronPrefsPath(), 'utf-8')
+    const parsed = JSON.parse(raw) as Partial<ElectronPrefs>
+    return { autoUpdateEnabled: parsed.autoUpdateEnabled === true }
+  } catch {
+    return { autoUpdateEnabled: false }
+  }
+}
+
+async function saveElectronPrefs(prefs: ElectronPrefs) {
+  await mkdir(app.getPath('userData'), { recursive: true })
+  await writeFile(getElectronPrefsPath(), JSON.stringify(prefs, null, 2), 'utf-8')
+}
+
+function getPreloadPath() {
+  if (isDev) {
+    return join(process.cwd(), '.output', 'preload.js')
+  }
+  return join(
+    process.resourcesPath,
+    'app.asar.unpacked',
+    '.output',
+    'preload.js',
+  )
+}
 
 function showStartupError(win: BrowserWindow | null, error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
@@ -29,10 +67,6 @@ function showStartupError(win: BrowserWindow | null, error: unknown) {
   }
 }
 
-/**
- * Polling mechanism to ensure the embedded server is actively accepting connections
- * before the main window attempts to load the application.
- */
 const waitForPort = (port: number, timeout = isDev ? 10_000 : 45_000) => {
   return new Promise<void>((resolve, reject) => {
     const startTime = Date.now()
@@ -64,10 +98,50 @@ function installContentSecurityPolicy() {
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' http://127.0.0.1:* http://localhost:*; object-src 'none'; base-uri 'self'",
+          "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' http://127.0.0.1:* http://localhost:*; object-src 'none'; base-uri 'self'",
         ],
       },
     })
+  })
+}
+
+function installSessionTokenInjection() {
+  if (!sessionToken) return
+
+  session.defaultSession.webRequest.onBeforeSendHeaders(
+    { urls: ['http://127.0.0.1/*', 'http://localhost/*'] },
+    (details, callback) => {
+      const headers = { ...details.requestHeaders }
+      headers.Authorization = `Bearer ${sessionToken}`
+      callback({ requestHeaders: headers })
+    },
+  )
+}
+
+function registerIpcHandlers() {
+  ipcMain.handle('auto-update:get-enabled', async () => {
+    const prefs = await loadElectronPrefs()
+    return prefs.autoUpdateEnabled
+  })
+
+  ipcMain.handle('auto-update:set-enabled', async (_event, enabled: boolean) => {
+    await saveElectronPrefs({ autoUpdateEnabled: enabled })
+    if (enabled) {
+      await autoUpdater.checkForUpdatesAndNotify()
+    }
+  })
+
+  ipcMain.handle('auto-update:check', async () => {
+    await autoUpdater.checkForUpdatesAndNotify()
+  })
+}
+
+async function maybeCheckForUpdates() {
+  const prefs = await loadElectronPrefs()
+  if (!prefs.autoUpdateEnabled) return
+
+  autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+    console.warn('Auto-updater failed to check for updates:', err.message)
   })
 }
 
@@ -80,6 +154,8 @@ async function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
+      webSecurity: true,
+      preload: getPreloadPath(),
     },
   })
 
@@ -88,7 +164,7 @@ async function createWindow() {
   if (isDev) {
     const PORT = 3000
     console.log('Running in development mode...')
-    mainWindow.loadURL(`http://localhost:${PORT}`)
+    mainWindow.loadURL(`http://127.0.0.1:${PORT}`)
     mainWindow.webContents.openDevTools()
   } else {
     console.log('Running in production mode, finding open port...')
@@ -96,7 +172,7 @@ async function createWindow() {
     const getFreePort = () =>
       new Promise<number>((resolve, reject) => {
         const srv = net.createServer()
-        srv.listen(0, () => {
+        srv.listen(0, '127.0.0.1', () => {
           const addr = srv.address()
           const port = addr && typeof addr === 'object' ? addr.port : 0
           srv.close(() => resolve(port))
@@ -106,6 +182,7 @@ async function createWindow() {
 
     try {
       const PORT = await getFreePort()
+      sessionToken = randomBytes(32).toString('hex')
 
       const userDataPath = app.getPath('userData')
       const dbPath = join(userDataPath, 'sanctuary.db')
@@ -130,13 +207,17 @@ async function createWindow() {
         env: {
           ...process.env,
           PORT: PORT.toString(),
+          HOST: '127.0.0.1',
           NODE_ENV: 'production',
           DATABASE_URL: `file:${dbPath}`,
           MEDIA_STORAGE_PATH: mediaPath,
           MIGRATIONS_PATH: migrationsPath,
+          SANCTUARY_SESSION_TOKEN: sessionToken,
         },
         stdio: 'inherit',
       })
+
+      installSessionTokenInjection()
 
       serverProcess.on('exit', (code, signal) => {
         serverProcess = null
@@ -164,7 +245,7 @@ async function createWindow() {
 
       await waitForPort(PORT)
       console.log(`Server is ready on port ${PORT}, loading window...`)
-      mainWindow.loadURL(`http://localhost:${PORT}`)
+      mainWindow.loadURL(`http://127.0.0.1:${PORT}`)
     } catch (err) {
       console.error('Failed to start internal server:', err)
       showStartupError(mainWindow, err)
@@ -181,12 +262,11 @@ app.on('second-instance', () => {
 
 app.whenReady().then(() => {
   installContentSecurityPolicy()
+  registerIpcHandlers()
   createWindow()
 
   if (!isDev) {
-    autoUpdater.checkForUpdatesAndNotify().catch((err) => {
-      console.warn('Auto-updater failed to check for updates:', err.message)
-    })
+    void maybeCheckForUpdates()
   }
 
   app.on('activate', function () {
@@ -198,10 +278,6 @@ app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit()
 })
 
-/**
- * Ensures the embedded Nitro server shuts down gracefully to allow SQLite WAL flushing.
- * Applies a 3-second timeout as a safety net against zombie processes.
- */
 app.on('before-quit', (e) => {
   isQuitting = true
   if (serverProcess && !serverProcess.killed) {

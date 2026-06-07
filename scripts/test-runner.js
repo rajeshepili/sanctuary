@@ -21,10 +21,13 @@ try {
   switch (testType) {
     case 'unit':
       console.log('📝 Running unit tests...\n')
-      execSync('vitest run --exclude "**/*.integration.test.ts"', {
-        stdio: 'inherit',
-        cwd: rootDir,
-      })
+      execSync(
+        'vitest run --exclude "**/*.integration.test.ts" --exclude "**/database.perf.test.ts"',
+        {
+          stdio: 'inherit',
+          cwd: rootDir,
+        },
+      )
       break
 
     case 'integration':
@@ -38,10 +41,13 @@ try {
     case 'all':
       console.log('📝 Running all tests...\n')
       console.log('1/2: Unit tests')
-      execSync('vitest run --exclude "**/*.integration.test.ts"', {
-        stdio: 'inherit',
-        cwd: rootDir,
-      })
+      execSync(
+        'vitest run --exclude "**/*.integration.test.ts" --exclude "**/database.perf.test.ts"',
+        {
+          stdio: 'inherit',
+          cwd: rootDir,
+        },
+      )
 
       console.log('\n2/2: Integration tests')
       execSync('vitest run integration.test', {

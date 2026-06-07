@@ -9,3 +9,6 @@ export const getMediaSchema = z.object({
   mediaId: z.number(),
   thumbnailOnly: z.boolean().optional().default(false),
 })
+
+export type UploadMediaInput = z.infer<typeof uploadMediaSchema>
+export type GetMediaInput = z.infer<typeof getMediaSchema>

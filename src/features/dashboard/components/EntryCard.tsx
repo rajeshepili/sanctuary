@@ -5,9 +5,9 @@ import { Card } from '#/components/ui/card'
 import { Pin, ArrowUpRight, Edit3, Trash2 } from 'lucide-react'
 import { formatEntryDate } from '#/utils/journal'
 import { IconButton } from '#/components/ui/icon-button'
-import { MarkdownViewer } from '#/components/journal/MarkdownViewer'
-import { MediaGrid } from '#/components/journal/MediaGrid'
-import { EntryEditForm } from '#/components/journal/editor/EntryEditForm'
+import { MarkdownViewer } from '#/features/journal/components/MarkdownViewer'
+import { MediaGrid } from '#/features/journal/components/MediaGrid'
+import { EntryEditForm } from '#/features/journal/components/editor/EntryEditForm'
 import type { Entry, EntryMedia } from '#/types'
 
 interface EntryCardProps {

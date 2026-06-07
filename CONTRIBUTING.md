@@ -10,7 +10,7 @@ Thank you for helping improve Sanctuary — a local-first journal and habit trac
 
 ## Development setup
 
-**Requirements:** Node.js 20+ (22 recommended), [pnpm](https://pnpm.io/), and build tools for native modules (`better-sqlite3`).
+**Requirements:** Node.js 20+ (22 recommended), [pnpm](https://pnpm.io/), and build tools for native modules (`sharp`, `@libsql/client`).
 
 ```bash
 git clone https://github.com/rajeshepili/sanctuary.git
@@ -19,7 +19,7 @@ pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). For the Electron shell:
+Open [http://127.0.0.1:3000](http://127.0.0.1:3000). For the Electron shell:
 
 ```bash
 pnpm desktop:dev
@@ -71,10 +71,10 @@ sanctuary/
 ├── public/                 # Static assets
 ├── scripts/                # Node scripts (test runner)
 ├── src/
-│   ├── components/         # React UI (feature + layout + ui/)
+│   ├── components/         # Shared UI (layout/, ui/, errors/, dev/)
 │   ├── config/             # App configuration
 │   ├── database/           # Schema, init, migrations runner
-│   ├── features/           # Domain modules (see below)
+│   ├── features/           # Domain modules + co-located components/
 │   ├── hooks/              # Shared React hooks
 │   ├── lib/                # Cross-cutting utilities
 │   ├── routes/             # TanStack Router pages
@@ -89,17 +89,30 @@ sanctuary/
 
 Each domain under `src/features/<name>/` uses consistent suffixes:
 
-| File                    | Purpose                    |
-| ----------------------- | -------------------------- |
-| `*.schema.ts`           | Zod validation             |
-| `*.service.ts`          | Business logic / DB access |
-| `*.api.ts`              | Server functions           |
-| `*.mutations.ts`        | React Query mutations      |
-| `*.queries.ts`          | React Query hooks          |
-| `*.options.ts`          | Query options              |
-| `*.cache.ts`            | Manual cache updates       |
-| `*.keys.ts`             | Query key factories        |
-| `*.integration.test.ts` | DB integration tests       |
+| File                    | Purpose                          |
+| ----------------------- | -------------------------------- |
+| `*.schema.ts`           | Zod validation                   |
+| `*.service.ts`          | Business logic / DB access       |
+| `*.api.ts`              | Server functions                 |
+| `*.mutations.ts`        | React Query mutations            |
+| `*.queries.ts`          | React Query hooks                |
+| `*.options.ts`          | Query options                    |
+| `*.cache.ts`            | Manual cache updates             |
+| `*.keys.ts`             | Query key factories              |
+| `*.service.test.ts`     | Service-layer accuracy tests     |
+| `*.integration.test.ts` | DB schema integration tests      |
+| `components/`           | Feature-specific UI (co-located) |
+
+**Layout rule:** domain logic lives in `src/features/<name>/`. Shared app chrome stays in `src/components/layout/` and the design system in `src/components/ui/`.
+
+### Scaffold a new feature
+
+```bash
+pnpm feature:create reminders
+pnpm feature:create daily-notes --route /daily-notes
+```
+
+This generates the module files, a route stub, and a starter service test. Then add migrations, implement the service, and build UI under `src/features/<name>/components/`.
 
 ### Naming
 

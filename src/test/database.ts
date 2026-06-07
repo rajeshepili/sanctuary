@@ -4,10 +4,28 @@ import { createClient } from '@libsql/client'
 import type { Client } from '@libsql/client'
 import * as schema from '#/database/schema'
 import { applyTestSchemaAsync } from '#/test/apply-test-schema'
+import { migrateTestDatabase } from '#/test/migrate-test-db'
 
 const clientByOrm = new WeakMap<LibSQLDatabase<typeof schema>, Client>()
 
 let sharedTestDb: LibSQLDatabase<typeof schema> | null = null
+
+async function initTestOrm(
+  client: Client,
+  useMigrations: boolean,
+): Promise<LibSQLDatabase<typeof schema>> {
+  if (useMigrations) {
+    const orm = drizzle(client, { schema })
+    await migrateTestDatabase(orm)
+    clientByOrm.set(orm, client)
+    return orm
+  }
+
+  await applyTestSchemaAsync((sql) => client.execute(sql))
+  const orm = drizzle(client, { schema })
+  clientByOrm.set(orm, client)
+  return orm
+}
 
 /**
  * Creates an in-memory SQLite database for integration tests (libsql).
@@ -20,12 +38,18 @@ export async function createTestDatabase(): Promise<
   }
 
   const client = createClient({ url: ':memory:' })
-  await applyTestSchemaAsync((sql) => client.execute(sql))
+  sharedTestDb = await initTestOrm(client, false)
+  return sharedTestDb
+}
 
-  const orm = drizzle(client, { schema })
-  clientByOrm.set(orm, client)
-  sharedTestDb = orm
-  return orm
+/**
+ * Fresh in-memory database per test file — uses real Drizzle migrations.
+ */
+export async function createIsolatedTestDatabase(): Promise<
+  LibSQLDatabase<typeof schema>
+> {
+  const client = createClient({ url: ':memory:' })
+  return initTestOrm(client, true)
 }
 
 /**

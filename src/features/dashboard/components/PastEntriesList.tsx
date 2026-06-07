@@ -10,7 +10,7 @@ import {
 import type { Entry } from '#/types'
 import { useCallback } from 'react'
 import { Link } from '@tanstack/react-router'
-import { EntryCard } from '#/components/dashboard/EntryCard'
+import { EntryCard } from '#/features/dashboard/components/EntryCard'
 import { MAX_DASHBOARD_ENTRIES } from '#/lib/constants'
 
 interface PastEntriesListProps {

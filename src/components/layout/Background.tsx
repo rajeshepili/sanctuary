@@ -1,14 +1,15 @@
+import { Suspense } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import type { ThemeMood } from '#/types'
 
-import { sceneRegistry } from './scenes/shared/scene-registry'
+import { sceneLoaders } from './scenes/shared/scene-loaders'
 
 interface Props {
   mood: ThemeMood
 }
 
 export function Background({ mood }: Props) {
-  const Scene = sceneRegistry[mood].component
+  const Scene = sceneLoaders[mood]
 
   return (
     <div
@@ -16,7 +17,9 @@ export function Background({ mood }: Props) {
       aria-hidden
     >
       <AnimatePresence mode="sync">
-        <Scene key={mood} />
+        <Suspense fallback={null}>
+          <Scene key={mood} />
+        </Suspense>
       </AnimatePresence>
     </div>
   )
