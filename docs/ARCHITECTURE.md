@@ -1,73 +1,50 @@
 # Architecture
 
-Sanctuary is a **local-first** TanStack Start application with an optional Electron shell.
+Sanctuary is built as a local-first desktop application using a modern, decoupled architecture.
 
-## Stack
+## Tech Stack
 
-| Layer         | Technology                                             |
-| ------------- | ------------------------------------------------------ |
-| UI            | React 19, Tailwind CSS, Radix / Base UI                |
-| Routing & SSR | TanStack Router, TanStack Start                        |
-| Data          | TanStack Query, Drizzle ORM, SQLite (`@libsql/client`) |
-| Desktop       | Electron 34, electron-builder                          |
-| Tests         | Vitest                                                 |
+- **Framework:** Electron (Desktop Shell)
+- **Local Server:** Nitro (API and Static Assets)
+- **Frontend:** React 19 + TanStack (Router, Query, Start)
+- **Styling:** Tailwind CSS 4 + Framer Motion
+- **Database:** SQLite (via LibSQL) + Drizzle ORM
+- **Rich Text:** Tiptap (ProseMirror)
 
-## High-level flow
+## High-Level Design
 
-```mermaid
-flowchart LR
-  subgraph client [Browser / Electron window]
-    UI[React routes & components]
-    RQ[React Query]
-  end
-  subgraph server [Embedded Node server]
-    API[Server functions / API routes]
-    SVC[Feature services]
-    DB[(SQLite)]
-  end
-  UI --> RQ --> API --> SVC --> DB
-```
+The application consists of three main layers that communicate over a local network interface:
 
-In **production desktop** mode, Electron forks `dist/server/server.js` and loads the UI from `http://127.0.0.1:<port>`.
+### 1. Electron Main Process
+The entry point of the application. It manages:
+- Application lifecycle and window management.
+- Native integration (IPC handlers, auto-updates).
+- Spawning and managing the lifecycle of the internal Nitro server.
+- Security policies (CSP, sandbox settings).
 
-## Directory layout
+### 2. Internal Nitro Server
+A lightweight server process forked by Electron. It serves as the application's "backend":
+- **API Routes:** Handles all data operations (CRUD for journal, habits, etc.).
+- **Database Management:** Handles migrations and connection pooling to the local SQLite file.
+- **Media Storage:** Manages the local file system for image and video attachments.
+- **Security:** Requires a randomly generated session token for all requests, ensuring only the local Electron window can communicate with it.
 
-```
-src/
-  routes/           # TanStack Router pages (__app/, __root.tsx)
-  components/       # UI by domain (journal/, habits/, layout/, ui/)
-  features/         # Domain modules (schema, service, api, queries, …)
-  database/         # Drizzle schema and initialization
-  config/           # Branding and app constants
-  test/             # Fixtures and in-memory DB helpers
-drizzle/            # Generated SQL migrations
-main.js             # Electron main process
-electron-builder.yml
-```
+### 3. Frontend (React)
+The user interface, running inside Electron's `BrowserWindow`:
+- Uses **TanStack Router** for type-safe routing.
+- Uses **TanStack Query** for data fetching and caching from the internal API.
+- Leverages **Zustand** for lightweight client-side state management.
+- Interfaces with the local server via standard fetch calls (secured by the session token).
 
-## Feature module pattern
+## Security Model
 
-Each domain under `src/features/<name>/` typically includes:
+- **Session Isolation:** A unique session token is generated on every startup. This token is injected into Electron's requests via `onBeforeSendHeaders` and verified by Nitro's middleware.
+- **Sandboxing:** Electron windows run with `sandbox: true` and `contextIsolation: true`.
+- **Local-Only:** The server binds to `127.0.0.1`, making it inaccessible from the external network.
+- **PIN Protection:** User preferences can include a PIN, which is verified before granting access to sensitive data.
 
-- `*.schema.ts` — Zod validation
-- `*.service.ts` — business logic and database access
-- `*.api.ts` — server functions exposed to the client
-- `*.queries.ts` / `*.mutations.ts` — React Query integration
-- `*.options.ts` / `*.cache.ts` / `*.keys.ts` — query wiring
-- `components/` — feature-specific UI (co-located with the module)
-- `*.service.test.ts` — service-layer accuracy tests (streaks, exports, purge, media, etc.)
-- `*.integration.test.ts` — database schema integration tests
+## Data Persistence
 
-Scaffold new modules with `pnpm feature:create <name>`.
-
-## Naming conventions
-
-| Kind                  | Convention    | Example                               |
-| --------------------- | ------------- | ------------------------------------- |
-| Product (user-facing) | **Sanctuary** | Window title, navbar                  |
-| npm / GitHub repo id  | `sanctuary`   | `github.com/rajeshepili/sanctuary`    |
-| Journal domain code   | `journal*`    | `journal.service.ts`, `JournalEditor` |
-| Settings UI           | `Sanctuary*`  | `SanctuarySettings.tsx`               |
-| Database tables       | `snake_case`  | `journal_entries`                     |
-
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for full contributor guidelines.
+- **Database:** Stored in the user's application data directory (`app.getPath('userData')/sanctuary.db`).
+- **Media:** Stored in a subfolder (`app.getPath('userData')/media`).
+- **Migrations:** Managed by Drizzle Kit and executed by the server on startup.

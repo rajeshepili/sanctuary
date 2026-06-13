@@ -1,53 +1,24 @@
 # Privacy
 
-Sanctuary is built for **one person on one machine**. This document describes how data is handled.
+Sanctuary is designed with privacy as its core principle. Unlike most modern apps, Sanctuary does not "phone home" or store your data on our servers.
 
-For detailed network and offline guarantees, see [OFFLINE.md](./OFFLINE.md).
+## Data Ownership
 
-## Summary
+- **Local Storage:** All your journal entries, habits, and preferences are stored directly on your computer in a SQLite database.
+- **Media Files:** Any images or videos you attach are copied to a local folder in your application data directory.
+- **No Cloud Sync:** By default, there is no cloud synchronization. Your data never leaves your device unless you manually back it up or export it.
 
-| Topic         | Sanctuary behavior                                           |
-| ------------- | ------------------------------------------------------------ |
-| Accounts      | None — no sign-up or login server                            |
-| Cloud sync    | None (not implemented; would be opt-in if added later)       |
-| Analytics     | No third-party analytics in the app                          |
-| Data location | SQLite database and media files on your device               |
-| Network       | **Off by default.** Loopback only for the local app server. Optional update checks and OS geolocation when you opt in. |
+## Network Activity
 
-## What is stored locally
+Sanctuary's network activity is minimal and strictly limited to:
+- **Local Communication:** Communicating with its own internal server (on `127.0.0.1`).
+- **Auto-Updates:** If enabled, the app checks for new versions via GitHub Releases using `electron-updater`. This can be disabled in Preferences.
 
-- Journal entries, habits, prompts usage, and preferences
-- Optional media attachments (images) on disk
-- Optional 4-digit PIN hash in the local database (not sent anywhere)
-- Optional coordinates for scene timing (if you enable location in Settings — stored locally only)
+## Security Features
 
-## What is never transmitted automatically
+- **Privacy PIN:** You can set a 4-digit PIN in the app preferences. This PIN is required to unlock the app and is stored securely in the local database.
+- **Session Tokens:** Communication between the UI and the internal server is secured by a one-time session token, preventing other applications on your machine from accessing your data.
 
-- Journal text, tags, or habits
-- Media files or thumbnails
-- Your PIN or preferences (except version metadata when you opt in to update checks)
+## Your Responsibilities
 
-## Optional network use (opt-in)
-
-| Feature | Data sent |
-| ------- | --------- |
-| Automatic update checks (desktop) | App version metadata to GitHub Releases — no journal content |
-| Manual “Check for updates” (desktop) | Same as above |
-| Location-aware scenes | **None over the network.** Uses your OS location API; coordinates saved locally only |
-
-## Desktop vs browser development
-
-- **Development (`pnpm dev`)**: database defaults to `dev.db` in the project directory unless configured otherwise. Dev server listens on `127.0.0.1` only.
-- **Desktop (Electron)**: data is stored in OS-specific application data paths (e.g. `~/.config/sanctuary/` on Linux). The local server binds to `127.0.0.1` with session token protection.
-
-## Your responsibilities
-
-- Back up your database and media folders if entries are important.
-- Anyone with access to your user account on the device can read local files unless you use full-disk encryption and a strong OS password.
-- Export folders and automated backups contain plain copies you create or that the app writes locally.
-
-## Open source
-
-Source code is public; running Sanctuary does not transmit your journal content to the project maintainers.
-
-For security issues, see [SECURITY.md](../SECURITY.md).
+Since Sanctuary is local-only, **you are responsible for your data**. If you lose access to your computer or delete the application data folder without a backup, your entries cannot be recovered. We recommend regular backups of your `userData` directory.

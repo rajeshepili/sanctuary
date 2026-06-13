@@ -67,22 +67,23 @@ Maintainers will review for correctness, privacy (local-only data paths), and co
 
 ```
 sanctuary/
-├── drizzle/                # SQL migrations (generated)
-├── public/                 # Static assets
-├── scripts/                # Node scripts (test runner)
-├── src/
-│   ├── components/         # Shared UI (layout/, ui/, errors/, dev/)
-│   ├── config/             # App configuration
-│   ├── database/           # Schema, init, migrations runner
-│   ├── features/           # Domain modules + co-located components/
-│   ├── hooks/              # Shared React hooks
-│   ├── lib/                # Cross-cutting utilities
-│   ├── routes/             # TanStack Router pages
-│   ├── styles/             # Global CSS
-│   ├── test/               # Test helpers (fixtures, DB seed)
-│   ├── types/              # Shared TypeScript types
-│   └── utils/              # Pure helper functions
-└── main.js                 # Electron entry point
+├── apps/
+│   ├── desktop/            # Core Electron application
+│   │   ├── src/
+│   │   │   ├── components/  # Shared UI (layout/, ui/, errors/, dev/)
+│   │   │   ├── config/      # App configuration
+│   │   │   ├── database/    # Schema, init, migrations runner
+│   │   │   ├── features/    # Domain modules + co-located components/
+│   │   │   ├── hooks/       # Shared React hooks
+│   │   │   ├── lib/         # Cross-cutting utilities
+│   │   │   ├── routes/      # TanStack Router pages
+│   │   │   ├── stores/      # Global state (Zustand)
+│   │   │   └── utils/       # Pure helper functions
+│   │   ├── main.ts         # Electron entry point
+│   │   └── nitro.config.ts  # API server configuration
+│   └── website/            # Landing page (Astro)
+├── docs/                   # In-depth documentation
+└── drizzle/                # SQL migrations (generated)
 ```
 
 ### Feature module pattern

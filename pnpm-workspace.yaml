@@ -1,3 +1,6 @@
+packages:
+  - "apps/*"
+
 allowBuilds:
   better-sqlite3: set this to true or false
   electron: true
@@ -6,3 +9,6 @@ allowBuilds:
   msw: set this to true or false
   sharp: true
   unrs-resolver: set this to true or false
+
+minimumReleaseAgeExclude:
+  - astro@6.4.6
