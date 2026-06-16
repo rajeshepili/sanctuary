@@ -38,15 +38,17 @@ export const entryMedia = sqliteTable('entry_media', {
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),
-})
+}, (t) => ({
+  entryIdIndex: index('entry_id_idx').on(t.entryId),
+}))
 
 export const habits = sqliteTable('habits', {
   id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),
   name: text().notNull(),
-  identityLabel: text('identity_label'), // e.g. "I am a runner"
-  miniDesc: text('mini_desc'), // The "floor" requirement
-  plusDesc: text('plus_desc'), // The "standard" requirement
-  eliteDesc: text('elite_desc'), // The "ceiling" requirement
+  identityLabel: text('identity_label'),
+  miniDesc: text('mini_desc'),
+  plusDesc: text('plus_desc'),
+  eliteDesc: text('elite_desc'),
   frequency: text({ enum: ['every_day', 'weekdays', 'weekends', 'custom'] })
     .notNull()
     .default('every_day'),
@@ -62,9 +64,6 @@ export const habits = sqliteTable('habits', {
     .default('active'),
   restUntil: integer('rest_until', { mode: 'timestamp' }),
   intention: text(),
-  // Streaks are deprecated in favor of rolling consistency and identity strength
-  // currentStreak: integer('current_streak').notNull().default(0),
-  // longestStreak: integer('longest_streak').notNull().default(0),
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -77,13 +76,14 @@ export const habitCompletions = sqliteTable(
     habitId: integer('habit_id')
       .notNull()
       .references(() => habits.id, { onDelete: 'cascade' }),
-    completedAt: text('completed_at').notNull(), // 'YYYY-MM-DD'
+    completedAt: text('completed_at').notNull(),
     tier: text({ enum: ['mini', 'plus', 'elite'] })
       .notNull()
       .default('plus'),
   },
   (t) => ({
     uniqueCompletion: unique().on(t.habitId, t.completedAt),
+    completedAtIndex: index('completed_at_idx').on(t.completedAt),
   }),
 )
 
@@ -97,10 +97,9 @@ export const userPreferences = sqliteTable('user_preferences', {
   showHabits: integer({ mode: 'boolean' }).notNull().default(true),
   showDailyIntention: integer({ mode: 'boolean' }).notNull().default(true),
   privacyPin: text('privacy_pin'),
-  // Location for astronomical scene timing (suncalc)
   latitude: real('latitude'),
   longitude: real('longitude'),
-  locationLabel: text('location_label'), // e.g. "Berlin, Germany"
+  locationLabel: text('location_label'),
 })
 
 export const customPrompts = sqliteTable('custom_prompts', {

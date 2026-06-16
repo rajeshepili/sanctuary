@@ -1,3 +1,7 @@
+import { createLogger } from '#/lib/logger'
+
+const logger = createLogger('db-metrics')
+
 // Database performance profiling utilities
 
 interface QueryMetrics {
@@ -41,15 +45,15 @@ export function getMetricsSummary() {
 
 export function logMetricsSummary() {
   const summary = getMetricsSummary()
-  console.group('📊 Database Performance Summary')
-  console.log(`Total Queries: ${summary.total}`)
-  console.log(`Avg Duration: ${summary.avgDuration}ms`)
-  console.log(`Slow Queries (>100ms): ${summary.slowCount}`)
+  
+  if (summary.total === 0) return
+
+  logger.info(`Database Summary: ${summary.total} queries, avg ${summary.avgDuration}ms, ${summary.slowCount} slow`)
+  
   if (summary.slowQueries.length > 0) {
-    console.table(summary.slowQueries)
+    logger.warn('Slow Queries Detected', summary.slowQueries)
   }
   if (summary.failedQueries.length > 0) {
-    console.warn('Failed Queries:', summary.failedQueries)
+    logger.error('Failed Queries Detected', undefined, summary.failedQueries)
   }
-  console.groupEnd()
 }

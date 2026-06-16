@@ -3,53 +3,53 @@ import { userPreferences } from '#/database/schema'
 import { eq } from 'drizzle-orm'
 import { PreferencesError } from './preferences.errors'
 import type { UserPreferences } from '#/types'
+import { getFirstOrThrow } from '#/database/utils'
 
 export async function getPreferencesService(): Promise<UserPreferences> {
   const db = await getDb()
   const results = await db.select().from(userPreferences).limit(1)
 
-  const prefs = results[0]
-
-  if (!prefs) {
-    throw new PreferencesError(
+  return getFirstOrThrow(
+    results,
+    new PreferencesError(
       'PREFERENCES_NOT_FOUND',
       'User preferences not found. The database may not have seeded correctly.',
-      { status: 404 }
-    )
-  }
-
-  return prefs
+      { status: 404 },
+    ),
+  )
 }
 
 export async function updatePreferencesService(
   data: Partial<typeof userPreferences.$inferInsert>,
 ): Promise<UserPreferences> {
   const db = await getDb()
-  const results = await db.select().from(userPreferences).limit(1)
-  const existing = results[0]
 
-  if (!existing) {
+  const [current] = await db
+    .select({ onboardedAt: userPreferences.onboardedAt })
+    .from(userPreferences)
+    .where(eq(userPreferences.id, 1))
+    .limit(1)
+
+  if (!current) {
     throw new PreferencesError(
       'PREFERENCES_NOT_FOUND',
       'User preferences not found. The database may not have seeded correctly.',
-      { status: 404 }
+      { status: 404 },
     )
   }
 
-  const updateData: Partial<typeof userPreferences.$inferInsert> = { ...data }
+  const payload: Partial<typeof userPreferences.$inferInsert> = { ...data }
 
-  /** Immutable field: set onboardedAt exactly once upon initial disclaimer agreement. */
-  if (data.disclaimerAgreed && !existing.onboardedAt) {
-    updateData.onboardedAt = new Date()
+  // onboardedAt is immutable once set — stamp it only on first disclaimer agreement.
+  if (data.disclaimerAgreed && !current.onboardedAt) {
+    payload.onboardedAt = new Date()
   }
 
-  const updatedResults = await db
+  const [updated] = await db
     .update(userPreferences)
-    .set(updateData)
-    .where(eq(userPreferences.id, existing.id))
+    .set(payload)
+    .where(eq(userPreferences.id, 1))
     .returning()
-
-  const updated = updatedResults[0]
 
   if (!updated) {
     throw new PreferencesError('PREFERENCES_UPDATE_FAILED', 'Failed to update preferences')

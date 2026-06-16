@@ -14,7 +14,7 @@ import type { EntryListViewModel } from '#/features/journal/hooks/useEntryList'
 import type { EntryEditorViewModel } from '#/features/journal/hooks/useEntryEditor'
 import { FeatureErrorBoundary } from '#/components/errors/FeatureErrorBoundary'
 import { Button } from '#/components/ui/button'
-import { useNavigate } from '@tanstack/react-router'
+
 import type { DraftStatus } from '#/hooks/use-draft'
 
 interface JournalViewProps {
@@ -233,7 +233,7 @@ export function JournalView({
                         </IconButton>
                         <IconButton
                           tooltip="Edit entry"
-                          onClick={editor.startEdit}
+                          onClick={() => editor.startEdit(activeEntry)}
                           className="hover:text-primary hover:bg-primary/10"
                         >
                           <Edit3 className="w-4 h-4" />

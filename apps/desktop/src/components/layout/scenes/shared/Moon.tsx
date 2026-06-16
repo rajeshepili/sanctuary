@@ -27,9 +27,7 @@ export default function Moon({
             <stop offset="100%" stopColor="#cbd5e1" stopOpacity="0" />
           </radialGradient>
         </defs>
-        {/* Outer soft edge */}
         <circle cx="80" cy="80" r="75" fill="url(#pureMoonGlow)" />
-        {/* Intense, pure white core */}
         <circle cx="80" cy="80" r="60" fill="#ffffff" />
       </svg>
     </motion.div>

@@ -1,9 +1,9 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
+import { useCallback, useMemo, useEffect, useRef } from 'react'
 import { useJournalMutations } from '#/features/journal/journal.mutations'
 import { readFilesAsBase64 } from '#/utils/file'
 import type { Entry, EntryMedia } from '#/types'
-
-export type PendingMedia = { file: File; url: string }
+import { useEditorStore } from '#/stores/editor-store'
+import type { PendingMedia } from '#/stores/editor-store'
 
 export interface EntryEditorViewModel {
   isEditing: boolean
@@ -11,7 +11,7 @@ export interface EntryEditorViewModel {
   setContent: (v: string | ((prev: string) => string)) => void
   pendingMedia: PendingMedia[]
   removedMediaIds: number[]
-  startEdit: () => void
+  startEdit: (entry: Entry) => void
   cancelEdit: () => void
   addMedia: (files: File[]) => void
   removePending: (index: number) => void
@@ -21,102 +21,88 @@ export interface EntryEditorViewModel {
   wordCount: number
 }
 
-/**
- * Manages the high-level semantic state and actions for the journal editor.
- * Encapsulates isEditing, staging state (content, media), and coordinate mutations.
- */
 export function useEntryEditor(activeEntry?: Entry): EntryEditorViewModel {
   const { updateEntry, createEntry } = useJournalMutations()
+  
+  const content = useEditorStore((s) => s.content)
+  const isEditing = useEditorStore((s) => s.isEditing)
+  const activeEntryId = useEditorStore((s) => s.activeEntryId)
+  const pendingMedia = useEditorStore((s) => s.pendingMedia)
+  const removedMediaIds = useEditorStore((s) => s.removedMediaIds)
+  
+  const setContentStore = useEditorStore((s) => s.setContent)
+  const setTypingStore = useEditorStore((s) => s.setTyping)
+  const addMediaStore = useEditorStore((s) => s.addMedia)
+  const removePendingStore = useEditorStore((s) => s.removePending)
 
-  const [isEditing, setIsEditing] = useState(false)
-  const [content, setContent] = useState('')
-  const [pendingMedia, setPendingMedia] = useState<PendingMedia[]>([])
-  const [removedMediaIds, setRemovedMediaIds] = useState<number[]>([])
+  const startEditStore = useEditorStore((s) => s.startEdit)
+  const cancelEditStore = useEditorStore((s) => s.cancelEdit)
+  const clearStore = useEditorStore((s) => s.clear)
+  const removeExistingStore = useEditorStore((s) => s.removeExisting)
 
-  // Cleanup Object URLs on unmount only
-  const pendingMediaRef = useRef(pendingMedia)
-  useEffect(() => {
-    pendingMediaRef.current = pendingMedia
-  }, [pendingMedia])
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+
+  const setContent = useCallback((value: string | ((prev: string) => string)) => {
+    setContentStore(value)
+    
+    setTypingStore(true)
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+    typingTimeoutRef.current = setTimeout(() => {
+      setTypingStore(false)
+    }, 2000)
+  }, [setContentStore, setTypingStore])
 
   useEffect(() => {
     return () => {
-      pendingMediaRef.current.forEach((m) => URL.revokeObjectURL(m.url))
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+      setTypingStore(false)
     }
-  }, [])
-
-  const startEdit = useCallback(() => {
-    if (!activeEntry) return
-    setIsEditing(true)
-    setContent(activeEntry.content)
-    setPendingMedia([])
-    setRemovedMediaIds([])
-  }, [activeEntry])
-
-  const cancelEdit = useCallback(() => {
-    setIsEditing(false)
-    setPendingMedia([])
-    setRemovedMediaIds([])
-  }, [])
-
-  const addMedia = useCallback((files: File[]) => {
-    const newItems = files.map((file) => ({
-      file,
-      url: URL.createObjectURL(file),
-    }))
-    setPendingMedia((prev) => [...prev, ...newItems])
-  }, [])
-
-  const removePending = useCallback((index: number) => {
-    setPendingMedia((prev) => {
-      const item = prev[index]
-      if (item) URL.revokeObjectURL(item.url)
-      return prev.filter((_, i) => i !== index)
-    })
-  }, [])
+  }, [setTypingStore])
 
   const removeExisting = useCallback((id: number) => {
-    setRemovedMediaIds((prev) => [...prev, id])
-  }, [])
+    removeExistingStore(id)
+  }, [removeExistingStore])
 
   const save = useCallback(async () => {
     const trimmed = content.trim()
     
-    // Convert File objects to Base64 only for the API call
     const base64Media = await readFilesAsBase64(pendingMedia.map(m => m.file))
     const apiMedia = base64Media.map(m => ({ base64Data: m.base64 }))
 
-    if (!activeEntry) {
-      const entry = await createEntry(trimmed, apiMedia)
+    if (!isEditing) {
+      const entry = await createEntry.mutateAsync({ value: trimmed, apiMedia })
       if (entry) {
-        setContent('')
-        setPendingMedia([])
+        clearStore()
       }
       return entry
     }
 
-    const updated = await updateEntry(
-      activeEntry.id,
-      trimmed,
-      apiMedia,
-      removedMediaIds,
-    )
-    setIsEditing(false)
-    return updated
-  }, [activeEntry, content, pendingMedia, removedMediaIds, createEntry, updateEntry])
+    if (activeEntryId) {
+      const updated = await updateEntry.mutateAsync({ id: activeEntryId, content: trimmed, addedMedia: apiMedia, removedMediaIds })
+      cancelEditStore()
+      return updated
+    }
+    
+    return undefined
+  }, [content, pendingMedia, isEditing, activeEntryId, removedMediaIds, createEntry, updateEntry, clearStore, cancelEditStore])
 
   const isSaveDisabled = useMemo(() => {
     const trimmed = content.trim()
-    if (!activeEntry) {
+    
+    if (!isEditing) {
       return !trimmed && pendingMedia.length === 0
     }
 
-    const visibleExistingCount = activeEntry.media.filter(
-      (m: EntryMedia) => !removedMediaIds.includes(m.id),
-    ).length
+    if (activeEntry && activeEntryId === activeEntry.id) {
+        const visibleExistingCount = activeEntry.media.filter(
+          (m: EntryMedia) => !removedMediaIds.includes(m.id),
+        ).length
+        return !trimmed && pendingMedia.length === 0 && visibleExistingCount === 0
+    }
 
-    return !trimmed && pendingMedia.length === 0 && visibleExistingCount === 0
-  }, [activeEntry, content, pendingMedia, removedMediaIds])
+    return !trimmed && pendingMedia.length === 0
+  }, [isEditing, content, pendingMedia, removedMediaIds, activeEntryId, activeEntry])
 
   const wordCount = useMemo(() => {
     return content.trim().split(/\s+/).filter(Boolean).length
@@ -128,10 +114,10 @@ export function useEntryEditor(activeEntry?: Entry): EntryEditorViewModel {
     setContent,
     pendingMedia,
     removedMediaIds,
-    startEdit,
-    cancelEdit,
-    addMedia,
-    removePending,
+    startEdit: startEditStore,
+    cancelEdit: cancelEditStore,
+    addMedia: addMediaStore,
+    removePending: removePendingStore,
     removeExisting,
     save,
     isSaveDisabled,

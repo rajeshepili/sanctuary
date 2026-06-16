@@ -1,3 +1,5 @@
+import os from 'node:os'
+import path from 'node:path'
 import { drizzle } from 'drizzle-orm/libsql'
 import type { LibSQLDatabase } from 'drizzle-orm/libsql'
 import { createClient } from '@libsql/client'
@@ -14,42 +16,59 @@ async function initTestOrm(
   client: Client,
   useMigrations: boolean,
 ): Promise<LibSQLDatabase<typeof schema>> {
+  console.log(`initTestOrm: useMigrations=${useMigrations}`)
   if (useMigrations) {
     const orm = drizzle(client, { schema })
-    await migrateTestDatabase(orm)
+    try {
+      await migrateTestDatabase(orm)
+      console.log('initTestOrm: migrations applied')
+    } catch (err) {
+      console.error('initTestOrm: migrations failed', err)
+      throw err
+    }
     clientByOrm.set(orm, client)
     return orm
   }
 
-  await applyTestSchemaAsync((sql) => client.execute(sql))
+  try {
+    console.log('initTestOrm: applying manual schema...')
+    await applyTestSchemaAsync((sql) => client.executeMultiple(sql))
+    console.log('initTestOrm: manual schema applied')
+  } catch (err) {
+    console.error('initTestOrm: manual schema failed', err)
+    throw err
+  }
   const orm = drizzle(client, { schema })
   clientByOrm.set(orm, client)
   return orm
 }
 
 /**
- * Creates an in-memory SQLite database for integration tests (libsql).
+ * Retrieves a shared temp-file SQLite database for integration tests (libsql).
+ * The database instance is cached and shared across the test file.
  */
-export async function createTestDatabase(): Promise<
+export async function getSharedTestDatabase(): Promise<
   LibSQLDatabase<typeof schema>
 > {
   if (sharedTestDb) {
     return sharedTestDb
   }
 
-  const client = createClient({ url: ':memory:' })
+  const dbPath = path.join(os.tmpdir(), `sanctuary-test-${Math.random().toString(36).slice(2)}.db`)
+  const client = createClient({ url: `file:${dbPath}` })
   sharedTestDb = await initTestOrm(client, false)
   return sharedTestDb
 }
 
 /**
- * Fresh in-memory database per test file — uses real Drizzle migrations.
+ * Fresh in-memory database per test file — uses manual schema application.
  */
 export async function createIsolatedTestDatabase(): Promise<
   LibSQLDatabase<typeof schema>
 > {
-  const client = createClient({ url: ':memory:' })
-  return initTestOrm(client, true)
+  const dbPath = path.join(os.tmpdir(), `sanctuary-test-${Math.random().toString(36).slice(2)}.db`)
+  const client = createClient({ url: `file:${dbPath}` })
+  return initTestOrm(client, false)
 }
 
 /**

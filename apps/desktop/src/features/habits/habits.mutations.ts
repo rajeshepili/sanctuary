@@ -1,7 +1,6 @@
-import { useCallback } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { toastAsync } from '#/lib/toast-async'
-import { withOptimistic } from '#/lib/with-optimistic'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { parseError } from '#/lib/error-parser'
+
 import type { HabitStatus } from '#/types'
 import type { CreateHabitInput } from './habits.schema'
 import { habitsCache } from './habits.cache'
@@ -16,94 +15,84 @@ import {
 export function useHabitsMutations() {
   const queryClient = useQueryClient()
 
-  const createHabit = useCallback(
-    (data: CreateHabitInput) =>
-      toastAsync(
-        async () => {
-          const habit = await createHabitApi({ data })
-          habitsCache.insertHabit(queryClient, habit)
-          return habit
-        },
-        {
-          loading: 'Establishing habit…',
-          success: 'Habit created.',
-        },
-      ),
-    [queryClient],
-  )
-
-  const updateHabitStatus = useCallback(
-    (id: number, status: HabitStatus) =>
-      toastAsync(
-        () =>
-          withOptimistic(
-            {
-              snapshot: (qc) => habitsCache.snapshot(qc),
-              apply: (qc) => habitsCache.patchHabitStatus(qc, id, status),
-              execute: () => {
-                const restUntilDate = new Date()
-                restUntilDate.setDate(restUntilDate.getDate() + 7)
-                const restUntil = status === 'resting' ? restUntilDate : null
-                return updateHabitStatusApi({ data: { id, status, restUntil } })
-              },
-              restore: (qc, snap) => habitsCache.restore(qc, snap),
-            },
-            queryClient,
-          ).then((res) => {
-            queryClient.invalidateQueries({ queryKey: habitsKeys.all })
-            return res
-          }),
-        {
-          loading: 'Updating habit…',
-          success:
-            status === 'resting'
-              ? 'Habit resting for 7 days.'
-              : 'Habit awakened.',
-        },
-      ),
-    [queryClient],
-  )
-
-  const deleteHabit = useCallback(
-    (id: number) =>
-      toastAsync(
-        async () => {
-          await deleteHabitApi({ data: { id } })
-          habitsCache.removeHabit(queryClient, id)
-        },
-        {
-          loading: 'Removing habit…',
-          success: 'Habit removed.',
-        },
-      ),
-    [queryClient],
-  )
-
-  const toggleCompletion = useCallback(
-    async (habitId: number, date: string, tier?: 'mini' | 'plus' | 'elite') => {
-      return toastAsync(
-        async () => {
-          const res = await withOptimistic(
-            {
-              snapshot: (qc) => habitsCache.snapshot(qc),
-              apply: (qc) => habitsCache.toggleCompletion(qc, habitId, date, tier),
-              execute: () =>
-                toggleHabitCompletionApi({ data: { habitId, date, tier } }),
-              restore: (qc, snap) => habitsCache.restore(qc, snap),
-            },
-            queryClient,
-          )
-          queryClient.invalidateQueries({ queryKey: habitsKeys.all })
-          return res
-        },
-        {
-          loading: 'Updating completion…',
-          success: (res) => res.completed ? 'Habit completed.' : 'Completion removed.',
-        }
-      )
+  const createHabit = useMutation({
+    mutationFn: (data: CreateHabitInput) => createHabitApi({ data }),
+    onSuccess: (habit) => {
+      habitsCache.insertHabit(queryClient, habit)
     },
-    [queryClient],
-  )
+    meta: {
+      errorHandler: (err: unknown) => parseError(err).message,
+    },
+  })
+
+  const updateHabitStatus = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: HabitStatus }) => {
+      const restUntilDate = new Date()
+      restUntilDate.setDate(restUntilDate.getDate() + 7)
+      const restUntil = status === 'resting' ? restUntilDate : null
+      return updateHabitStatusApi({ data: { id, status, restUntil } })
+    },
+    onMutate: async ({ id, status }) => {
+      await queryClient.cancelQueries({ queryKey: habitsKeys.all })
+      const previous = habitsCache.snapshot(queryClient)
+      habitsCache.patchHabitStatus(queryClient, id, status)
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        habitsCache.restore(queryClient, context.previous)
+      }
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: habitsKeys.all })
+    },
+    meta: {
+      errorHandler: (err: unknown) => parseError(err).message,
+    },
+  })
+
+  const deleteHabit = useMutation({
+    mutationFn: (id: number) => deleteHabitApi({ data: { id } }),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: habitsKeys.all })
+      const previous = habitsCache.snapshot(queryClient)
+      habitsCache.removeHabit(queryClient, id)
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        habitsCache.restore(queryClient, context.previous)
+      }
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: habitsKeys.all })
+    },
+    meta: {
+      errorHandler: (err: unknown) => parseError(err).message,
+    },
+  })
+
+  const toggleCompletion = useMutation({
+    mutationFn: ({ habitId, date, tier }: { habitId: number; date: string; tier?: 'mini' | 'plus' | 'elite' }) =>
+      toggleHabitCompletionApi({ data: { habitId, date, tier } }),
+    onMutate: async ({ habitId, date, tier }) => {
+      await queryClient.cancelQueries({ queryKey: habitsKeys.all })
+      const previous = habitsCache.snapshot(queryClient)
+      habitsCache.toggleCompletion(queryClient, habitId, date, tier)
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        habitsCache.restore(queryClient, context.previous)
+      }
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: habitsKeys.all })
+    },
+    meta: {
+      errorHandler: (err: unknown) => parseError(err).message,
+    },
+  })
 
   return { createHabit, updateHabitStatus, deleteHabit, toggleCompletion }
 }

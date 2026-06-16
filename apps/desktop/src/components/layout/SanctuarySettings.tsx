@@ -25,7 +25,6 @@ import {
   DrawerTrigger,
 } from '#/components/ui/drawer'
 import type { UserPreferences } from '#/types'
-import type { UpdatePreferencesInput } from '#/features/preferences/preferences.schema'
 import {
   exportMarkdown,
   exportAllData,
@@ -33,15 +32,13 @@ import {
 import { toast } from 'sonner'
 import { PinModal } from './PinModal'
 import { useState, useEffect } from 'react'
-import { hashPin } from '#/utils/crypto'
+import { hashPin, verifyPin } from '#/utils/crypto'
 import { formatCoordinates } from '#/lib/format-coordinates'
 import { IconButton } from '#/components/ui/icon-button'
 import { useUIStore } from '#/stores/ui-store'
-
-interface SanctuarySettingsProps {
-  prefs: UserPreferences
-  onUpdatePrefs: (newPrefs: UpdatePreferencesInput) => void
-}
+import { usePreferencesQueries } from '#/features/preferences/preferences.queries'
+import { usePreferencesMutations } from '#/features/preferences/preferences.mutations'
+import type { UpdatePreferencesInput } from '#/features/preferences/preferences.schema'
 
 function ToggleRow({
   label,
@@ -69,10 +66,10 @@ function ToggleRow({
   )
 }
 
-export function SanctuarySettings({
-  prefs,
-  onUpdatePrefs,
-}: SanctuarySettingsProps) {
+export function SanctuarySettings() {
+  const { prefs } = usePreferencesQueries()
+  const { updatePreferences } = usePreferencesMutations()
+
   const [pinModalMode, setPinModalMode] = useState<'enable' | 'disable' | null>(
     null,
   )
@@ -80,6 +77,7 @@ export function SanctuarySettings({
   const [locLoading, setLocLoading] = useState(false)
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false)
   const [updateCheckLoading, setUpdateCheckLoading] = useState(false)
+
   const isDesktop = typeof window !== 'undefined' && window.sanctuary?.isDesktop
   const { setLocked } = useUIStore()
   const navigate = useNavigate()
@@ -89,16 +87,30 @@ export function SanctuarySettings({
     void window.sanctuary.getAutoUpdateEnabled().then(setAutoUpdateEnabled)
   }, [])
 
+  const update = (patch: UpdatePreferencesInput, successMessage?: string) => {
+    updatePreferences.mutate(patch, {
+      onSuccess: () => {
+        if (successMessage) toast.success(successMessage)
+      },
+      onError: (err) => {
+        toast.error(err instanceof Error ? err.message : 'Failed to save settings.')
+      },
+    })
+  }
+
   const handleGrantLocation = () => {
     setLocLoading(true)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords
-        onUpdatePrefs({
-          latitude,
-          longitude,
-          locationLabel: formatCoordinates(latitude, longitude),
-        })
+        update(
+          {
+            latitude,
+            longitude,
+            locationLabel: formatCoordinates(latitude, longitude),
+          },
+          'Location saved.',
+        )
         setLocLoading(false)
       },
       () => {
@@ -114,9 +126,7 @@ export function SanctuarySettings({
     await window.sanctuary.setAutoUpdateEnabled(enabled)
     setAutoUpdateEnabled(enabled)
     toast.success(
-      enabled
-        ? 'Automatic update checks enabled.'
-        : 'Automatic update checks disabled.',
+      enabled ? 'Auto-update checks enabled.' : 'Auto-update checks disabled.',
     )
   }
 
@@ -178,19 +188,17 @@ export function SanctuarySettings({
             <div className="mx-auto w-full max-w-2xl p-6 md:p-8 space-y-8">
               <DrawerHeader className="p-0 space-y-2">
                 <DrawerTitle className="text-2xl font-bold">
-                  Sanctuary Personalization
+                  Settings
                 </DrawerTitle>
                 <DrawerDescription className="text-sm text-muted-foreground">
-                  Tailor your dashboard to match your current season of life.
+                  Customize what tools are shown on your dashboard.
                 </DrawerDescription>
               </DrawerHeader>
 
-              {/* Widget Toggles */}
               <div className="space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground pb-2">
-                  Modular Dashboard
+                  Dashboard
                 </h3>
-
                 <div className="space-y-3">
                   {toggles.map(({ label, description, key }) => (
                     <ToggleRow
@@ -198,16 +206,15 @@ export function SanctuarySettings({
                       label={label}
                       description={description}
                       checked={!!prefs[key]}
-                      onChange={(val) => onUpdatePrefs({ [key]: val })}
+                      onChange={(val) => update({ [key]: val })}
                     />
                   ))}
                 </div>
               </div>
 
-              {/* Data & Privacy */}
               <div className="pt-4 border-t border-border/10 space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground pb-2">
-                  Data Management
+                  Data
                 </h3>
 
                 <div className="flex flex-col gap-2">
@@ -226,7 +233,7 @@ export function SanctuarySettings({
                         a.click()
                         URL.revokeObjectURL(url)
                         toast.success(`Exported ${result.count} entries`)
-                      } catch (e) {
+                      } catch {
                         toast.error('Failed to export data')
                       }
                     }}
@@ -238,8 +245,7 @@ export function SanctuarySettings({
                         Markdown
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-1 font-normal">
-                        Save all entries as Markdown files to your Documents
-                        folder.
+                        Save all entries as a single Markdown file.
                       </div>
                     </div>
                   </Button>
@@ -264,7 +270,7 @@ export function SanctuarySettings({
                         toast.success(
                           `Exported ${result.entries.length} entries`,
                         )
-                      } catch (e) {
+                      } catch {
                         toast.error('Failed to export data')
                       }
                     }}
@@ -283,7 +289,6 @@ export function SanctuarySettings({
                 </div>
               </div>
 
-              {/* Trash / Data */}
               <div className="pt-4 border-t border-border/10 space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground pb-2">
                   Trash & Recovery
@@ -300,14 +305,12 @@ export function SanctuarySettings({
                       <Trash2 className="w-4 h-4 text-primary" /> View Trash
                     </div>
                     <div className="text-[11px] text-muted-foreground mt-1">
-                      Recover deleted journal entries or empty the trash bin
-                      permanently.
+                      Recover or permanently delete trashed entries.
                     </div>
                   </div>
                 </button>
               </div>
 
-              {/* Scene Location */}
               <div className="pt-4 border-t border-border/10 space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground pb-2">
                   Scene Location
@@ -323,8 +326,7 @@ export function SanctuarySettings({
                             `${prefs.latitude.toFixed(2)}°, ${prefs.longitude.toFixed(2)}°`}
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
-                          Saved locally on your device. Coordinates are never sent
-                          over the network.
+                          Saved locally. Coordinates are never sent over the network.
                         </div>
                       </div>
                     </div>
@@ -342,11 +344,10 @@ export function SanctuarySettings({
                       <IconButton
                         tooltip="Clear location"
                         onClick={() =>
-                          onUpdatePrefs({
-                            latitude: null,
-                            longitude: null,
-                            locationLabel: null,
-                          })
+                          update(
+                            { latitude: null, longitude: null, locationLabel: null },
+                            'Location cleared.',
+                          )
                         }
                         className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
                       >
@@ -368,9 +369,7 @@ export function SanctuarySettings({
                           : 'Enable Location-Aware Scenes'}
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-1">
-                        Opt in to use your device location for sunrise &amp;
-                        sunset scenes. Uses the OS location API only — no
-                        internet lookup. Falls back to timezone if denied.
+                        Uses the OS location API only — no internet lookup. Falls back to timezone if denied.
                       </div>
                     </div>
                   </button>
@@ -384,7 +383,7 @@ export function SanctuarySettings({
                   </h3>
                   <ToggleRow
                     label="Automatic update checks"
-                    description="When enabled, Sanctuary checks GitHub for new releases on startup. Version metadata only — no journal data is sent."
+                    description="Checks GitHub for new releases on startup. Only version metadata is fetched — no journal data is sent."
                     checked={autoUpdateEnabled}
                     onChange={(val) => void handleAutoUpdateToggle(val)}
                   />
@@ -399,10 +398,9 @@ export function SanctuarySettings({
                 </div>
               )}
 
-              {/* Privacy Shield */}
               <div className="pt-4 border-t border-border/10 space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground border-b border-border/10 pb-2">
-                  Privacy Shield
+                  App Lock
                 </h3>
 
                 <div className="flex flex-col gap-2">
@@ -452,11 +450,10 @@ export function SanctuarySettings({
                     >
                       <div>
                         <div className="text-sm font-bold flex items-center gap-2 text-primary">
-                          <Lock className="w-4 h-4 text-primary" /> Lock
-                          Application Now
+                          <Lock className="w-4 h-4 text-primary" /> Lock Now
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-1">
-                          Immediately lock the application and require a PIN.
+                          Require a PIN next time the app opens.
                         </div>
                       </div>
                     </button>
@@ -464,14 +461,13 @@ export function SanctuarySettings({
                 </div>
               </div>
 
-              {/* Disclaimer */}
               <div className="pt-4 border-t border-border/10">
                 <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
                   <ShieldAlert className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
 
                   <div className="text-xs flex-1">
                     <div className="font-bold">
-                      Privacy & Therapy Disclaimer
+                      Privacy & Disclaimer
                     </div>
                     <p className="opacity-90 mt-1">
                       All data is stored locally on your device. This is not a
@@ -486,7 +482,7 @@ export function SanctuarySettings({
                   ) : (
                     <Button
                       size="sm"
-                      onClick={() => onUpdatePrefs({ disclaimerAgreed: true })}
+                      onClick={() => update({ disclaimerAgreed: true })}
                       className="shrink-0"
                     >
                       I Agree
@@ -514,17 +510,14 @@ export function SanctuarySettings({
           onSubmit={async (pin) => {
             if (pinModalMode === 'enable') {
               const hashed = await hashPin(pin)
-              onUpdatePrefs({ privacyPin: hashed })
-              toast.success('Privacy Shield activated.')
+              update({ privacyPin: hashed }, 'App Lock enabled.')
             } else {
-              const hashed = await hashPin(pin)
-              if (hashed === prefs.privacyPin) {
-                onUpdatePrefs({ privacyPin: null })
-                toast.success('Privacy Shield disabled.')
-              } else {
+              const isValid = await verifyPin(pin, prefs.privacyPin || '')
+              if (!isValid) {
                 toast.error('Incorrect PIN.')
                 return
               }
+              update({ privacyPin: null }, 'App Lock disabled.')
             }
             setPinModalMode(null)
           }}

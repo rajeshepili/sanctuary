@@ -20,31 +20,41 @@ const _appRoute = _appRouteImport.update({
   id: '/__app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const _appIndexRoute = _appIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => _appRoute,
-} as any)
-const _appTrashRoute = _appTrashRouteImport.update({
-  id: '/trash',
-  path: '/trash',
-  getParentRoute: () => _appRoute,
-} as any)
-const _appPromptsRoute = _appPromptsRouteImport.update({
-  id: '/prompts',
-  path: '/prompts',
-  getParentRoute: () => _appRoute,
-} as any)
-const _appJournalRoute = _appJournalRouteImport.update({
-  id: '/journal',
-  path: '/journal',
-  getParentRoute: () => _appRoute,
-} as any)
-const _appHabitsRoute = _appHabitsRouteImport.update({
-  id: '/habits',
-  path: '/habits',
-  getParentRoute: () => _appRoute,
-} as any)
+const _appIndexRoute = _appIndexRouteImport
+  .update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => _appRoute,
+  } as any)
+  .lazy(() => import('./routes/__app/index.lazy').then((d) => d.Route))
+const _appTrashRoute = _appTrashRouteImport
+  .update({
+    id: '/trash',
+    path: '/trash',
+    getParentRoute: () => _appRoute,
+  } as any)
+  .lazy(() => import('./routes/__app/trash.lazy').then((d) => d.Route))
+const _appPromptsRoute = _appPromptsRouteImport
+  .update({
+    id: '/prompts',
+    path: '/prompts',
+    getParentRoute: () => _appRoute,
+  } as any)
+  .lazy(() => import('./routes/__app/prompts.lazy').then((d) => d.Route))
+const _appJournalRoute = _appJournalRouteImport
+  .update({
+    id: '/journal',
+    path: '/journal',
+    getParentRoute: () => _appRoute,
+  } as any)
+  .lazy(() => import('./routes/__app/journal.lazy').then((d) => d.Route))
+const _appHabitsRoute = _appHabitsRouteImport
+  .update({
+    id: '/habits',
+    path: '/habits',
+    getParentRoute: () => _appRoute,
+  } as any)
+  .lazy(() => import('./routes/__app/habits.lazy').then((d) => d.Route))
 
 export interface FileRoutesByFullPath {
   '/': typeof _appIndexRoute

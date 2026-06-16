@@ -12,8 +12,27 @@ type Props = {
 
 export function Hero({ title, description, greeting, children }: Props) {
   return (
-    <div className="w-full max-w-6xl mx-auto flex flex-col min-h-dvh px-6 pb-12">
-      <div className="flex-1 flex flex-col items-center justify-center space-y-12 mt-8">
+    <div className="w-full max-w-6xl mx-auto flex flex-col min-h-dvh px-6 pb-12 relative">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden -z-10">
+        <motion.div
+          animate={{
+            scale: [1, 1.3, 1],
+            opacity: [0.4, 0.8, 0.4],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="w-[800px] h-[800px] rounded-full"
+          style={{
+            background: `radial-gradient(circle, var(--hero-a) 0%, var(--hero-b) 40%, transparent 75%)`,
+            filter: 'blur(100px)',
+          }}
+        />
+      </div>
+
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center space-y-12 mt-8">
         <PageHeader
           title={title}
           description={description}

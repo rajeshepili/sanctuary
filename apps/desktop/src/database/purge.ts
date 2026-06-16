@@ -1,47 +1,54 @@
 import type { LibSQLDatabase } from 'drizzle-orm/libsql'
 import type * as schema from '#/database/schema'
-import { journalEntries, entryMedia } from '#/database/schema'
+import { journalEntries } from '#/database/schema'
 import { and, isNotNull, lt } from 'drizzle-orm'
 import fs from 'fs-extra'
 import path from 'node:path'
+import os from 'node:os'
+import { createLogger } from '#/lib/logger'
+import { deleteMediaAssets } from '#/features/media/media.service'
 
+const logger = createLogger('purge')
 const SOFT_DELETE_GRACE_DAYS = 30
 
 type Database = LibSQLDatabase<typeof schema>
 
-// Handles the edge case where `prepareMediaAsset` wrote files to disk but the
-// process crashed before the DB transaction committed. On the next startup, any
-// .webp file in the media directory with no corresponding DB record is deleted.
 export async function purgeOrphanedMediaFiles(db: Database): Promise<void> {
   try {
-    const mediaDir = process.env.MEDIA_STORAGE_PATH
-    if (!mediaDir) return
+    const mediaDir =
+      process.env.MEDIA_STORAGE_PATH ||
+      path.join(os.homedir(), '.config', 'sanctuary', 'media')
 
-    const dirExists = await fs.pathExists(mediaDir)
-    if (!dirExists) return
+    const exists = await fs.pathExists(mediaDir)
+    if (!exists) return
 
-    const filesOnDisk = await fs.readdir(mediaDir)
-    const webpFiles = filesOnDisk.filter((f) => f.endsWith('.webp'))
-    if (webpFiles.length === 0) return
+    const files = await fs.readdir(mediaDir)
+    if (files.length === 0) return
 
-    const knownMedia = await db.select().from(entryMedia)
-    const knownPaths = new Set<string>()
-    for (const m of knownMedia) {
-      knownPaths.add(path.basename(m.filePath))
-      knownPaths.add(path.basename(m.thumbnailPath))
+    const mediaRecords = await db.query.entryMedia.findMany({
+      columns: { filePath: true, thumbnailPath: true },
+    })
+
+    const validPaths = new Set<string>()
+    for (const record of mediaRecords) {
+      validPaths.add(record.filePath)
+      validPaths.add(record.thumbnailPath)
     }
 
-    const orphaned = webpFiles.filter((f) => !knownPaths.has(f))
-    if (orphaned.length === 0) return
+    let purged = 0
+    for (const file of files) {
+      const fullPath = path.join(mediaDir, file)
+      if (!validPaths.has(fullPath)) {
+        await fs.remove(fullPath)
+        purged++
+      }
+    }
 
-    console.log(
-      `[media] Purging ${orphaned.length} orphaned file(s) from ${mediaDir}`,
-    )
-    for (const file of orphaned) {
-      await fs.remove(path.join(mediaDir, file)).catch(() => {})
+    if (purged > 0) {
+      logger.info(`Purged ${purged} orphaned media file${purged === 1 ? '' : 's'}`)
     }
   } catch (err) {
-    console.error('[media] Orphaned file cleanup failed (non-fatal):', err)
+    logger.error('Failed to purge orphaned media:', err)
   }
 }
 
@@ -59,16 +66,11 @@ export async function purgeStaleEntries(db: Database): Promise<void> {
     })
 
     if (stale.length > 0) {
-      console.log(
-        `[purge] Permanently deleting ${stale.length} stale entr${stale.length === 1 ? 'y' : 'ies'} (>${SOFT_DELETE_GRACE_DAYS} days old)`,
+      logger.info(
+        `Permanently deleting ${stale.length} stale entr${stale.length === 1 ? 'y' : 'ies'} (>${SOFT_DELETE_GRACE_DAYS} days old)`,
       )
 
-      for (const entry of stale) {
-        for (const m of entry.media) {
-          await fs.remove(m.filePath).catch(() => {})
-          await fs.remove(m.thumbnailPath).catch(() => {})
-        }
-      }
+      await deleteMediaAssets(stale.flatMap((entry) => entry.media))
 
       await db
         .delete(journalEntries)
@@ -80,6 +82,6 @@ export async function purgeStaleEntries(db: Database): Promise<void> {
         )
     }
   } catch (purgeErr) {
-    console.error('[purge] Failed to purge stale entries:', purgeErr)
+    logger.error('Failed to purge stale entries:', purgeErr)
   }
 }

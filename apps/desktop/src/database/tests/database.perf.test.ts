@@ -1,7 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import type { LibSQLDatabase } from 'drizzle-orm/libsql'
-import { drizzle } from 'drizzle-orm/libsql'
-import { createClient } from '@libsql/client'
 import * as schema from '#/database/schema'
 import { eq, desc } from 'drizzle-orm'
 import {
@@ -9,16 +7,13 @@ import {
   getMetricsSummary,
   logMetricsSummary,
 } from '#/database/metrics'
-import { applyTestSchemaAsync } from '#/test/apply-test-schema'
+import { createIsolatedTestDatabase } from '#/test/database'
 
-// Use in-memory SQLite for tests
+// Use isolated SQLite for tests
 let testDb: LibSQLDatabase<typeof schema>
 
 beforeEach(async () => {
-  const client = createClient({ url: ':memory:' })
-  testDb = drizzle(client, { schema })
-
-  await applyTestSchemaAsync((sql) => testDb.run(sql))
+  testDb = await createIsolatedTestDatabase()
 
   // Extra indexes for performance testing
   await testDb.run(`CREATE INDEX idx_habits_status ON habits(status)`)

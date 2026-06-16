@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import type { LibSQLDatabase } from 'drizzle-orm/libsql'
 import { eq } from 'drizzle-orm'
 import * as schema from '#/database/schema'
-import { createTestDatabase, resetTestDatabase } from '#/test/database'
+import { getSharedTestDatabase, resetTestDatabase } from '#/test/database'
 import { seedHabit, seedHabitCompletion } from '#/test/db-seed'
 import { formatDate } from '#/test/fixtures'
 
@@ -10,7 +10,7 @@ describe('Habits Integration Tests', () => {
   let db: LibSQLDatabase<typeof schema>
 
   beforeEach(async () => {
-    db = await createTestDatabase()
+    db = await getSharedTestDatabase()
   })
 
   afterEach(async () => {

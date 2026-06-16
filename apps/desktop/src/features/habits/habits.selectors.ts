@@ -1,6 +1,7 @@
 import type { Habit, HabitCompletion } from '#/types'
 import { isScheduledOnDate } from '#/utils/consistency'
 import { toLocalDateString } from '#/utils/date'
+import { CONSISTENCY_WINDOW_DAYS } from '#/config/constants'
 
 export function buildCompletionMap(completions: HabitCompletion[]) {
   const map = new Map<number, Map<string, string>>()
@@ -32,7 +33,7 @@ export function buildCompletionMap(completions: HabitCompletion[]) {
 export function calculateConsistency(
   habit: Habit,
   completions: Map<string, string>,
-  days: number = 30,
+  days: number = CONSISTENCY_WINDOW_DAYS,
 ) {
   const now = new Date()
   let completedCount = 0
@@ -67,4 +68,20 @@ export function calculateIdentityVotes(completions: Map<string, string>) {
   })
 
   return totalVotes
+}
+
+export function calculateMissedYesterday(
+  habit: Habit,
+  completions: Map<string, string>,
+  todayStr: string
+) {
+  const d = new Date()
+  d.setDate(d.getDate() - 1)
+  const yesterdayStr = toLocalDateString(d)
+
+  return (
+    isScheduledOnDate(d, habit.frequency, habit.daysOfWeek) &&
+    !completions.has(yesterdayStr) &&
+    !completions.has(todayStr)
+  )
 }

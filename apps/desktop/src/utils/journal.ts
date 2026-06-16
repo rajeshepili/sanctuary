@@ -1,6 +1,7 @@
 import { addDays } from 'date-fns'
 import { toLocalDateString } from '#/utils/date'
 import type { Entry } from '#/types'
+import { CONSISTENCY_WINDOW_DAYS } from '#/config/constants'
 
 export function injectPromptIntoContent(
   currentContent: string,
@@ -15,7 +16,7 @@ export function injectPromptIntoContent(
  * Computes journaling consistency (%) over the last 30 days.
  * Skips soft-deleted entries.
  */
-export function computeJournalConsistency(entries: Entry[], daysWindow: number = 30): number {
+export function computeJournalConsistency(entries: Entry[], daysWindow: number = CONSISTENCY_WINDOW_DAYS): number {
   if (entries.length === 0) return 0
 
   const completionDays = new Set(

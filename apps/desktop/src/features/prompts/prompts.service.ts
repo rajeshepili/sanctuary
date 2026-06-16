@@ -8,6 +8,7 @@ import type {
 } from './prompts.schema'
 import { PromptError } from './prompts.errors'
 import type { CustomPrompt } from '#/types'
+import { getFirstOrThrow, ensureRowsAffected } from '#/database/utils'
 
 export async function getActivePromptsService(): Promise<CustomPrompt[]> {
   const db = await getDb()
@@ -24,11 +25,7 @@ export async function addPromptService(data: AddPromptInput): Promise<CustomProm
     .values({ text: data.text })
     .returning()
   
-  if (results.length === 0) {
-    throw new PromptError('PROMPT_CREATE_FAILED', 'Failed to create prompt')
-  }
-  
-  return results[0]
+  return getFirstOrThrow(results, new PromptError('PROMPT_CREATE_FAILED', 'Failed to create prompt'))
 }
 
 export async function updatePromptService(data: UpdatePromptInput): Promise<CustomPrompt> {
@@ -39,11 +36,7 @@ export async function updatePromptService(data: UpdatePromptInput): Promise<Cust
     .where(eq(customPrompts.id, data.id))
     .returning()
 
-  if (results.length === 0) {
-    throw new PromptError('PROMPT_NOT_FOUND', `Prompt with id ${data.id} not found`, { status: 404 })
-  }
-
-  return results[0]
+  return getFirstOrThrow(results, new PromptError('PROMPT_NOT_FOUND', `Prompt with id ${data.id} not found`, { status: 404 }))
 }
 
 export async function deletePromptService(
@@ -52,7 +45,5 @@ export async function deletePromptService(
   const db = await getDb()
   const results = await db.delete(customPrompts).where(eq(customPrompts.id, data.id)).returning({ id: customPrompts.id })
   
-  if (results.length === 0) {
-    throw new PromptError('PROMPT_NOT_FOUND', `Prompt with id ${data.id} not found`, { status: 404 })
-  }
+  ensureRowsAffected(results, new PromptError('PROMPT_NOT_FOUND', `Prompt with id ${data.id} not found`, { status: 404 }))
 }

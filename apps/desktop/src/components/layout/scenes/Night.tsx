@@ -31,6 +31,7 @@ export function Night() {
   return (
     <SceneShell mood="night">
       <div className="absolute inset-0 bg-linear-to-b from-[#010410] via-[#090e2b] to-[#0d1430]" />
+      <div className="absolute inset-0 bg-linear-to-t from-transparent via-[#111A2D]/20 to-[#0F182A]" />
 
       <div className="absolute inset-0 pointer-events-none opacity-40 mix-blend-screen">
         <motion.svg
@@ -74,75 +75,79 @@ export function Night() {
             'radial-gradient(ellipse at 50% 50%, rgba(99,102,241,0.08) 0%, transparent 70%)',
         }}
       />
-      <div
-        className="absolute bottom-[20%] right-[10%] w-[65vw] h-[55vh] pointer-events-none"
-        style={{
-          background:
-            'radial-gradient(ellipse at 50% 50%, rgba(109,40,217,0.07) 0%, transparent 70%)',
-        }}
-      />
+      <div className="absolute bottom-[-10%] right-[-5%] w-[45%] h-[60%]">
+        <div
+          className="absolute bottom-[20%] right-[10%] w-[65vw] h-[55vh] pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(ellipse at 50% 50%, rgba(109,40,217,0.07) 0%, transparent 70%)',
+          }}
+        />
+      </div>
 
-      <motion.div
-        className="absolute inset-0 w-full h-full origin-center"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 800, repeat: Infinity, ease: 'linear' }}
-      >
-        <svg
-          className="absolute inset-0 w-full h-full"
-          xmlns="http://www.w3.org/2000/svg"
+      <div className="absolute top-0 inset-x-0 h-1/2 flex justify-center">
+        <motion.div
+          className="absolute inset-0 w-full h-full origin-center"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 800, repeat: Infinity, ease: 'linear' }}
         >
-          <defs>
-            <pattern
-              id="stars-n"
+          <svg
+            className="absolute inset-0 w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <defs>
+              <pattern
+                id="stars-n"
+                x="0"
+                y="0"
+                width="300"
+                height="300"
+                patternUnits="userSpaceOnUse"
+              >
+                {DENSE_STARS.map((s, i) => (
+                  <circle
+                    key={i}
+                    cx={s.x}
+                    cy={s.y}
+                    r={s.r}
+                    fill={`rgba(255,255,255,${s.op})`}
+                  />
+                ))}
+              </pattern>
+            </defs>
+            <rect
               x="0"
               y="0"
-              width="300"
-              height="300"
-              patternUnits="userSpaceOnUse"
-            >
-              {DENSE_STARS.map((s, i) => (
-                <circle
-                  key={i}
-                  cx={s.x}
-                  cy={s.y}
-                  r={s.r}
-                  fill={`rgba(255,255,255,${s.op})`}
-                />
-              ))}
-            </pattern>
-          </defs>
-          <rect
-            x="0"
-            y="0"
-            width="100%"
-            height="100%"
-            fill="url(#stars-n)"
-            opacity="0.8"
-          />
-        </svg>
-
-        <svg
-          className="absolute inset-0 w-full h-full"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          {BRIGHT_STARS.map(([cx, cy, r], i) => (
-            <motion.circle
-              key={i}
-              cx={`${cx}%`}
-              cy={`${cy}%`}
-              r={r}
-              fill="white"
-              animate={{ opacity: [0.15, 0.95, 0.15] }}
-              transition={{
-                duration: 3 + i * 0.5,
-                repeat: Infinity,
-                ease: easeInOut,
-                delay: i * 0.3,
-              }}
+              width="100%"
+              height="100%"
+              fill="url(#stars-n)"
+              opacity="0.8"
             />
-          ))}
-        </svg>
-      </motion.div>
+          </svg>
+
+          <svg
+            className="absolute inset-0 w-full h-full"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            {BRIGHT_STARS.map(([cx, cy, r], i) => (
+              <motion.circle
+                key={i}
+                cx={`${cx}%`}
+                cy={`${cy}%`}
+                r={r}
+                fill="white"
+                animate={{ opacity: [0.15, 0.95, 0.15] }}
+                transition={{
+                  duration: 3 + i * 0.5,
+                  repeat: Infinity,
+                  ease: easeInOut,
+                  delay: i * 0.3,
+                }}
+              />
+            ))}
+          </svg>
+        </motion.div>
+      </div>
 
       <svg
         className="absolute bottom-0 w-full h-[50vh]"
@@ -199,10 +204,8 @@ export function Night() {
           </mask>
         </defs>
 
-        {/* Sea base */}
         <path fill="#040b20" d="M0,250 L1440,250 L1440,600 L0,600 Z" />
 
-        {/* Wave layer 1 — slowest, deepest */}
         <motion.path
           fill="#06102e"
           d="M-400,310 Q0,290 400,310 T1200,310 T2000,310 L2000,600 L-400,600 Z"
@@ -210,7 +213,6 @@ export function Night() {
           transition={{ duration: 22, repeat: Infinity, ease: easeInOut }}
         />
 
-        {/* Wave layer 2 — medium speed, opposite direction */}
         <motion.path
           fill="#03091f"
           d="M-400,360 Q-100,340 200,360 T800,355 T1400,360 T2000,355 L2000,600 L-400,600 Z"
@@ -218,7 +220,6 @@ export function Night() {
           transition={{ duration: 17, repeat: Infinity, ease: easeInOut }}
         />
 
-        {/* Wave layer 3 — fastest, closest */}
         <motion.path
           fill="#020714"
           d="M-400,420 Q100,440 500,420 T1200,425 T2200,420 L2200,600 L-400,600 Z"
@@ -226,7 +227,6 @@ export function Night() {
           transition={{ duration: 13, repeat: Infinity, ease: easeInOut }}
         />
 
-        {/* Horizon mist */}
         <rect
           x="0"
           y="250"
@@ -235,7 +235,6 @@ export function Night() {
           fill="url(#horizonGlow)"
         />
 
-        {/* Moon reflection */}
         <rect
           x="0"
           y="250"
@@ -247,7 +246,6 @@ export function Night() {
           opacity="0.85"
         />
 
-        {/* Corner mountains */}
         <path
           fill="#020512"
           fillOpacity="0.9"
@@ -259,7 +257,6 @@ export function Night() {
           d="M1440,250 L1440,80 Q1340,90 1240,150 T1040,250 Z"
         />
 
-        {/* Sitting ledge */}
         <path
           fill="#010208"
           d="M0,450 Q200,450 400,520 T720,560 T1040,520 Q1240,450 1440,450 L1440,600 L0,600 Z"
@@ -272,7 +269,6 @@ export function Night() {
           d="M0,450 Q200,450 400,520 T720,560 T1040,520 Q1240,450 1440,450"
         />
 
-        {/* Immediate foreground rock */}
         <path
           fill="#000000"
           d="M0,520 Q200,520 400,580 T720,600 T1040,580 Q1240,520 1440,520 L1440,600 L0,600 Z"
@@ -285,6 +281,7 @@ export function Night() {
           d="M0,520 Q200,520 400,580 T720,600 T1040,580 Q1240,520 1440,520"
         />
       </svg>
+      <div className="absolute top-[-20%] -left-[10%] w-[40%] h-[140%] bg-gradient-to-r from-[#050B14] to-transparent transform -skew-x-[25deg]" />
 
       <div className="absolute bottom-0 left-0 right-0 h-[30vh] bg-linear-to-t from-indigo-950/60 to-transparent" />
       <motion.div

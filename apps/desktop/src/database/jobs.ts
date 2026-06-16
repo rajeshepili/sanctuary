@@ -5,7 +5,9 @@ import { exportAllData } from '#/features/journal/journal.export'
 import fs from 'fs-extra'
 import path from 'node:path'
 import os from 'node:os'
+import { createLogger } from '#/lib/logger'
 
+const logger = createLogger('jobs')
 let jobsInterval: NodeJS.Timeout | null = null
 
 const JOBS_INTERVAL_MS = 60 * 60 * 1000 // 1 hour
@@ -13,7 +15,7 @@ const JOBS_INTERVAL_MS = 60 * 60 * 1000 // 1 hour
 export function startBackgroundJobs() {
   if (jobsInterval) return
 
-  console.log('[jobs] Starting background jobs scheduler...')
+  logger.info('Starting background jobs scheduler...')
   runJobs()
 
   jobsInterval = setInterval(runJobs, JOBS_INTERVAL_MS)
@@ -27,7 +29,7 @@ export function stopBackgroundJobs() {
 }
 
 async function runJobs() {
-  console.log('[jobs] Running background jobs tick...')
+  logger.info('Running background jobs tick...')
   try {
     const db = await getDb()
 
@@ -36,7 +38,7 @@ async function runJobs() {
     await reactivateHabits(db)
     await runDailyBackup()
   } catch (error) {
-    console.error('[jobs] Error running background jobs:', error)
+    logger.error('Error running background jobs:', error)
   }
 }
 
@@ -57,10 +59,10 @@ async function runDailyBackup() {
     const filepath = path.join(backupDir, filename)
 
     await fs.writeJson(filepath, result, { spaces: 2 })
-    console.log(`[jobs] Automated backup saved to ${filepath}`)
+    logger.info(`Automated backup saved to ${filepath}`)
 
     lastBackupDate = today
   } catch (error) {
-    console.error('[jobs] Automated backup failed:', error)
+    logger.error('Automated backup failed:', error)
   }
 }

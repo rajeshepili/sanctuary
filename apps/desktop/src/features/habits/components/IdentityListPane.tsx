@@ -12,6 +12,7 @@ import {
 import { addDays } from 'date-fns'
 import { buildCompletionMap } from '../habits.selectors'
 import type { Habit, HabitCompletion } from '#/types'
+import { motion } from 'framer-motion'
 
 interface IdentityListPaneProps {
   habits: Habit[]
@@ -27,6 +28,14 @@ const CATEGORY_EMOJI: Record<string, string> = {
   connection: '🤝',
   rest: '😴',
   growth: '🌱',
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  mind: 'rgba(168, 85, 247, 0.4)', // Purple
+  body: 'rgba(34, 197, 94, 0.4)',   // Green
+  connection: 'rgba(236, 72, 153, 0.4)', // Pink
+  rest: 'rgba(59, 130, 246, 0.4)',  // Blue
+  growth: 'rgba(245, 158, 11, 0.4)', // Amber
 }
 
 export function IdentityListPane({
@@ -98,15 +107,34 @@ export function IdentityListPane({
                   </div>
                   <div className="flex items-center gap-1 shrink-0 ml-2">
                     {missedYesterday && (
-                      <AlertTriangle className="w-3 h-3 text-orange-500" />
+                      <AlertTriangle className="w-3.5 h-3.5 text-orange-500 animate-pulse" />
                     )}
                     {habit.status === 'resting' ? (
                       <Moon className="w-3 h-3 text-blue-400" />
-                    ) : scheduledToday && doneToday ? (
-                      <span className="w-2 h-2 rounded-full bg-primary block" />
-                    ) : scheduledToday ? (
-                      <span className="w-2 h-2 rounded-full border border-muted-foreground/40 block" />
-                    ) : null}
+                    ) : (
+                      <div className="relative flex items-center justify-center w-4 h-4">
+                        {scheduledToday && (
+                           <div className={`w-2 h-2 rounded-full border border-muted-foreground/40 ${doneToday ? 'hidden' : 'block'}`} />
+                        )}
+                        {doneToday && (
+                          <motion.div 
+                            layoutId={`glow-${habit.id}`}
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="w-2.5 h-2.5 rounded-full bg-primary relative"
+                            style={{ 
+                              boxShadow: `0 0 12px ${CATEGORY_COLORS[habit.category] || 'rgba(var(--primary), 0.5)'}` 
+                            }}
+                          >
+                             <motion.div 
+                               animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0, 0.3] }}
+                               transition={{ duration: 2, repeat: Infinity }}
+                               className="absolute inset-0 rounded-full bg-inherit" 
+                             />
+                          </motion.div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 

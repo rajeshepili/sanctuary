@@ -45,7 +45,6 @@ interface JournalEditorProps {
   retryDraftSave?: () => void
   copyDraft?: () => void
   // Layout
-  isExpandedPage?: boolean
   /** True when embedded in split-pane viewer — renders without card wrapper */
   isInlinePane?: boolean
   isSaveDisabled?: boolean
@@ -58,7 +57,6 @@ export function JournalEditor(props: JournalEditorProps) {
     value: props.value,
     setValue: props.setValue,
     onSave: props.onSave,
-    isExpandedPage: props.isExpandedPage,
     isInlinePane: props.isInlinePane,
   })
 
@@ -73,7 +71,6 @@ export function JournalEditor(props: JournalEditorProps) {
     wordCount,
     showMdGuide,
     setShowMdGuide,
-    isExpandedPage: props.isExpandedPage ?? false,
     isInlinePane: props.isInlinePane ?? false,
     openMediaPicker,
     fileInputRef,
@@ -96,16 +93,14 @@ export function JournalEditor(props: JournalEditorProps) {
 }
 
 function JournalEditorRoot({ children }: { children: React.ReactNode }) {
-  const { isExpandedPage, isInlinePane } = useJournalEditorContext()
+  const { isInlinePane } = useJournalEditorContext()
   return (
     <div
       className={`
         transition-all duration-300 flex flex-col relative
-        ${isExpandedPage
-          ? 'flex-1'
-          : isInlinePane
-            ? 'flex-1 flex flex-col min-h-0'
-            : 'bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(15,23,42,0.04))] backdrop-blur-2xl hover:border-primary/20 p-5 sm:p-6 rounded-[1.75rem] border border-border/70 shadow-[0_24px_80px_rgba(15,23,42,0.14)] space-y-4'
+        ${isInlinePane
+          ? 'flex-1 flex flex-col min-h-0'
+          : 'bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(15,23,42,0.04))] backdrop-blur-2xl hover:border-primary/20 p-5 sm:p-6 rounded-[1.75rem] border border-border/70 shadow-[0_24px_80px_rgba(15,23,42,0.14)] space-y-4'
         }
       `}
     >
@@ -119,13 +114,11 @@ function JournalEditorHeader() {
 }
 
 function JournalEditorMain({ children }: { children: React.ReactNode }) {
-  const { isExpandedPage, isInlinePane } = useJournalEditorContext()
+  const { isInlinePane } = useJournalEditorContext()
   return (
-    <div className={`relative ${isExpandedPage
-        ? 'flex-1 flex flex-col min-h-0 pt-16 sm:pt-20'
-        : isInlinePane
-          ? 'flex-1 flex flex-col min-h-0'
-          : ''
+    <div className={`relative ${isInlinePane
+        ? 'flex-1 flex flex-col min-h-0'
+        : ''
       }`}>
       {children}
     </div>
@@ -133,12 +126,12 @@ function JournalEditorMain({ children }: { children: React.ReactNode }) {
 }
 
 function JournalEditorContent() {
-  const { editor, isExpandedPage, isInlinePane, showMdGuide } = useJournalEditorContext()
+  const { editor, isInlinePane, showMdGuide } = useJournalEditorContext()
 
   const content = (
     <FeatureErrorBoundary
       title="Editor Content"
-      className={isExpandedPage || isInlinePane ? 'flex-1 flex flex-col min-h-0' : ''}
+      className={isInlinePane ? 'flex-1 flex flex-col min-h-0' : ''}
     >
       {editor ? <JournalBubbleMenu editor={editor} /> : null}
 
@@ -148,7 +141,7 @@ function JournalEditorContent() {
         scrolling (overflow-y-auto), but the outer wrapper cleanly clips the native
         scrollbar so it doesn't bleed out of the rounded corners.
       */}
-      {isExpandedPage || isInlinePane ? (
+      {isInlinePane ? (
         <EditorContent
           editor={editor}
           className="flex-1 flex flex-col min-h-0"
@@ -164,13 +157,13 @@ function JournalEditorContent() {
 
       <AnimatePresence>
         {showMdGuide && (
-          <JournalMarkdownGuide isExpandedPage={isExpandedPage} />
+          <JournalMarkdownGuide />
         )}
       </AnimatePresence>
     </FeatureErrorBoundary>
   )
 
-  // Inline pane / expanded page / card mode all just return the content.
+  // Inline pane / card mode all just return the content.
   // We will handle the scrollbar clipping directly via standard CSS on the wrapper.
   return content
 }
@@ -249,7 +242,6 @@ function JournalEditorMediaGallery() {
 
 function JournalEditorToolbar() {
   const {
-    isExpandedPage,
     wordCount,
     onAddMedia,
     openMediaPicker,
@@ -281,7 +273,7 @@ function JournalEditorToolbar() {
 
   return (
     <div
-      className={`flex flex-col gap-3 pt-4 md:flex-row md:items-center md:justify-between ${isExpandedPage ? 'mt-8' : 'border-t border-border/10 mt-4'}`}
+      className={`flex flex-col gap-3 pt-4 md:flex-row md:items-center md:justify-between border-t border-border/10 mt-4`}
     >
       <div className="flex items-center gap-1 relative">
         <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5 mr-3">
@@ -317,39 +309,37 @@ function JournalEditorToolbar() {
         </IconButton>
       </div>
 
-      {!isExpandedPage && (
-        <div className="flex flex-col items-end gap-2">
-          <AutoSaveIndicator
-            status={draftStatus ?? 'idle'}
-            error={draftError}
-          />
-          <div className="flex items-center gap-2">
-            {onCancel && (
-              <Button
-                onClick={onCancel}
-                variant="outline"
-                size="sm"
-                className="h-9"
-              >
-                Cancel
-              </Button>
-            )}
+      <div className="flex flex-col items-end gap-2">
+        <AutoSaveIndicator
+          status={draftStatus ?? 'idle'}
+          error={draftError}
+        />
+        <div className="flex items-center gap-2">
+          {onCancel && (
             <Button
-              onClick={onSave}
-              size={onCancel ? 'sm' : 'default'}
-              className={onCancel ? 'h-9' : ''}
-              disabled={saveDisabled}
+              onClick={onCancel}
+              variant="outline"
+              size="sm"
+              className="h-9"
             >
-              {onCancel ? 'Save Changes' : 'Save entry'}
-              {!onCancel && (
-                <Kbd className="bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30 px-1 py-0 text-[10px]">
-                  {isMac() ? '⌘' : 'Ctrl'} ↵
-                </Kbd>
-              )}
+              Cancel
             </Button>
-          </div>
+          )}
+          <Button
+            onClick={onSave}
+            size={onCancel ? 'sm' : 'default'}
+            className={onCancel ? 'h-9' : ''}
+            disabled={saveDisabled}
+          >
+            {onCancel ? 'Save Changes' : 'Save entry'}
+            {!onCancel && (
+              <Kbd className="bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30 px-1 py-0 text-[10px]">
+                {isMac() ? '⌘' : 'Ctrl'} ↵
+              </Kbd>
+            )}
+          </Button>
         </div>
-      )}
+      </div>
     </div>
   )
 }

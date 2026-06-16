@@ -14,6 +14,14 @@ let dbInstance: Database | null = null
 let initPromise: Promise<Database> | null = null
 let lastError: Error | null = null
 
+/** For testing only — inject a pre-built db instance to bypass real initialization. */
+export function setDb(instance: Database) {
+  console.log('setDb: setting db instance')
+  dbInstance = instance
+  initPromise = null
+  databaseStatus = 'ready'
+}
+
 export type DatabaseStatus = 'idle' | 'ready' | 'error'
 
 export let databaseStatus: DatabaseStatus = 'idle'
@@ -24,14 +32,17 @@ function createClientInstance() {
 
 export async function initializeDatabase(): Promise<Database> {
   if (dbInstance) {
+    console.log('initializeDatabase: returning existing dbInstance')
     databaseStatus = 'ready'
     return dbInstance
   }
 
   if (initPromise) {
+    console.log('initializeDatabase: returning existing initPromise')
     return initPromise
   }
 
+  console.log('initializeDatabase: starting initialization...')
   initPromise = (async () => {
     try {
       const client = createClientInstance()
@@ -40,6 +51,10 @@ export async function initializeDatabase(): Promise<Database> {
       await client.execute('PRAGMA journal_mode=WAL')
       await client.execute('PRAGMA synchronous=NORMAL')
       await client.execute('PRAGMA foreign_keys=ON')
+      // Performance and concurrency pragmas
+      await client.execute('PRAGMA busy_timeout=5000')
+      await client.execute('PRAGMA cache_size=-20000') // 20MB cache
+      await client.execute('PRAGMA mmap_size=2147483648') // 2GB memory map
 
       await migrate(db, {
         migrationsFolder: process.env.MIGRATIONS_PATH || './drizzle',

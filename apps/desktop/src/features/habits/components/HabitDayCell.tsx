@@ -54,7 +54,7 @@ export const HabitDayCell = memo(function HabitDayCellComponent({
         <button
           onClick={() => onToggle(dayStr)}
           aria-pressed={isCompleted}
-          aria-label={`${dateLabel}: ${isCompleted ? `Completed (${tier})` : 'Not completed'}`}
+          aria-label={`${dateLabel}: ${isToday ? 'Today, ' : ''}${isCompleted ? `Completed (${tier})` : 'Not completed'}`}
           className={`w-8 h-8 sm:w-9 sm:h-9 rounded-[10px] flex items-center justify-center text-[11px] sm:text-xs font-bold transition-all duration-300 cursor-pointer select-none active:scale-95
             ${
               isCompleted
@@ -68,8 +68,12 @@ export const HabitDayCell = memo(function HabitDayCellComponent({
         </button>
       </TooltipTrigger>
       <TooltipContent>
-        {dateLabel}:{' '}
-        {isCompleted ? `Completed (${tier}) ✓` : isToday ? 'Today' : 'Not completed'}
+        <div className="text-[11px] font-bold">
+          {isToday ? 'Today' : dateLabel}
+        </div>
+        <div className="text-[10px] opacity-80">
+          {isCompleted ? `Completed (${tier}) ✓` : 'Not completed'}
+        </div>
       </TooltipContent>
     </Tooltip>
   )

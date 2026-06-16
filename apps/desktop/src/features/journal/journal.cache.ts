@@ -42,71 +42,54 @@ export const journalCache = {
     )
   },
 
-  /** Prepend a new entry to the cached list */
-  insert(queryClient: QueryClient, entry: Entry) {
-    // Update flat list
-    queryClient.setQueryData<Entry[]>(journalKeys.entries, (old) =>
-      old ? [entry, ...old] : [entry],
-    )
-
-    // Update infinite pages
+  /** Helper to update both flat and infinite caches DRYly */
+  _updateCaches(
+    queryClient: QueryClient,
+    flatUpdater: (old: Entry[] | undefined) => Entry[] | undefined,
+    infiniteUpdater: (pages: InfiniteEntriesData[]) => InfiniteEntriesData[]
+  ) {
+    queryClient.setQueryData<Entry[]>(journalKeys.entries, flatUpdater)
     queryClient.setQueryData<InfiniteData<InfiniteEntriesData>>(
       [...journalKeys.entries, 'infinite'],
       (old) => {
         if (!old) return old
-        return {
-          ...old,
-          pages: old.pages.map((page, i) =>
-            i === 0 ? { ...page, items: [entry, ...page.items] } : page,
-          ),
-        }
-      },
+        return { ...old, pages: infiniteUpdater(old.pages) }
+      }
+    )
+  },
+
+  /** Prepend a new entry to the cached list */
+  insert(queryClient: QueryClient, entry: Entry) {
+    this._updateCaches(
+      queryClient,
+      (old) => (old ? [entry, ...old] : [entry]),
+      (pages) => pages.map((page, i) =>
+        i === 0 ? { ...page, items: [entry, ...page.items] } : page
+      )
     )
   },
 
   /** Remove an entry from the cached list by id */
   remove(queryClient: QueryClient, id: number) {
-    // Update flat list
-    queryClient.setQueryData<Entry[]>(journalKeys.entries, (old) =>
-      old?.filter((e) => e.id !== id),
-    )
-
-    // Update infinite pages
-    queryClient.setQueryData<InfiniteData<InfiniteEntriesData>>(
-      [...journalKeys.entries, 'infinite'],
-      (old) => {
-        if (!old) return old
-        return {
-          ...old,
-          pages: old.pages.map((page) => ({
-            ...page,
-            items: page.items.filter((e) => e.id !== id),
-          })),
-        }
-      },
+    this._updateCaches(
+      queryClient,
+      (old) => old?.filter((e) => e.id !== id),
+      (pages) => pages.map((page) => ({
+        ...page,
+        items: page.items.filter((e) => e.id !== id),
+      }))
     )
   },
 
   /** Patch specific fields on a cached entry */
   update(queryClient: QueryClient, id: number, patch: Partial<Entry>) {
-    // Update flat list
-    queryClient.setQueryData<Entry[]>(journalKeys.entries, (old) =>
-      old?.map((e) => (e.id === id ? { ...e, ...patch } : e)),
-    )
-
-    // Update infinite pages
-    queryClient.setQueryData<InfiniteData<InfiniteEntriesData>>(
-      [...journalKeys.entries, 'infinite'],
-      (old) => {
-        if (!old) return old
-        return {
-          ...old,
-          pages: old.pages.map((page) => ({
-            ...page,
-            items: page.items.map((e) => (e.id === id ? { ...e, ...patch } : e)),
-          })),
-        }
-      },
+    this._updateCaches(
+      queryClient,
+      (old) => old?.map((e) => (e.id === id ? { ...e, ...patch } : e)),
+      (pages) => pages.map((page) => ({
+        ...page,
+        items: page.items.map((e) => (e.id === id ? { ...e, ...patch } : e)),
+      }))
     )
   },
 
@@ -118,33 +101,21 @@ export const journalCache = {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     }
 
-    // Update flat list
-    queryClient.setQueryData<Entry[]>(journalKeys.entries, (old) => {
-      if (!old) return old
-      const updated = old.map((e) =>
-        e.id === id ? { ...e, isPinned: !e.isPinned } : e,
-      )
-      return [...updated].sort(sortFn)
-    })
-
-    // Update infinite pages
-    queryClient.setQueryData<InfiniteData<InfiniteEntriesData>>(
-      [...journalKeys.entries, 'infinite'],
+    this._updateCaches(
+      queryClient,
       (old) => {
         if (!old) return old
-        // Note: For simplicity in infinite pages, we just update the entry.
-        // Re-sorting across all pages is complex.
-        // Usually, pinned items are fetched in the first page anyway.
-        return {
-          ...old,
-          pages: old.pages.map((page) => ({
-            ...page,
-            items: page.items
-              .map((e) => (e.id === id ? { ...e, isPinned: !e.isPinned } : e))
-              .sort(sortFn),
-          })),
-        }
+        const updated = old.map((e) =>
+          e.id === id ? { ...e, isPinned: !e.isPinned } : e,
+        )
+        return [...updated].sort(sortFn)
       },
+      (pages) => pages.map((page) => ({
+        ...page,
+        items: page.items
+          .map((e) => (e.id === id ? { ...e, isPinned: !e.isPinned } : e))
+          .sort(sortFn),
+      }))
     )
   },
 

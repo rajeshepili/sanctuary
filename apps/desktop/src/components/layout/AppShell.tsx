@@ -35,19 +35,23 @@ function AppShellContent({ prefs }: { prefs: UserPreferences }) {
 
   return (
     <main
-      className={`relative min-h-dvh flex flex-col theme-${mood} bg-background text-foreground`}
+      className={`relative min-h-dvh flex flex-col theme-${mood} bg-background text-foreground transition-colors duration-700`}
     >
       <Background mood={mood} />
+
       <div className="relative z-50">
         <Navbar />
       </div>
-      <FeatureErrorBoundary 
-        className="max-w-4xl mx-auto mt-20"
-        title="Page Error"
-        message="The page could not be loaded correctly."
-      >
-        <Outlet />
-      </FeatureErrorBoundary>
+
+      <div className="flex-1 relative z-10 mt-20">
+        <FeatureErrorBoundary
+          className="max-w-4xl mx-auto"
+          title="Page Error"
+          message="The page could not be loaded correctly."
+        >
+          <Outlet />
+        </FeatureErrorBoundary>
+      </div>
     </main>
   )
 }

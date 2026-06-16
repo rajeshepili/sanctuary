@@ -26,7 +26,6 @@ export interface JournalEditorContextValue {
   // UI State
   showMdGuide: boolean
   setShowMdGuide: (v: boolean | ((prev: boolean) => boolean)) => void
-  isExpandedPage: boolean
   /** True when rendered inside the split-pane viewer — removes card wrapper, fills height naturally */
   isInlinePane?: boolean
   isSaveDisabled?: boolean

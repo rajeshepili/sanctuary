@@ -1,8 +1,8 @@
-import { app, BrowserWindow, ipcMain, session } from 'electron'
+import { app, BrowserWindow, ipcMain, session, net, globalShortcut, Tray, Menu, nativeImage } from 'electron'
 import { join } from 'node:path'
 import { fork } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
-import net from 'node:net'
+import nodeNet from 'node:net'
 import { randomBytes } from 'node:crypto'
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import electronUpdater from 'electron-updater'
@@ -22,6 +22,7 @@ let serverProcess: ChildProcess | null = null
 let mainWindow: BrowserWindow | null = null
 let isQuitting = false
 let sessionToken: string | null = null
+let tray: Tray | null = null
 
 interface ElectronPrefs {
   autoUpdateEnabled: boolean
@@ -72,7 +73,7 @@ const waitForPort = (port: number, timeout = isDev ? 10_000 : 45_000) => {
     const startTime = Date.now()
 
     const checkPort = () => {
-      const socket = new net.Socket()
+      const socket = new nodeNet.Socket()
       socket.on('connect', () => {
         socket.destroy()
         resolve()
@@ -171,7 +172,7 @@ async function createWindow() {
 
     const getFreePort = () =>
       new Promise<number>((resolve, reject) => {
-        const srv = net.createServer()
+        const srv = nodeNet.createServer()
         srv.listen(0, '127.0.0.1', () => {
           const addr = srv.address()
           const port = addr && typeof addr === 'object' ? addr.port : 0
@@ -244,6 +245,31 @@ async function createWindow() {
       )
 
       await waitForPort(PORT)
+
+      // Pre-warm: hit the preferences and entries endpoints to prime DB and cache
+      // This happens while the splash screen is still visible
+      if (sessionToken) {
+        const prewarmUrls = [
+          `http://127.0.0.1:${PORT}/api/preferences`,
+          `http://127.0.0.1:${PORT}/api/entries`,
+        ]
+
+        await Promise.all(
+          prewarmUrls.map((url) => {
+            return new Promise<void>((resolve) => {
+              const request = net.request({
+                url,
+                method: 'GET',
+              })
+              request.setHeader('Authorization', `Bearer ${sessionToken}`)
+              request.on('response', () => resolve())
+              request.on('error', () => resolve()) // Non-blocking
+              request.end()
+            })
+          }),
+        )
+      }
+
       console.log(`Server is ready on port ${PORT}, loading window...`)
       mainWindow.loadURL(`http://127.0.0.1:${PORT}`)
     } catch (err) {
@@ -265,6 +291,33 @@ app.whenReady().then(() => {
   registerIpcHandlers()
   createWindow()
 
+  // Global Shortcut
+  globalShortcut.register('CommandOrControl+Shift+J', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.show()
+      mainWindow.focus()
+      mainWindow.webContents.send('open-quick-entry')
+    }
+  })
+
+  // System Tray
+  tray = new Tray(nativeImage.createEmpty()) // Ideally replace with actual icon path later
+  tray.setToolTip('Sanctuary')
+  const contextMenu = Menu.buildFromTemplate([
+    { label: 'Open Sanctuary', click: () => {
+        if (mainWindow) {
+          if (mainWindow.isMinimized()) mainWindow.restore()
+          mainWindow.show()
+          mainWindow.focus()
+        }
+      } 
+    },
+    { type: 'separator' },
+    { label: 'Quit', click: () => app.quit() }
+  ])
+  tray.setContextMenu(contextMenu)
+
   if (!isDev) {
     void maybeCheckForUpdates()
   }
@@ -280,6 +333,7 @@ app.on('window-all-closed', function () {
 
 app.on('before-quit', (e) => {
   isQuitting = true
+  globalShortcut.unregisterAll()
   if (serverProcess && !serverProcess.killed) {
     e.preventDefault()
     const forceQuitTimer = setTimeout(() => {

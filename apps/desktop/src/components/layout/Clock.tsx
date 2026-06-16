@@ -27,7 +27,7 @@ const moodStyles = {
 export const LiveClock = memo(function LiveClockComponent({
   use24Hour = false,
 }: LiveClockProps) {
-  const [time, setTime] = useState(() => new Date())
+  const [time, setTime] = useState<Date | null>(null)
   const mood = useMood()
 
   const currentMoodStyle = moodStyles[mood]
@@ -76,6 +76,10 @@ export const LiveClock = memo(function LiveClockComponent({
       hour12: !use24Hour,
     })
   }, [use24Hour])
+
+  if (!time) {
+    return <div className="h-16 w-32 animate-pulse bg-foreground/5 rounded" />
+  }
 
   const formattedTime = timeFormatter.format(time)
   const formattedDate = dateFormatter.format(time)

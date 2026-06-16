@@ -1,7 +1,5 @@
-import { useCallback } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { toastAsync } from '#/lib/toast-async'
-import { withOptimistic } from '#/lib/with-optimistic'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+
 import { toast } from 'sonner'
 import { journalCache } from './journal.cache'
 import {
@@ -17,112 +15,83 @@ import { parseError } from '#/lib/error-parser'
 export function useJournalMutations() {
   const queryClient = useQueryClient()
 
-  const createEntry = useCallback(
-    (value: string, apiMedia: { base64Data: string }[]) =>
-      toastAsync(
-        async () => {
-          const entry = await createEntryApi({
-            data: {
-              content: value.trim(),
-              media: apiMedia,
-            },
-          })
-          journalCache.insert(queryClient, entry)
-          return entry
+  const createEntry = useMutation({
+    mutationFn: async ({ value, apiMedia }: { value: string; apiMedia: { base64Data: string }[] }) => {
+      const promise = createEntryApi({
+        data: {
+          content: value.trim(),
+          media: apiMedia,
         },
-        {
-          loading: 'Recording thought…',
-          success: 'Saved to sanctuary.',
-        },
-      ),
-    [queryClient],
-  )
-
-  const updateEntry = useCallback(
-    (
-      id: number,
-      content: string,
-      apiMedia: { base64Data: string }[] = [],
-      removedMediaIds: number[] = [],
-    ) => {
-      const trimmed = content.trim()
-      return toastAsync(
-        () =>
-          withOptimistic(
-            {
-              snapshot: (qc) => journalCache.snapshot(qc),
-              apply: (qc) =>
-                journalCache.update(qc, id, {
-                  content: trimmed,
-                  updatedAt: new Date(),
-                  /**
-                   * Optimistic update applied to text content and timestamps only.
-                   * Complex media mutations (adds/removes) defer to the server response.
-                   */
-                }),
-              execute: () =>
-                updateEntryApi({
-                  data: {
-                    id,
-                    content: trimmed,
-                    addedMedia: apiMedia,
-                    removedMediaIds,
-                  },
-                }),
-              restore: (qc, snap) => journalCache.restore(qc, snap),
-            },
-            queryClient,
-          ).then((updated) => {
-            journalCache.update(queryClient, id, updated)
-            return updated
-          }),
-        {
-          loading: 'Updating…',
-          success: 'Entry updated.',
-        },
-      )
-    },
-    [queryClient],
-  )
-
-  const togglePin = useCallback(
-    (id: number) =>
-      toastAsync(
-        () =>
-          withOptimistic(
-            {
-              snapshot: (qc) => journalCache.snapshot(qc),
-              apply: (qc) => journalCache.togglePin(qc, id),
-              execute: () => togglePinApi({ data: { id } }),
-              restore: (qc, snap) => journalCache.restore(qc, snap),
-            },
-            queryClient,
-          ),
-        {
-          loading: 'Updating pin…',
-          success: 'Pin toggled.',
-        },
-      ),
-    [queryClient],
-  )
-
-  const deleteEntry = useCallback(
-    (id: number) => {
-      const snapshot = journalCache.snapshot(queryClient)
-      const entry = snapshot.flat?.find((e) => e.id === id)
-
-      const promise = deleteEntryApi({ data: { id } }).then(() => {
-        journalCache.remove(queryClient, id)
-        if (entry) journalCache.moveToTrash(queryClient, entry)
       })
+      toast.promise(promise, {
+        loading: 'Recording thought…',
+        success: 'Saved to sanctuary.',
+        error: (err) => parseError(err).message,
+      })
+      return promise
+    },
+    onSuccess: (entry) => {
+      journalCache.insert(queryClient, entry)
+    }
+  })
 
+  const updateEntry = useMutation({
+    mutationFn: async ({ id, content, addedMedia, removedMediaIds }: { id: number; content: string; addedMedia: { base64Data: string }[]; removedMediaIds: number[] }) => {
+      const promise = updateEntryApi({ data: { id, content, addedMedia, removedMediaIds } })
+      toast.promise(promise, {
+        loading: 'Updating…',
+        success: 'Entry updated.',
+        error: (err) => parseError(err).message,
+      })
+      return promise
+    },
+    onMutate: async ({ id, content }) => {
+      const previous = journalCache.snapshot(queryClient)
+      journalCache.update(queryClient, id, {
+        content,
+        updatedAt: new Date(),
+      })
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        journalCache.restore(queryClient, context.previous)
+      }
+    },
+    onSuccess: (updated, { id }) => {
+      journalCache.update(queryClient, id, updated)
+    }
+  })
+
+  const togglePin = useMutation({
+    mutationFn: async (id: number) => {
+      const promise = togglePinApi({ data: { id } })
+      toast.promise(promise, {
+        loading: 'Updating pin…',
+        success: 'Pin toggled.',
+        error: (err) => parseError(err).message,
+      })
+      return promise
+    },
+    onMutate: async (id) => {
+      const previous = journalCache.snapshot(queryClient)
+      journalCache.togglePin(queryClient, id)
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        journalCache.restore(queryClient, context.previous)
+      }
+    }
+  })
+
+  const deleteEntry = useMutation({
+    mutationFn: async (id: number) => {
+      const promise = deleteEntryApi({ data: { id } })
       toast.promise(promise, {
         loading: 'Deleting…',
         success: 'Entry deleted.',
-        error: (err: unknown) => {
-          const parsed = parseError(err)
-          return parsed.message
-        },
+        error: (err) => parseError(err).message,
         action: {
           label: 'Undo',
           onClick: async () => {
@@ -137,51 +106,70 @@ export function useJournalMutations() {
         },
         duration: 10000,
       })
-
       return promise
     },
-    [queryClient],
-  )
+    onMutate: async (id) => {
+      const previous = journalCache.snapshot(queryClient)
+      const entry = previous.flat?.find((e) => e.id === id)
+      
+      journalCache.remove(queryClient, id)
+      if (entry) journalCache.moveToTrash(queryClient, entry)
+      
+      return { previous, entry, id }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        journalCache.restore(queryClient, context.previous)
+      }
+      if (context?.entry) {
+        journalCache.removeFromTrash(queryClient, context.id)
+      }
+    }
+  })
 
-  const restoreEntry = useCallback(
-    (id: number) => {
-      const promise = undeleteEntryApi({ data: { id } }).then(() => {
-        journalCache.restoreFromTrash(queryClient, id)
-      })
-
+  const restoreEntry = useMutation({
+    mutationFn: async (id: number) => {
+      const promise = undeleteEntryApi({ data: { id } })
       toast.promise(promise, {
         loading: 'Restoring…',
         success: 'Entry restored.',
-        error: (err: unknown) => {
-          const parsed = parseError(err)
-          return parsed.message
-        },
+        error: (err) => parseError(err).message,
       })
-
       return promise
     },
-    [queryClient],
-  )
+    onMutate: async (id) => {
+      const previous = journalCache.snapshot(queryClient)
+      journalCache.restoreFromTrash(queryClient, id)
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        journalCache.restore(queryClient, context.previous)
+      }
+    }
+  })
 
-  const permanentDeleteEntry = useCallback(
-    (id: number) => {
-      const promise = permanentDeleteEntryApi({ data: { id } }).then(() => {
-        journalCache.removeFromTrash(queryClient, id)
-      })
-
+  const permanentDeleteEntry = useMutation({
+    mutationFn: async (id: number) => {
+      const promise = permanentDeleteEntryApi({ data: { id } })
       toast.promise(promise, {
         loading: 'Deleting…',
         success: 'Permanently deleted.',
-        error: (err: unknown) => {
-          const parsed = parseError(err)
-          return parsed.message
-        },
+        error: (err) => parseError(err).message,
       })
-
       return promise
     },
-    [queryClient],
-  )
+    onMutate: async (id) => {
+      const previous = journalCache.snapshot(queryClient)
+      journalCache.removeFromTrash(queryClient, id)
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        journalCache.restore(queryClient, context.previous)
+      }
+    }
+  })
 
   return {
     createEntry,

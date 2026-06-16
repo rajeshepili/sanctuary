@@ -1,8 +1,7 @@
 import { getDb } from '#/database'
 import { journalEntries, entryMedia } from '#/database/schema'
-import { prepareMediaAsset } from '#/features/media/media.service'
+import { deleteMediaAssets, prepareMediaAsset } from '#/features/media/media.service'
 import { eq, desc, isNull, isNotNull, inArray } from 'drizzle-orm'
-import fs from 'fs-extra'
 import type {
   CreateEntryInput,
   UpdateEntryInput,
@@ -13,6 +12,7 @@ import type {
 } from './journal.schema'
 import { JournalError } from './journal.errors'
 import type { Entry } from '#/types'
+import { getFirstOrThrow, ensureRowsAffected } from '#/database/utils'
 
 function extractTags(content: string): string | null {
   const matches = content.match(/#[a-zA-Z0-9-]+/g)
@@ -108,7 +108,7 @@ export async function createEntryService(data: CreateEntryInput): Promise<Entry>
 
   try {
     const createdEntry = await db.transaction(async (tx) => {
-      const [entry] = await tx
+      const results = await tx
         .insert(journalEntries)
         .values({
           content: data.content.trim(),
@@ -116,9 +116,7 @@ export async function createEntryService(data: CreateEntryInput): Promise<Entry>
         })
         .returning()
 
-      if (!entry) {
-        throw new JournalError('JOURNAL_CREATE_FAILED', 'Failed to create journal entry')
-      }
+      const entry = getFirstOrThrow(results, new JournalError('JOURNAL_CREATE_FAILED', 'Failed to create journal entry'))
 
       const insertedMedia = preparedMedia.length
         ? await tx
@@ -143,14 +141,7 @@ export async function createEntryService(data: CreateEntryInput): Promise<Entry>
 
     return createdEntry
   } catch (error) {
-    await Promise.allSettled(
-      preparedMedia.map((media) =>
-        Promise.all([
-          fs.remove(media.filePath),
-          fs.remove(media.thumbnailPath),
-        ]),
-      ),
-    )
+    await deleteMediaAssets(preparedMedia)
     if (error instanceof JournalError) throw error
     throw new JournalError('JOURNAL_CREATE_FAILED', 'Failed to create journal entry', { cause: error })
   }
@@ -176,11 +167,7 @@ export async function updateEntryService(data: UpdateEntryInput): Promise<Entry>
         .where(eq(journalEntries.id, data.id))
         .returning()
 
-      if (updateResults.length === 0) {
-        throw new JournalError('JOURNAL_NOT_FOUND', `Entry with id ${data.id} not found`, { status: 404 })
-      }
-
-      const entry = updateResults[0]
+      const entry = getFirstOrThrow(updateResults, new JournalError('JOURNAL_NOT_FOUND', `Entry with id ${data.id} not found`, { status: 404 }))
 
       if (data.removedMediaIds.length > 0) {
         const toRemove = await tx.query.entryMedia.findMany({
@@ -226,20 +213,18 @@ export async function updateEntryService(data: UpdateEntryInput): Promise<Entry>
     })
 
     // Remove files ONLY after the transaction has successfully committed
-    for (const path of pathsToRemove) {
-      if (path) await fs.remove(path).catch(() => { })
-    }
+    await deleteMediaAssets(
+      pathsToRemove.reduce<{filePath: string, thumbnailPath: string}[]>((acc, p, i) => {
+        if (i % 2 === 0) {
+          acc.push({ filePath: p, thumbnailPath: pathsToRemove[i + 1]! })
+        }
+        return acc
+      }, [])
+    )
 
     return updatedWithMedia
   } catch (error) {
-    await Promise.allSettled(
-      preparedMedia.map((media) =>
-        Promise.all([
-          fs.remove(media.filePath),
-          fs.remove(media.thumbnailPath),
-        ]),
-      ),
-    )
+    await deleteMediaAssets(preparedMedia)
     if (error instanceof JournalError) throw error
     throw new JournalError('JOURNAL_UPDATE_FAILED', 'Failed to update journal entry', { cause: error })
   }
@@ -263,9 +248,7 @@ export async function togglePinService(data: TogglePinInput): Promise<Entry> {
       .where(eq(journalEntries.id, data.id))
       .returning()
 
-    if (updateResults.length === 0) {
-      throw new JournalError('JOURNAL_TOGGLE_PIN_FAILED', 'Failed to toggle pin')
-    }
+    ensureRowsAffected(updateResults, new JournalError('JOURNAL_TOGGLE_PIN_FAILED', 'Failed to toggle pin'))
 
     const pinnedEntry = await tx.query.journalEntries.findFirst({
       where: eq(journalEntries.id, data.id),
@@ -289,9 +272,7 @@ export async function deleteEntryService(
       .where(eq(journalEntries.id, id))
       .returning({ id: journalEntries.id })
 
-    if (updateResults.length === 0) {
-      throw new JournalError('JOURNAL_NOT_FOUND', `Entry with id ${id} not found`, { status: 404 })
-    }
+    ensureRowsAffected(updateResults, new JournalError('JOURNAL_NOT_FOUND', `Entry with id ${id} not found`, { status: 404 }))
   })
 }
 
@@ -307,11 +288,7 @@ export async function undeleteEntryService(
       .where(eq(journalEntries.id, id))
       .returning({ id: journalEntries.id })
 
-    if (updateResults.length === 0) {
-      throw new JournalError('JOURNAL_NOT_FOUND', `Entry with id ${id} not found`, { status: 404 })
-    }
-
-    return updateResults[0]
+    return getFirstOrThrow(updateResults, new JournalError('JOURNAL_NOT_FOUND', `Entry with id ${id} not found`, { status: 404 }))
   })
 }
 
@@ -327,8 +304,5 @@ export async function permanentDeleteEntryService(id: number): Promise<void> {
 
   await db.delete(journalEntries).where(eq(journalEntries.id, id))
 
-  for (const m of entry.media) {
-    await fs.remove(m.filePath).catch(() => { })
-    await fs.remove(m.thumbnailPath).catch(() => { })
-  }
+  await deleteMediaAssets(entry.media)
 }

@@ -2,14 +2,14 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import type { LibSQLDatabase } from 'drizzle-orm/libsql'
 import { desc, eq, isNull } from 'drizzle-orm'
 import * as schema from '#/database/schema'
-import { createTestDatabase, resetTestDatabase } from '#/test/database'
+import { getSharedTestDatabase, resetTestDatabase } from '#/test/database'
 import { seedJournalEntry, seedMedia } from '#/test/db-seed'
 
 describe('Journal Integration Tests', () => {
   let db: LibSQLDatabase<typeof schema>
 
   beforeEach(async () => {
-    db = await createTestDatabase()
+    db = await getSharedTestDatabase()
   })
 
   afterEach(async () => {

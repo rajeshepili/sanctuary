@@ -42,7 +42,6 @@ export function AnimatedLight({
         transform: 'translate(-50%, -50%)',
       }}
     >
-      {/* Wide glow */}
       <div
         className="absolute inset-[-180px] rounded-full mix-blend-lighten pointer-events-none"
         style={{
@@ -51,7 +50,6 @@ export function AnimatedLight({
         }}
       />
 
-      {/* Main body */}
       <div
         className="w-full h-full rounded-full"
         style={{
@@ -61,7 +59,6 @@ export function AnimatedLight({
         }}
       />
 
-      {/* Core highlight */}
       <div
         className="absolute inset-[25%] rounded-full"
         style={{

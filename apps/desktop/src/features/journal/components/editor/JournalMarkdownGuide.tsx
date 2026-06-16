@@ -11,25 +11,14 @@ const MD_HINTS = [
   { syntax: '#tag', label: 'Tag' },
 ]
 
-interface Props {
-  isExpandedPage: boolean
-}
-
-export function JournalMarkdownGuide({ isExpandedPage }: Props) {
+export function JournalMarkdownGuide() {
   return (
     <motion.div
       initial={{ opacity: 0, y: 6, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 6, scale: 0.97 }}
       transition={{ duration: 0.15 }}
-      className={`
-        absolute z-10
-        bg-card/95 border border-border/60 backdrop-blur-xl
-        rounded-2xl p-3 shadow-xl
-        grid grid-cols-2 gap-x-5 gap-y-1.5
-        min-w-[220px]
-        ${isExpandedPage ? 'bottom-full mb-3 left-0' : 'bottom-3 right-3'}
-      `}
+      className="absolute z-10 bg-card/95 border border-border/60 backdrop-blur-xl rounded-2xl p-3 shadow-xl grid grid-cols-2 gap-x-5 gap-y-1.5 min-w-[220px] bottom-3 right-3"
     >
       <p className="col-span-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
         Markdown cheatsheet

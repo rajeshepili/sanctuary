@@ -72,7 +72,6 @@ export function Morning() {
         className="absolute bottom-[-10%] left-[0%] w-[120%] h-[25vh] bg-white/60 blur-[80px] rounded-[100%]"
       />
 
-      {/* Flock 1 */}
       <motion.div
         className="absolute top-[20%] left-[-10%]"
         animate={{
@@ -132,7 +131,6 @@ export function Morning() {
         </svg>
       </motion.div>
 
-      {/* Flock 2 — smaller, further back */}
       <motion.div
         className="absolute top-[35%] left-[-20%]"
         animate={{

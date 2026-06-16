@@ -9,11 +9,12 @@ import { MediaError } from './media.errors'
 type PreparedMediaAsset = {
   filePath: string
   thumbnailPath: string
-  mimeType: 'image/webp'
+  mimeType: string
   fileSize: number
 }
 
 const MAX_SIZE_BYTES = 25 * 1024 * 1024 // 25MB
+const MAX_ORIGINAL_WIDTH = 2048
 const MAX_THUMB_WIDTH = 400
 
 export async function prepareMediaAsset(
@@ -45,42 +46,44 @@ export async function prepareMediaAsset(
   }
 
   const id = crypto.randomUUID()
-
   const originalPath = path.join(mediaDir, `${id}.webp`)
   const thumbPath = path.join(mediaDir, `${id}_thumb.webp`)
 
   try {
-    const image = sharp(bytes, { failOn: 'none' }).rotate().withMetadata()
+    const pipeline = sharp(bytes, { failOn: 'none' }).rotate()
 
-    const originalBuffer = await image
-      .withMetadata()
-      .webp({
-        quality: 85,
-      })
-      .toBuffer()
+    const [originalImage, thumbImage] = await Promise.all([
+      pipeline
+        .clone()
+        .resize({ width: MAX_ORIGINAL_WIDTH, fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 85 })
+        .toBuffer(),
+      pipeline
+        .clone()
+        .resize({ width: MAX_THUMB_WIDTH, fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 80 })
+        .toBuffer()
+    ])
 
-    const thumbnailBuffer = await image
-      .clone()
-      .resize({
-        width: MAX_THUMB_WIDTH,
-        fit: 'inside',
-        withoutEnlargement: true,
-      })
-      .webp({ quality: 95 })
-      .toBuffer()
-
-    await fs.writeFile(originalPath, originalBuffer)
-    await fs.writeFile(thumbPath, thumbnailBuffer)
+    await Promise.all([
+      fs.writeFile(originalPath, originalImage),
+      fs.writeFile(thumbPath, thumbImage),
+    ])
 
     return {
       filePath: originalPath,
       thumbnailPath: thumbPath,
       mimeType: 'image/webp',
-      fileSize: originalBuffer.length,
+      fileSize: originalImage.length,
     }
   } catch (error) {
     throw new MediaError('MEDIA_PREPARATION_FAILED', 'Failed to process image', { cause: error })
   }
 }
 
-
+export async function deleteMediaAssets(
+  paths: Array<{ filePath: string; thumbnailPath: string }>
+): Promise<void> {
+  const allPaths = paths.flatMap((p) => [p.filePath, p.thumbnailPath])
+  await Promise.allSettled(allPaths.map((p) => fs.remove(p)))
+}

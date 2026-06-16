@@ -65,7 +65,7 @@ export function OnboardingFlow() {
 
   const handleFinish = async () => {
     if (!agreed) return
-    await updatePreferences({
+    await updatePreferences.mutateAsync({
       firstName: firstName.trim() || undefined,
       ...selections,
       disclaimerAgreed: true,
@@ -78,9 +78,22 @@ export function OnboardingFlow() {
   }
 
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-background text-foreground p-4 relative">
-      {/* Ambient glow */}
-      <div className="absolute inset-0 bg-radial-gradient from-primary/10 to-transparent pointer-events-none" />
+    <div className="min-h-dvh flex items-center justify-center bg-background text-foreground p-4 relative overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+      <motion.div
+        animate={{
+          scale: [1, 1.2, 1],
+          x: [-20, 20, -20],
+          y: [-20, 20, -20],
+        }}
+        transition={{
+          duration: 15,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        className="absolute inset-0 bg-radial-gradient from-primary/15 to-transparent pointer-events-none opacity-50"
+      />
+      </div>
 
       <AnimatePresence mode="wait">
         <motion.div
@@ -97,8 +110,7 @@ export function OnboardingFlow() {
             flex flex-col space-y-6 relative overflow-hidden
           "
           >
-            {/* Step counter */}
-            <div className="flex justify-between items-center text-xs font-bold text-muted-foreground/60 uppercase tracking-widest text-[10px]">
+            <div className="flex gap-2">
               <span>Welcome</span>
               <span>
                 Step {step} of {totalSteps}
@@ -114,10 +126,6 @@ export function OnboardingFlow() {
                   Welcome to <br />
                   {APP_NAME}
                 </h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  A completely private, zero-pressure space for reflection. No
-                  gamification, no leaderboards — just you and your thoughts.
-                </p>
                 <div className="p-4 rounded-2xl border border-border/40 bg-foreground/1 text-xs text-muted-foreground leading-relaxed italic">
                   "Progress is not about moving faster; it is about staying
                   present along the way."
@@ -134,7 +142,7 @@ export function OnboardingFlow() {
                   Personalize Your Space
                 </h2>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  What should we call you? This is completely optional.
+                  What should we call you? You can skip this if you'd like.
                 </p>
                 <Input
                   value={firstName}
@@ -213,59 +221,50 @@ export function OnboardingFlow() {
 
             {step === 4 && (
               <div className="space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center">
-                  <ShieldAlert className="w-6 h-6 animate-pulse" />
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                  <ShieldAlert className="w-6 h-6" />
                 </div>
                 <h2 className="text-3xl font-extrabold tracking-tight text-foreground leading-tight">
-                  Terms of Use
+                  Data Privacy
                 </h2>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Before you enter the sanctuary, please read and acknowledge
-                  our legal disclaimer:
+                  Please read and acknowledge how your data is handled:
                 </p>
 
-                {/* Glassmorphic waiver box */}
-                <div className="p-4 rounded-2xl border border-red-500/20 bg-red-500/2 space-y-2.5">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-red-500 uppercase tracking-wider">
+                <div className="bg-card/30 backdrop-blur-md rounded-xl p-6 border border-white/5 space-y-6 shadow-xl relative overflow-hidden">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-amber-600 uppercase tracking-wider">
                     <Lock className="w-3.5 h-3.5" />
-                    <span>Liability & Accountability Notice</span>
+                    <span>Local Data Only</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    This platform is a local, private self-reflection journal
-                    and tracking system provided solely for personal use.
-                    Everything you write is stored on your device using a local
-                    database. There is no cloud sync.
+                    Sanctuary is a local-only application. Your data never leaves your device,
+                    and there are no cloud backups or account recovery options.
                   </p>
                   <p className="text-[11px] text-foreground/90 font-semibold leading-relaxed">
-                    By accessing and using this application, you explicitly
-                    agree that{' '}
-                    <span className="underline">
-                      any damage, data loss, or distress caused directly or
-                      indirectly is your sole responsibility
-                    </span>
-                    . The author assumes absolutely no liability for your usage,
-                    actions, and outcomes.
+                    By using this app, you acknowledge that you are solely responsible
+                    for backing up your own data. If you lose your device or uninstall
+                    the app without a backup, your data will be permanently lost.
                   </p>
                 </div>
 
-                {/* Consent checkbox */}
-                <Label className="flex items-start gap-3 p-4 rounded-xl border border-border/50 hover:bg-foreground/5 transition-colors cursor-pointer select-none">
+                <div className="flex items-start space-x-3 mt-6">
+                <Label className="flex items-start gap-3 p-4 rounded-xl border border-border/50 hover:bg-foreground/5 transition-colors cursor-pointer select-none group">
                   <Checkbox
                     id="agreed"
                     checked={agreed}
                     onCheckedChange={(checked) => setAgreed(!!checked)}
-                    className="mt-1"
+                    className="mt-1 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
                   />
                   <div className="space-y-1">
-                    <div className="text-xs font-bold text-foreground uppercase tracking-wider">
-                      I acknowledge and accept full responsibility
+                    <div className="text-xs font-bold text-foreground uppercase tracking-wider transition-colors group-hover:text-amber-600">
+                      I understand the risks
                     </div>
                     <p className="text-[10px] text-muted-foreground leading-tight normal-case font-medium">
-                      I agree that the developer is not responsible nor
-                      accountable for any damage or outcomes of my usage.
+                      I acknowledge that my data is saved only on this device and cannot be recovered if lost.
                     </p>
                   </div>
                 </Label>
+              </div>
               </div>
             )}
 

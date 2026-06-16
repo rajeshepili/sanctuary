@@ -36,7 +36,6 @@ export function Bird({
 
   return (
     <g opacity={opacity}>
-      {/* Left half-wing — pivots at body center, tips go UP on negative rotate */}
       <motion.g
         style={{ transformOrigin: `${cx}px ${cy}px` }}
         animate={{ rotate: [-22, 14, -22] }}
@@ -51,7 +50,6 @@ export function Bird({
         />
       </motion.g>
 
-      {/* Right half-wing — mirrors left: tips go UP on positive rotate */}
       <motion.g
         style={{ transformOrigin: `${cx}px ${cy}px` }}
         animate={{ rotate: [22, -14, 22] }}
@@ -66,7 +64,6 @@ export function Bird({
         />
       </motion.g>
 
-      {/* Tiny body dot */}
       <circle
         cx={cx}
         cy={cy}

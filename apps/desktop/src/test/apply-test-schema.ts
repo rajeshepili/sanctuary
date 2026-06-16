@@ -2,7 +2,7 @@
  * Applies the current SQLite schema for in-memory tests.
  * Kept in sync with drizzle migrations under /drizzle.
  */
-const TEST_SCHEMA_STATEMENTS = [
+export const TEST_SCHEMA_STATEMENTS = [
   `CREATE TABLE journal_entries (
       id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
       content TEXT NOT NULL,
@@ -25,6 +25,10 @@ const TEST_SCHEMA_STATEMENTS = [
   `CREATE TABLE habits (
       id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
       name TEXT NOT NULL,
+      identity_label TEXT,
+      mini_desc TEXT,
+      plus_desc TEXT,
+      elite_desc TEXT,
       frequency TEXT DEFAULT 'every_day' NOT NULL,
       days_of_week TEXT,
       priority TEXT DEFAULT 'medium' NOT NULL,
@@ -32,14 +36,13 @@ const TEST_SCHEMA_STATEMENTS = [
       status TEXT DEFAULT 'active' NOT NULL,
       rest_until INTEGER,
       intention TEXT,
-      current_streak INTEGER DEFAULT 0 NOT NULL,
-      longest_streak INTEGER DEFAULT 0 NOT NULL,
       created_at INTEGER DEFAULT (unixepoch()) NOT NULL
     )`,
   `CREATE TABLE habit_completions (
       id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
       habit_id INTEGER NOT NULL,
       completed_at TEXT NOT NULL,
+      tier TEXT DEFAULT 'plus' NOT NULL,
       FOREIGN KEY (habit_id) REFERENCES habits(id) ON DELETE CASCADE
     )`,
   `CREATE TABLE user_preferences (
@@ -68,6 +71,8 @@ const TEST_SCHEMA_STATEMENTS = [
   `CREATE INDEX IF NOT EXISTS idx_habit_completions_completed_at ON habit_completions(completed_at)`,
 ] as const
 
+export const TEST_SCHEMA_SQL = TEST_SCHEMA_STATEMENTS.join(';\n') + ';'
+
 export function applyTestSchema(exec: (sql: string) => void) {
   for (const sql of TEST_SCHEMA_STATEMENTS) {
     exec(sql)
@@ -77,7 +82,5 @@ export function applyTestSchema(exec: (sql: string) => void) {
 export async function applyTestSchemaAsync(
   run: (sql: string) => Promise<unknown>,
 ) {
-  for (const sql of TEST_SCHEMA_STATEMENTS) {
-    await run(sql)
-  }
+  await run(TEST_SCHEMA_SQL)
 }

@@ -11,6 +11,7 @@ import type {
 
 import type { Habit, HabitsData } from '#/types'
 import { HabitError } from './habits.errors'
+import { getFirstOrThrow, ensureRowsAffected } from '#/database/utils'
 
 export async function getAllHabitsService(): Promise<HabitsData> {
   const db = await getDb()
@@ -48,11 +49,7 @@ export async function createHabitService(data: CreateHabitInput): Promise<Habit>
     })
     .returning()
 
-  if (results.length === 0) {
-    throw new HabitError('HABIT_CREATE_FAILED', 'Failed to create habit')
-  }
-
-  return results[0]
+  return getFirstOrThrow(results, new HabitError('HABIT_CREATE_FAILED', 'Failed to create habit'))
 }
 
 export async function toggleHabitCompletionService(
@@ -61,38 +58,40 @@ export async function toggleHabitCompletionService(
   const db = await getDb()
   const { habitId, date, tier = 'plus' } = data
 
-  const existing = await db
-    .select()
-    .from(habitCompletions)
-    .where(
-      and(
-        eq(habitCompletions.habitId, habitId),
-        eq(habitCompletions.completedAt, date),
-      ),
-    )
+  return db.transaction(async (tx) => {
+    const existing = await tx
+      .select()
+      .from(habitCompletions)
+      .where(
+        and(
+          eq(habitCompletions.habitId, habitId),
+          eq(habitCompletions.completedAt, date),
+        ),
+      )
 
-  let completed = false
-  if (existing.length > 0) {
-    // If clicking the same tier, toggle off. If clicking a different tier, update tier.
-    if (existing[0].tier === tier) {
-      await db
-        .delete(habitCompletions)
-        .where(eq(habitCompletions.id, existing[0].id))
-      completed = false
+    let completed = false
+    if (existing.length > 0) {
+      // If clicking the same tier, toggle off. If clicking a different tier, update tier.
+      if (existing[0].tier === tier) {
+        await tx
+          .delete(habitCompletions)
+          .where(eq(habitCompletions.id, existing[0].id))
+        completed = false
+      } else {
+        await tx
+          .update(habitCompletions)
+          .set({ tier })
+          .where(eq(habitCompletions.id, existing[0].id))
+        completed = true
+      }
     } else {
-      await db
-        .update(habitCompletions)
-        .set({ tier })
-        .where(eq(habitCompletions.id, existing[0].id))
+      await tx.insert(habitCompletions).values({ habitId, completedAt: date, tier })
       completed = true
     }
-  } else {
-    await db.insert(habitCompletions).values({ habitId, completedAt: date, tier })
-    completed = true
-  }
 
-  // Streaks are deprecated, consistency is calculated on-demand in selectors/queries
-  return { habitId, date, completed, tier }
+    // Streaks are deprecated, consistency is calculated on-demand in selectors/queries
+    return { habitId, date, completed, tier }
+  })
 }
 
 export async function reactivateHabits(
@@ -132,18 +131,12 @@ export async function updateHabitStatusService(data: UpdateHabitStatusInput): Pr
     .where(eq(habits.id, data.id))
     .returning()
 
-  if (results.length === 0) {
-    throw new HabitError('HABIT_UPDATE_FAILED', 'Failed to update habit status')
-  }
-
-  return results[0]
+  return getFirstOrThrow(results, new HabitError('HABIT_UPDATE_FAILED', 'Failed to update habit status'))
 }
 
 export async function deleteHabitService(data: DeleteHabitInput): Promise<void> {
   const db = await getDb()
   const results = await db.delete(habits).where(eq(habits.id, data.id)).returning()
 
-  if (results.length === 0) {
-    throw new HabitError('HABIT_DELETE_FAILED', 'Failed to delete habit')
-  }
+  ensureRowsAffected(results, new HabitError('HABIT_DELETE_FAILED', 'Failed to delete habit'))
 }

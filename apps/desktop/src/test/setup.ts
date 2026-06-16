@@ -1,4 +1,5 @@
 import { beforeAll, afterEach, afterAll, vi } from 'vitest'
+import '@testing-library/jest-dom'
 
 // Suppress console logs during tests unless explicitly needed
 const originalError = console.error
@@ -21,6 +22,19 @@ beforeAll(() => {
       originalWarn(...args)
     }
   })
+
+  // Mock global objects that aren't in JSDOM
+  if (typeof window !== 'undefined') {
+    window.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
+    window.URL.revokeObjectURL = vi.fn()
+    
+    // Mock ResizeObserver
+    window.ResizeObserver = vi.fn().mockImplementation(() => ({
+      observe: vi.fn(),
+      unobserve: vi.fn(),
+      disconnect: vi.fn(),
+    }))
+  }
 })
 
 afterEach(() => {

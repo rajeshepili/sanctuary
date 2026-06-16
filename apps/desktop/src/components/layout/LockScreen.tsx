@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Lock, ShieldAlert } from 'lucide-react'
 import { Card } from '#/components/ui/card'
-import { hashPin } from '#/utils/crypto'
+import { verifyPin } from '#/utils/crypto'
 import { useEventListener } from '#/hooks/use-event-listener'
 
 export function LockScreen({
@@ -21,8 +21,8 @@ export function LockScreen({
     if (next.length <= 4) {
       setInput(next)
       if (next.length === 4) {
-        const hashed = await hashPin(next)
-        if (hashed === pin || next === pin) {
+        const isValid = await verifyPin(next, pin)
+        if (isValid) {
           onUnlock()
         } else {
           setError(true)
