@@ -5,8 +5,8 @@ export function FocusSection({ children }: { children: React.ReactNode }) {
     <motion.div
       className="
         relative z-20 w-full
-        bg-background/70
-        backdrop-blur-3xl
+        bg-background/75
+        backdrop-blur-xs
         border-t border-border/20
         pt-32 pb-16
         min-h-dvh

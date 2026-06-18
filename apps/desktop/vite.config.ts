@@ -14,7 +14,7 @@ const config = defineConfig({
     host: '127.0.0.1',
   },
   build: {
-    chunkSizeWarningLimit: 500,
+    chunkSizeWarningLimit: 600,
     rolldownOptions: {
       output: {
         codeSplitting: {
@@ -26,6 +26,18 @@ const config = defineConfig({
             {
               name: 'vendor-motion',
               test: /framer-motion/,
+            },
+            {
+              name: 'vendor-viz',
+              test: /recharts|d3/,
+            },
+            {
+              name: 'vendor-ui',
+              test: /radix-ui|lucide-react|sonner|vaul/,
+            },
+            {
+              name: 'vendor-query',
+              test: /@tanstack\/react-query/,
             },
           ],
         },

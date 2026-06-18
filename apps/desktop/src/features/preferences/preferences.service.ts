@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm'
 import { PreferencesError } from './preferences.errors'
 import type { UserPreferences } from '#/types'
 import { getFirstOrThrow } from '#/database/utils'
+import { hashPin } from '#/utils/crypto'
 
 export async function getPreferencesService(): Promise<UserPreferences> {
   const db = await getDb()
@@ -43,6 +44,11 @@ export async function updatePreferencesService(
   // onboardedAt is immutable once set — stamp it only on first disclaimer agreement.
   if (data.disclaimerAgreed && !current.onboardedAt) {
     payload.onboardedAt = new Date()
+  }
+
+  // Security: Hash the privacy PIN if it's being set/changed and isn't already hashed.
+  if (data.privacyPin && !data.privacyPin.includes('$')) {
+    payload.privacyPin = await hashPin(data.privacyPin)
   }
 
   const [updated] = await db

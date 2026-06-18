@@ -4,6 +4,7 @@ import { habits, habitCompletions } from '#/database/schema'
 import { eq, and, gte } from 'drizzle-orm'
 import type {
   CreateHabitInput,
+  UpdateHabitInput,
   UpdateHabitStatusInput,
   DeleteHabitInput,
   ToggleCompletionInput,
@@ -52,6 +53,28 @@ export async function createHabitService(data: CreateHabitInput): Promise<Habit>
   return getFirstOrThrow(results, new HabitError('HABIT_CREATE_FAILED', 'Failed to create habit'))
 }
 
+export async function updateHabitService(data: UpdateHabitInput): Promise<Habit> {
+  const db = await getDb()
+  const results = await db
+    .update(habits)
+    .set({
+      name: data.name,
+      identityLabel: data.identityLabel ?? null,
+      miniDesc: data.miniDesc ?? null,
+      plusDesc: data.plusDesc ?? null,
+      eliteDesc: data.eliteDesc ?? null,
+      frequency: data.frequency,
+      daysOfWeek: data.daysOfWeek ?? null,
+      priority: data.priority,
+      category: data.category,
+      intention: data.intention ?? null,
+    })
+    .where(eq(habits.id, data.id))
+    .returning()
+
+  return getFirstOrThrow(results, new HabitError('HABIT_UPDATE_FAILED', 'Failed to update habit'))
+}
+
 export async function toggleHabitCompletionService(
   data: ToggleCompletionInput,
 ): Promise<{ habitId: number; date: string; completed: boolean; tier?: string }> {
@@ -71,7 +94,7 @@ export async function toggleHabitCompletionService(
 
     let completed = false
     if (existing.length > 0) {
-      // If clicking the same tier, toggle off. If clicking a different tier, update tier.
+      // If clicking the same tier → toggle off. Different tier → update tier.
       if (existing[0].tier === tier) {
         await tx
           .delete(habitCompletions)
@@ -89,7 +112,6 @@ export async function toggleHabitCompletionService(
       completed = true
     }
 
-    // Streaks are deprecated, consistency is calculated on-demand in selectors/queries
     return { habitId, date, completed, tier }
   })
 }
@@ -111,11 +133,6 @@ export async function reactivateHabits(
         .update(habits)
         .set({ status: 'active', restUntil: null })
         .where(eq(habits.id, habit.id))
-
-      /**
-       * Note: We no longer mutate the in-memory habit object.
-       * The caller should re-fetch or rely on the DB update.
-       */
     }
   }
 }

@@ -21,6 +21,17 @@ export const habitsCache = {
     })
   },
 
+  /** Replace a habit's data in the cache */
+  patchHabit(queryClient: QueryClient, habit: Habit) {
+    queryClient.setQueryData<HabitsData>(habitsKeys.all, (old) => {
+      if (!old) return old
+      return {
+        ...old,
+        habits: old.habits.map((h) => (h.id === habit.id ? habit : h)),
+      }
+    })
+  },
+
   /** Remove a habit and its completions from the cache */
   removeHabit(queryClient: QueryClient, id: number) {
     queryClient.setQueryData<HabitsData>(habitsKeys.all, (old) => {
@@ -47,8 +58,13 @@ export const habitsCache = {
     })
   },
 
-  /** Toggle a completion entry (add or remove) */
-  toggleCompletion(queryClient: QueryClient, habitId: number, date: string, tier?: 'mini' | 'plus' | 'elite') {
+  /** Toggle a completion entry (add, remove, or switch tier) */
+  toggleCompletion(
+    queryClient: QueryClient,
+    habitId: number,
+    date: string,
+    tier?: 'mini' | 'plus' | 'elite' | 'skipped',
+  ) {
     queryClient.setQueryData<HabitsData>(habitsKeys.all, (old) => {
       if (!old) return old
       const existing = old.completions.find(
@@ -57,12 +73,18 @@ export const habitsCache = {
       let completions = [...old.completions]
       if (existing) {
         if (tier && existing.tier !== tier) {
-           completions = completions.map(c => c.id === existing.id ? { ...c, tier } : c)
+          // Tier switch — update in place
+          completions = completions.map((c) =>
+            c.id === existing.id ? { ...c, tier } : c,
+          )
         } else {
-           completions = completions.filter((c) => !(c.habitId === habitId && c.completedAt === date))
+          // Same tier → remove (toggle off)
+          completions = completions.filter(
+            (c) => !(c.habitId === habitId && c.completedAt === date),
+          )
         }
       } else {
-         completions.push({ id: -Date.now(), habitId, completedAt: date, tier: tier ?? 'plus' })
+        completions.push({ id: -Date.now(), habitId, completedAt: date, tier: tier ?? 'plus' })
       }
       return { ...old, completions }
     })

@@ -13,6 +13,7 @@ import {
   Heart,
   Calendar,
   Lock,
+  Unlock,
 } from 'lucide-react'
 import { usePreferencesMutations } from '#/features/preferences/preferences.mutations'
 import { APP_NAME } from '#/config/branding'
@@ -60,14 +61,16 @@ export function OnboardingFlow() {
     showBreathingSpace: true,
   })
   const [agreed, setAgreed] = useState(false)
+  const [pin, setPin] = useState('')
 
-  const totalSteps = 4
+  const totalSteps = 5
 
   const handleFinish = async () => {
     if (!agreed) return
     await updatePreferences.mutateAsync({
       firstName: firstName.trim() || undefined,
       ...selections,
+      privacyPin: pin.length === 4 ? pin : undefined,
       disclaimerAgreed: true,
     })
     navigate({ to: '/' })
@@ -75,6 +78,12 @@ export function OnboardingFlow() {
 
   const toggleFeature = (id: string) => {
     setSelections((prev) => ({ ...prev, [id]: !prev[id] }))
+  }
+
+  const handlePinInput = (val: string) => {
+    if (pin.length < 4 && /^\d+$/.test(val)) {
+      setPin(pin + val)
+    }
   }
 
   return (
@@ -110,8 +119,9 @@ export function OnboardingFlow() {
             flex flex-col space-y-6 relative overflow-hidden
           "
           >
-            <div className="flex gap-2">
+            <div className="flex gap-2 text-[10px] uppercase tracking-widest font-bold text-muted-foreground/60">
               <span>Welcome</span>
+              <span className="opacity-40">/</span>
               <span>
                 Step {step} of {totalSteps}
               </span>
@@ -142,12 +152,12 @@ export function OnboardingFlow() {
                   Personalize Your Space
                 </h2>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  What should we call you? You can skip this if you'd like.
+                  How would you like to be called? You can skip this if you'd like.
                 </p>
                 <Input
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="Your first name (optional)"
+                  placeholder="Your name (optional)"
                   className="w-full h-12 px-4 rounded-xl bg-card/50 border-border/50"
                   autoFocus
                   onKeyDown={(e) => e.key === 'Enter' && setStep(3)}
@@ -268,6 +278,86 @@ export function OnboardingFlow() {
               </div>
             )}
 
+            {step === 5 && (
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                  <Lock className="w-6 h-6" />
+                </div>
+                <h2 className="text-3xl font-extrabold tracking-tight text-foreground leading-tight">
+                  Secure Your Sanctuary
+                </h2>
+                <p className="text-sm text-muted-foreground leading-relaxed text-center px-8">
+                  Add a 4-digit PIN to protect your reflections. You can skip this and add it later in Settings.
+                </p>
+
+                <div className="flex flex-col items-center gap-8 py-4">
+                  <div className="flex gap-4">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className={`w-4 h-4 rounded-full border-2 transition-all duration-300 ${
+                          pin.length > i
+                            ? 'bg-primary border-primary scale-110 shadow-[0_0_15px_rgba(var(--primary),0.4)]'
+                            : 'border-border/60 bg-transparent'
+                        }`}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 w-full max-w-[280px]">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+                      <button
+                        key={n}
+                        onClick={() => handlePinInput(n.toString())}
+                        className="h-12 rounded-xl bg-foreground/5 hover:bg-primary/10 hover:text-primary text-xl font-medium transition-all active:scale-90 cursor-pointer border border-transparent hover:border-primary/20"
+                      >
+                        {n}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setPin('')}
+                      className="h-12 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all text-xs font-bold uppercase tracking-widest cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                    <button
+                      onClick={() => handlePinInput('0')}
+                      className="h-12 rounded-xl bg-foreground/5 hover:bg-primary/10 hover:text-primary text-xl font-medium transition-all active:scale-90 cursor-pointer border border-transparent hover:border-primary/20"
+                    >
+                      0
+                    </button>
+                    {pin.length > 0 ? (
+                      <button
+                        onClick={() => setPin(pin.slice(0, -1))}
+                        className="h-12 rounded-xl text-muted-foreground hover:bg-foreground/10 transition-all text-xs font-bold uppercase tracking-widest cursor-pointer"
+                      >
+                        Del
+                      </button>
+                    ) : (
+                      <div />
+                    )}
+                  </div>
+
+                  {pin.length === 4 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-widest"
+                    >
+                      <Check className="w-4 h-4" />
+                      PIN Set
+                    </motion.div>
+                  )}
+                  {pin.length === 0 && (
+                    <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground/60 uppercase tracking-widest">
+                      <Unlock className="w-4 h-4" />
+                      No PIN (Unlocked)
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-between items-center pt-4 border-t border-border/15">
               {step > 1 ? (
                 <Button
@@ -285,6 +375,7 @@ export function OnboardingFlow() {
                 <Button
                   onClick={() => setStep((s) => s + 1)}
                   className="inline-flex items-center gap-1 px-5 py-2.5"
+                  disabled={step === 4 && !agreed}
                 >
                   <span>Continue</span>
                   <ArrowRight className="w-3.5 h-3.5" />

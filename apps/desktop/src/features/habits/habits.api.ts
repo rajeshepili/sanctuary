@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import {
   createHabitSchema,
+  updateHabitSchema,
   updateHabitStatusSchema,
   deleteHabitSchema,
   toggleCompletionSchema,
@@ -8,6 +9,7 @@ import {
 import {
   getAllHabitsService,
   createHabitService,
+  updateHabitService,
   updateHabitStatusService,
   deleteHabitService,
   toggleHabitCompletionService,
@@ -27,6 +29,10 @@ export const syncHabits = createServerFn({ method: 'POST' }).handler(async () =>
 export const createHabit = createServerFn({ method: 'POST' })
   .inputValidator(createHabitSchema)
   .handler(({ data }) => createHabitService(data))
+
+export const updateHabit = createServerFn({ method: 'POST' })
+  .inputValidator(updateHabitSchema)
+  .handler(({ data }) => updateHabitService(data))
 
 export const updateHabitStatus = createServerFn({ method: 'POST' })
   .inputValidator(updateHabitStatusSchema)

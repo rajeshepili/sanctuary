@@ -77,7 +77,7 @@ export const habitCompletions = sqliteTable(
       .notNull()
       .references(() => habits.id, { onDelete: 'cascade' }),
     completedAt: text('completed_at').notNull(),
-    tier: text({ enum: ['mini', 'plus', 'elite'] })
+    tier: text({ enum: ['mini', 'plus', 'elite', 'skipped'] })
       .notNull()
       .default('plus'),
   },
@@ -100,6 +100,9 @@ export const userPreferences = sqliteTable('user_preferences', {
   latitude: real('latitude'),
   longitude: real('longitude'),
   locationLabel: text('location_label'),
+  syncDirectory: text('sync_directory'),
+  syncPassphraseHash: text('sync_passphrase_hash'),
+  lastSyncedAt: integer('last_synced_at', { mode: 'timestamp' }),
 })
 
 export const customPrompts = sqliteTable('custom_prompts', {

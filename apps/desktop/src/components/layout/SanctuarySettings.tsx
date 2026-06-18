@@ -9,6 +9,8 @@ import {
   X as XIcon,
   RefreshCw,
   Trash2,
+  FolderArchive,
+  Cloud,
 } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { Switch } from '#/components/ui/switch'
@@ -29,6 +31,8 @@ import {
   exportMarkdown,
   exportAllData,
 } from '#/features/journal/journal.export'
+import { runHumanReadableExport } from '#/features/journal/journal.export.service'
+import { performEncryptedSync } from '#/features/preferences/preferences.sync.service'
 import { toast } from 'sonner'
 import { PinModal } from './PinModal'
 import { useState, useEffect } from 'react'
@@ -77,6 +81,7 @@ export function SanctuarySettings() {
   const [locLoading, setLocLoading] = useState(false)
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false)
   const [updateCheckLoading, setUpdateCheckLoading] = useState(false)
+  const [syncLoading, setSyncLoading] = useState(false)
 
   const isDesktop = typeof window !== 'undefined' && window.sanctuary?.isDesktop
   const { setLocked } = useUIStore()
@@ -140,6 +145,46 @@ export function SanctuarySettings() {
       toast.error('Could not check for updates.')
     } finally {
       setUpdateCheckLoading(false)
+    }
+  }
+
+  const handleSetupSync = async () => {
+    if (!window.sanctuary) return
+    const dir = await window.sanctuary.selectDirectory()
+    if (!dir) return
+
+    // For now, use the Privacy PIN as the sync passphrase if available, or ask for one.
+    // Simplifying for now: Use a default or prompt.
+    const passphrase = prompt('Enter a passphrase for E2E encryption:')
+    if (!passphrase) return
+
+    const hashed = await hashPin(passphrase) // We can reuse hashPin for simplicity or just use raw if it's high entropy
+
+    update({
+      syncDirectory: dir,
+      syncPassphraseHash: hashed,
+    }, 'Sync directory configured.')
+  }
+
+  const handleRunSync = async () => {
+    if (!prefs.syncDirectory) return
+    setSyncLoading(true)
+    try {
+      // In a real app we'd prompt for the passphrase or get it from a secure store
+      const passphrase = prompt('Enter your sync passphrase to proceed:')
+      if (!passphrase) {
+        setSyncLoading(false)
+        return
+      }
+
+      const syncedAt = await performEncryptedSync(prefs.syncDirectory, passphrase)
+      if (syncedAt) {
+        update({ lastSyncedAt: syncedAt }, 'Sync complete.')
+      }
+    } catch (e) {
+      toast.error('Sync failed. Check passphrase.')
+    } finally {
+      setSyncLoading(false)
     }
   }
 
@@ -218,6 +263,24 @@ export function SanctuarySettings() {
                 </h3>
 
                 <div className="flex flex-col gap-2">
+                  {isDesktop && (
+                    <Button
+                      variant="outline"
+                      onClick={() => void runHumanReadableExport()}
+                      className="w-full flex items-center justify-between p-4 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors text-left cursor-pointer h-auto"
+                    >
+                      <div>
+                        <div className="text-sm font-bold flex items-center gap-2 text-foreground">
+                          <FolderArchive className="w-4 h-4 text-primary" /> Export
+                          Human-Readable Archive
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-1 font-normal">
+                          Creates a structured folder with Markdown entries, media, and a local viewer.
+                        </div>
+                      </div>
+                    </Button>
+                  )}
+
                   <Button
                     variant="outline"
                     onClick={async () => {
@@ -240,12 +303,9 @@ export function SanctuarySettings() {
                     className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:bg-foreground/3 transition-colors text-left cursor-pointer h-auto"
                   >
                     <div>
-                      <div className="text-sm font-bold flex items-center gap-2 text-foreground">
-                        <Download className="w-4 h-4 text-primary" /> Export
-                        Markdown
-                      </div>
-                      <div className="text-[11px] text-muted-foreground mt-1 font-normal">
-                        Save all entries as a single Markdown file.
+                      <div className="text-sm font-bold flex items-center gap-2 text-foreground/80">
+                        <Download className="w-4 h-4 text-muted-foreground" /> Export
+                        Single Markdown
                       </div>
                     </div>
                   </Button>
@@ -277,17 +337,87 @@ export function SanctuarySettings() {
                     className="w-full flex items-center justify-between p-3 rounded-xl border border-border/50 hover:bg-foreground/3 transition-colors text-left cursor-pointer h-auto"
                   >
                     <div>
-                      <div className="text-sm font-bold flex items-center gap-2 text-foreground">
-                        <Download className="w-4 h-4 text-primary" /> Export
+                      <div className="text-sm font-bold flex items-center gap-2 text-foreground/80">
+                        <Download className="w-4 h-4 text-muted-foreground" /> Export
                         JSON Backup
-                      </div>
-                      <div className="text-[11px] text-muted-foreground mt-1 font-normal">
-                        Save a complete JSON backup of all entries and media.
                       </div>
                     </div>
                   </Button>
                 </div>
               </div>
+
+              {isDesktop && (
+                <div className="pt-4 border-t border-border/10 space-y-4">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground pb-2">
+                    Sync
+                  </h3>
+
+                  {!prefs.syncDirectory ? (
+                    <button
+                      onClick={handleSetupSync}
+                      className="w-full flex items-center justify-between p-4 rounded-xl border border-border/50 hover:bg-foreground/3 transition-colors text-left cursor-pointer"
+                    >
+                      <div>
+                        <div className="text-sm font-bold flex items-center gap-2">
+                          <Cloud className="w-4 h-4 text-primary" /> Setup Local
+                          Encrypted Sync
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-1">
+                          Select a folder (like Dropbox or iCloud) to keep your
+                          data synced across devices with E2E encryption.
+                        </div>
+                      </div>
+                    </button>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="p-3 rounded-xl border border-primary/20 bg-primary/5 flex items-center justify-between">
+                        <div className="min-w-0">
+                          <div className="text-sm font-bold flex items-center gap-2">
+                            <Cloud className="w-3.5 h-3.5 text-primary" /> Sync
+                            Active
+                          </div>
+                          <div className="text-[10px] text-muted-foreground truncate mt-0.5">
+                            {prefs.syncDirectory}
+                          </div>
+                          {prefs.lastSyncedAt && (
+                            <div className="text-[9px] text-primary/70 mt-1 uppercase font-bold">
+                              Last synced: {new Date(prefs.lastSyncedAt).toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-1">
+                          <IconButton
+                            tooltip="Run Sync Now"
+                            onClick={handleRunSync}
+                            disabled={syncLoading}
+                            className="p-1.5 rounded-lg hover:bg-primary/10 text-primary disabled:opacity-50"
+                          >
+                            <RefreshCw
+                              className={`w-4 h-4 ${syncLoading ? 'animate-spin' : ''}`}
+                            />
+                          </IconButton>
+                          <IconButton
+                            tooltip="Remove Sync"
+                            onClick={() =>
+                              update(
+                                {
+                                  syncDirectory: null,
+                                  syncPassphraseHash: null,
+                                  lastSyncedAt: null,
+                                },
+                                'Sync disabled.',
+                              )
+                            }
+                            className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive"
+                          >
+                            <XIcon className="w-4 h-4" />
+                          </IconButton>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="pt-4 border-t border-border/10 space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground pb-2">
@@ -509,8 +639,7 @@ export function SanctuarySettings() {
           onClose={() => setPinModalMode(null)}
           onSubmit={async (pin) => {
             if (pinModalMode === 'enable') {
-              const hashed = await hashPin(pin)
-              update({ privacyPin: hashed }, 'App Lock enabled.')
+              update({ privacyPin: pin }, 'App Lock enabled.')
             } else {
               const isValid = await verifyPin(pin, prefs.privacyPin || '')
               if (!isValid) {

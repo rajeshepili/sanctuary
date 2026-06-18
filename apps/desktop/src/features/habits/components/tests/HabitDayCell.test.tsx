@@ -22,20 +22,37 @@ describe('HabitDayCell', () => {
     expect(screen.getByText('1')).toBeInTheDocument()
   })
 
-  it('calls onToggle when clicked', () => {
+  it('opens the tier picker when clicked (not completed)', () => {
+    // Clicking a non-completed cell should open the tier picker, NOT immediately call onToggle
     wrap(<HabitDayCell {...defaultProps} />)
     fireEvent.click(screen.getByRole('button'))
-    expect(defaultProps.onToggle).toHaveBeenCalledWith('2024-01-01')
+    // Tier picker portal renders "How did it go?" label
+    expect(screen.getByText('How did it go?')).toBeInTheDocument()
   })
 
-  it('applies completed styles', () => {
+  it('calls onToggle with tier after selecting from picker', () => {
+    const onToggle = vi.fn()
+    wrap(<HabitDayCell {...defaultProps} onToggle={onToggle} />)
+    fireEvent.click(screen.getByRole('button'))
+    // Click the "Target" tier option
+    fireEvent.click(screen.getByText('Target'))
+    expect(onToggle).toHaveBeenCalledWith('2024-01-01', 'plus')
+  })
+
+  it('applies completed styles for plus tier', () => {
     wrap(<HabitDayCell {...defaultProps} isCompleted={true} tier="plus" />)
     expect(screen.getByRole('button')).toHaveClass('bg-primary')
   })
 
+  it('applies sky styles for mini tier', () => {
+    wrap(<HabitDayCell {...defaultProps} isCompleted={true} tier="mini" />)
+    // Mini tier uses sky-500 class
+    const button = screen.getByRole('button')
+    expect(button.className).toContain('bg-sky')
+  })
+
   it('shows the today indicator', () => {
     wrap(<HabitDayCell {...defaultProps} isToday={true} />)
-    // today cell gets a ring, not an aria-label indicator — verify button exists with today label
     expect(screen.getByRole('button')).toHaveAttribute(
       'aria-label',
       expect.stringContaining('Today'),
@@ -47,4 +64,3 @@ describe('HabitDayCell', () => {
     expect(screen.queryByRole('button')).toBeNull()
   })
 })
-

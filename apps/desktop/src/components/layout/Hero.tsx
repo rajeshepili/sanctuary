@@ -13,7 +13,7 @@ type Props = {
 export function Hero({ title, description, greeting, children }: Props) {
   return (
     <div className="w-full max-w-6xl mx-auto flex flex-col min-h-dvh px-6 pb-12 relative">
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden -z-10">
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none overflow-hidden -z-10">
         <motion.div
           animate={{
             scale: [1, 1.3, 1],

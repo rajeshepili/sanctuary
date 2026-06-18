@@ -75,11 +75,11 @@ function JournalEntriesPage() {
           list={list}
           editor={editor}
           onSelect={(id) => navigate({ search: { entryId: id, isCreating: undefined }, resetScroll: false })}
-          onCreateNew={() => navigate({ search: { isCreating: true, entryId: undefined } })}
-          onCancelCreate={() => navigate({ search: { isCreating: undefined } })}
+          onCreateNew={() => navigate({ search: { isCreating: true, entryId: undefined }, resetScroll: false })}
+          onCancelCreate={() => navigate({ search: { isCreating: undefined }, resetScroll: false })}
           onSaveNew={(id) => {
             clearDraft()
-            navigate({ search: { entryId: id, isCreating: undefined } })
+            navigate({ search: { entryId: id, isCreating: undefined }, resetScroll: false })
           }}
           onEditSave={() => {
             clearDraft()
@@ -115,7 +115,7 @@ function JournalEntriesPage() {
                 if (deleteId) {
                   deleteEntry.mutate(deleteId)
                   if (activeEntry?.id === deleteId) {
-                    navigate({ search: { entryId: undefined } })
+                    navigate({ search: { entryId: undefined }, resetScroll: false })
                   }
                   setDeleteId(null)
                 }

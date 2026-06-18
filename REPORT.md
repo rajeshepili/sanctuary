@@ -34,7 +34,7 @@ To maintain the "private and local-first" ethos while generating revenue, Sanctu
 - **Custom Typography:** Access to premium font sets beyond the standard system/Inter fonts.
 
 #### B. Advanced Productivity & Insights
-- **Advanced Metrics:** Deeper habit trends, mood correlation analysis, and "year in review" visualizations.
+- **Advanced Metrics:** Deeper habit trends and "year in review" visualizations.
 - **Export Formats:** One-click export to beautifully formatted PDF books, Markdown archives, or structured JSON.
 - **Habit Templates:** Expert-curated habit bundles (e.g., "The Morning Routine", "Deep Work Preparation").
 
@@ -42,9 +42,6 @@ To maintain the "private and local-first" ethos while generating revenue, Sanctu
 While Sanctuary is local-first, many users desire multi-device access.
 - **Encrypted Sync:** An E2EE (End-to-End Encrypted) synchronization service where the developer never has the keys. Users pay for the convenience of the encrypted relay and storage.
 - **Encrypted Backups:** Automatic daily backups to a secure cloud bucket.
-
-#### D. Local AI Intelligence
-- **On-Device Reflection:** Using Web-LLM or similar technologies to provide local, private summaries of the week or insights without sending data to a server. This could be a "Pro" feature due to its computational complexity.
 
 ---
 

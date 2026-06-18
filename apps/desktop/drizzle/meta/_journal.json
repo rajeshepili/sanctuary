@@ -57,6 +57,13 @@
       "when": 1781196721094,
       "tag": "0007_soft_mach_iv",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1781640739620,
+      "tag": "0008_powerful_luke_cage",
+      "breakpoints": true
     }
   ]
 }

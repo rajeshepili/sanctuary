@@ -2,11 +2,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { parseError } from '#/lib/error-parser'
 
 import type { HabitStatus } from '#/types'
-import type { CreateHabitInput } from './habits.schema'
+import type { CreateHabitInput, UpdateHabitInput } from './habits.schema'
 import { habitsCache } from './habits.cache'
 import { habitsKeys } from './habits.keys'
 import {
   createHabit as createHabitApi,
+  updateHabit as updateHabitApi,
   deleteHabit as deleteHabitApi,
   updateHabitStatus as updateHabitStatusApi,
   toggleHabitCompletion as toggleHabitCompletionApi,
@@ -19,6 +20,36 @@ export function useHabitsMutations() {
     mutationFn: (data: CreateHabitInput) => createHabitApi({ data }),
     onSuccess: (habit) => {
       habitsCache.insertHabit(queryClient, habit)
+    },
+    meta: {
+      errorHandler: (err: unknown) => parseError(err).message,
+    },
+  })
+
+  const updateHabit = useMutation({
+    mutationFn: (data: UpdateHabitInput) => updateHabitApi({ data }),
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: habitsKeys.all })
+      const previous = habitsCache.snapshot(queryClient)
+      // Optimistic update — merge new data into the cached habit
+      const currentHabits = queryClient.getQueryData<{ habits: unknown[] }>(habitsKeys.all)
+      if (currentHabits) {
+        const currentHabit = currentHabits.habits.find(
+          (h: unknown) => (h as { id: number }).id === data.id
+        )
+        if (currentHabit) {
+          habitsCache.patchHabit(queryClient, { ...(currentHabit as object), ...data } as Parameters<typeof habitsCache.patchHabit>[1])
+        }
+      }
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        habitsCache.restore(queryClient, context.previous)
+      }
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: habitsKeys.all })
     },
     meta: {
       errorHandler: (err: unknown) => parseError(err).message,
@@ -73,8 +104,15 @@ export function useHabitsMutations() {
   })
 
   const toggleCompletion = useMutation({
-    mutationFn: ({ habitId, date, tier }: { habitId: number; date: string; tier?: 'mini' | 'plus' | 'elite' }) =>
-      toggleHabitCompletionApi({ data: { habitId, date, tier } }),
+    mutationFn: ({
+      habitId,
+      date,
+      tier,
+    }: {
+      habitId: number
+      date: string
+      tier?: 'mini' | 'plus' | 'elite' | 'skipped'
+    }) => toggleHabitCompletionApi({ data: { habitId, date, tier } }),
     onMutate: async ({ habitId, date, tier }) => {
       await queryClient.cancelQueries({ queryKey: habitsKeys.all })
       const previous = habitsCache.snapshot(queryClient)
@@ -94,5 +132,5 @@ export function useHabitsMutations() {
     },
   })
 
-  return { createHabit, updateHabitStatus, deleteHabit, toggleCompletion }
+  return { createHabit, updateHabit, updateHabitStatus, deleteHabit, toggleCompletion }
 }

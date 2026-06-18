@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, session, net, globalShortcut, Tray, Menu, nativeImage } from 'electron'
+import { app, BrowserWindow, ipcMain, session, net, globalShortcut, Tray, Menu, nativeImage, dialog } from 'electron'
 import { join } from 'node:path'
 import { fork } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
@@ -134,6 +134,52 @@ function registerIpcHandlers() {
 
   ipcMain.handle('auto-update:check', async () => {
     await autoUpdater.checkForUpdatesAndNotify()
+  })
+
+  ipcMain.handle('dialog:select-directory', async () => {
+    if (!mainWindow) return null
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory', 'createDirectory'],
+      title: 'Select Export Destination',
+      buttonLabel: 'Export Here',
+    })
+    if (result.canceled) return null
+    return result.filePaths[0]
+  })
+
+  ipcMain.handle(
+    'fs:write-file-structure',
+    async (_event, { basePath, files }: { basePath: string; files: Array<{ path: string; content: string | Uint8Array }> }) => {
+      for (const file of files) {
+        const fullPath = join(basePath, file.path)
+        const dir = join(fullPath, '..')
+        await mkdir(dir, { recursive: true })
+        if (typeof file.content === 'string') {
+          await writeFile(fullPath, file.content, 'utf-8')
+        } else {
+          await writeFile(fullPath, Buffer.from(file.content))
+        }
+      }
+    },
+  )
+
+  ipcMain.handle('fs:list-files', async (_event, dirPath: string) => {
+    try {
+      const { readdir } = await import('node:fs/promises')
+      return await readdir(dirPath)
+    } catch {
+      return []
+    }
+  })
+
+  ipcMain.handle('fs:read-file-base64', async (_event, filePath: string) => {
+    try {
+      const { readFile } = await import('node:fs/promises')
+      const buffer = await readFile(filePath)
+      return buffer.toString('base64')
+    } catch {
+      return null
+    }
   })
 }
 

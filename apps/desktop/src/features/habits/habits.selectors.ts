@@ -20,11 +20,12 @@ export function buildCompletionMap(completions: HabitCompletion[]) {
 /**
  * Calculates the consistency percentage for a habit over the last `days` days.
  *
- * Formula:  Math.min(100, round(completedOnScheduledDays / scheduledDays * 100))
+ * Formula:  Math.min(100, round(completedOnScheduledDays / (scheduledDays - skippedDays) * 100))
  *
  * Key design decisions:
  * - Uses toLocalDateString() (date-fns based) to avoid UTC offset bugs.
  * - Only counts scheduled days in the denominator. Off-days do NOT penalise the user.
+ * - 'skipped' tier (forgiveness) removes the day from the scheduled denominator.
  * - If the user completes a habit on an unscheduled day, it contributes to the
  *   numerator as a bonus, which can push the score above 100 — capped at 100.
  * - If no days were scheduled (e.g. new habit or very short window), returns
@@ -38,25 +39,32 @@ export function calculateConsistency(
   const now = new Date()
   let completedCount = 0
   let scheduledCount = 0
+  let skippedCount = 0
 
   for (let i = 0; i < days; i++) {
     const d = new Date(now)
     d.setDate(d.getDate() - i)
-    // Use local timezone date string, NOT toISOString() which is UTC-based
-    // and can report the wrong calendar date for users in UTC+ or UTC- timezones.
     const dateStr = toLocalDateString(d)
 
-    if (isScheduledOnDate(d, habit.frequency, habit.daysOfWeek)) {
-      scheduledCount++
-      if (completions.has(dateStr)) completedCount++
+    const isScheduled = isScheduledOnDate(d, habit.frequency, habit.daysOfWeek)
+    const tier = completions.get(dateStr)
+
+    if (isScheduled) {
+      if (tier === 'skipped') {
+        skippedCount++
+      } else {
+        scheduledCount++
+        if (tier) completedCount++
+      }
     } else {
       // Bonus: completed on an unscheduled day — reward but don't penalise.
-      if (completions.has(dateStr)) completedCount++
+      if (tier && tier !== 'skipped') completedCount++
     }
   }
 
-  if (scheduledCount === 0) return completedCount > 0 ? 100 : 0
-  return Math.min(100, Math.round((completedCount / scheduledCount) * 100))
+  const effectiveScheduledCount = scheduledCount // skipped days are already excluded from scheduledCount
+  if (effectiveScheduledCount === 0) return completedCount > 0 ? 100 : 0
+  return Math.min(100, Math.round((completedCount / effectiveScheduledCount) * 100))
 }
 
 export function calculateIdentityVotes(completions: Map<string, string>) {

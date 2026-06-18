@@ -16,7 +16,7 @@ export const habitCategorySchema = z.enum([
 ])
 export const habitStatusSchema = z.enum(['active', 'resting'])
 
-export const habitTierSchema = z.enum(['mini', 'plus', 'elite'])
+export const habitTierSchema = z.enum(['mini', 'plus', 'elite', 'skipped'])
 
 export const createHabitSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -28,6 +28,20 @@ export const createHabitSchema = z.object({
   daysOfWeek: z.string().nullable().optional(),
   priority: habitPrioritySchema.default('medium'),
   category: habitCategorySchema.default('growth'),
+  intention: z.string().nullable().optional(),
+})
+
+export const updateHabitSchema = z.object({
+  id: z.number().int().positive(),
+  name: z.string().min(1, 'Name is required'),
+  identityLabel: z.string().nullable().optional(),
+  miniDesc: z.string().nullable().optional(),
+  plusDesc: z.string().nullable().optional(),
+  eliteDesc: z.string().nullable().optional(),
+  frequency: habitFrequencySchema,
+  daysOfWeek: z.string().nullable().optional(),
+  priority: habitPrioritySchema,
+  category: habitCategorySchema,
   intention: z.string().nullable().optional(),
 })
 
@@ -48,6 +62,7 @@ export const toggleCompletionSchema = z.object({
 })
 
 export type CreateHabitInput = z.infer<typeof createHabitSchema>
+export type UpdateHabitInput = z.infer<typeof updateHabitSchema>
 export type UpdateHabitStatusInput = z.infer<typeof updateHabitStatusSchema>
 export type DeleteHabitInput = z.infer<typeof deleteHabitSchema>
 export type ToggleCompletionInput = z.infer<typeof toggleCompletionSchema>
