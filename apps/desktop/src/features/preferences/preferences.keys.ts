@@ -1,3 +1,3 @@
 export const preferencesKeys = {
-  all: ['preferences'] as const,
-}
+  all: ['preferences'],
+} as const

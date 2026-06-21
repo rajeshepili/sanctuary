@@ -1,11 +1,17 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
-import { useSuspenseQuery, useQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { Sparkles, PenLine, Shuffle, BarChart3 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+} from '#/components/ui/empty'
 import { entriesQueryOptions } from '#/features/journal/journal.options'
-import { promptsQueryOptions } from '#/features/prompts/prompts.options'
 import { FocusSection } from '#/components/layout/FocusSection'
 import { Hero } from '#/components/layout/Hero'
 import { JournalEditor } from '#/features/journal/components/editor/JournalEditor'
@@ -25,29 +31,24 @@ export const Route = createLazyFileRoute('/__app/')({
 
 function DashboardPage() {
   const { data: entries } = useSuspenseQuery(entriesQueryOptions())
-  
-  // Non-blocking query for prompts - won't delay page transition
-  const { data: prompts } = useQuery(promptsQueryOptions())
-  
+
   const navigate = Route.useNavigate()
 
-  const randomPrompt = useMemo(() => {
-    if (!prompts || prompts.length === 0) return PAGE_DESCRIPTIONS.home
-    const randomIndex = Math.floor(Math.random() * prompts.length)
-    return prompts[randomIndex].text
-  }, [prompts])
+  const randomPrompt = PAGE_DESCRIPTIONS.home
 
   const personalizedGreeting = useMemo(() => {
-    const lastEntry = entries.filter(e => !e.deletedAt)[0]
-    if (!lastEntry) return "Welcome to your new Sanctuary."
-    
+    const lastEntry = entries.filter((e) => !e.deletedAt)[0]
+    if (!lastEntry) return 'Welcome to your new Sanctuary.'
+
     const lastDate = new Date(lastEntry.createdAt)
     const now = new Date()
     const diffTime = Math.abs(now.getTime() - lastDate.getTime())
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
 
-    if (diffDays === 0) return "Welcome back. Take a moment to reflect on your day."
-    if (diffDays === 1) return "Good to see you again. Ready for today's reflection?"
+    if (diffDays === 0)
+      return 'Welcome back. Take a moment to reflect on your day.'
+    if (diffDays === 1)
+      return "Good to see you again. Ready for today's reflection?"
     return `Welcome back. It's been ${diffDays} days—take a deep breath and settle in.`
   }, [entries])
 
@@ -56,8 +57,14 @@ function DashboardPage() {
     [entries],
   )
 
-  const journalConsistency = useMemo(() => computeJournalConsistency(entries), [entries])
-  const totalActive = useMemo(() => entries.filter((e) => !e.deletedAt).length, [entries])
+  const journalConsistency = useMemo(
+    () => computeJournalConsistency(entries),
+    [entries],
+  )
+  const totalActive = useMemo(
+    () => entries.filter((e) => !e.deletedAt).length,
+    [entries],
+  )
 
   const editor = useEntryEditor()
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null)
@@ -94,13 +101,20 @@ function DashboardPage() {
     }
   }, [pendingPrompt, editor])
 
-  const handleSave = async () => {
+  const handleDismissPrompt = useCallback(() => {
+    import('#/lib/session-store').then(({ sessionStore }) => {
+      sessionStore.consumePendingPrompt()
+    })
+    setPendingPrompt(null)
+  }, [])
+
+  const handleSave = useCallback(async () => {
     const entry = await editor.save()
     if (entry) {
       clearDraft()
       navigate({ to: '/journal', search: { entryId: entry.id } })
     }
-  }
+  }, [editor, clearDraft, navigate])
 
   return (
     <>
@@ -134,14 +148,7 @@ function DashboardPage() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => {
-                          import('#/lib/session-store').then(
-                            ({ sessionStore }) => {
-                              sessionStore.consumePendingPrompt()
-                            },
-                          )
-                          setPendingPrompt(null)
-                        }}
+                        onClick={handleDismissPrompt}
                       >
                         Dismiss
                       </Button>
@@ -154,6 +161,8 @@ function DashboardPage() {
             <JournalEditor
               value={editor.content}
               setValue={editor.setContent}
+              mood={editor.mood}
+              setMood={editor.setMood}
               onSave={handleSave}
               pendingMedia={editor.pendingMedia}
               onAddMedia={editor.addMedia}
@@ -161,12 +170,18 @@ function DashboardPage() {
               draftStatus={draftStatus}
               draftError={draftError}
               retryDraftSave={retryDraftSave}
+              isSaving={editor.isSaving}
+              isSaveDisabled={editor.isSaveDisabled}
               copyDraft={() => {
                 navigator.clipboard.writeText(editor.content)
               }}
             />
 
-            <FeatureErrorBoundary title="Recent Reflections" compact resetKeys={[entries]}>
+            <FeatureErrorBoundary
+              title="Recent Reflections"
+              compact
+              resetKeys={[entries]}
+            >
               <div className="pt-8">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-bold flex items-center gap-2">
@@ -187,7 +202,10 @@ function DashboardPage() {
                       key={entry.id}
                       className="p-4 hover:bg-foreground/5 cursor-pointer transition-colors border-border/40"
                       onClick={() =>
-                        navigate({ to: '/journal', search: { entryId: entry.id } })
+                        navigate({
+                          to: '/journal',
+                          search: { entryId: entry.id },
+                        })
                       }
                     >
                       <div className="flex items-center justify-between mb-2">
@@ -203,12 +221,17 @@ function DashboardPage() {
                   ))}
 
                   {activeEntries.length === 0 && (
-                    <div className="py-12 text-center border border-dashed border-border/40 rounded-2xl bg-background/20">
-                      <PenLine className="w-8 h-8 mx-auto mb-3 opacity-20" />
-                      <p className="text-sm text-muted-foreground">
-                        No reflections yet. Start your first one above.
-                      </p>
-                    </div>
+                    <Empty className="py-12 border border-dashed border-border/40 rounded-2xl bg-background/20 px-4">
+                      <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                          <PenLine />
+                        </EmptyMedia>
+                        <EmptyTitle>No reflections yet</EmptyTitle>
+                        <EmptyDescription>
+                          Start your first one above.
+                        </EmptyDescription>
+                      </EmptyHeader>
+                    </Empty>
                   )}
                 </div>
               </div>
@@ -216,7 +239,11 @@ function DashboardPage() {
           </div>
 
           <div className="space-y-6">
-            <FeatureErrorBoundary title="Sanctuary Stats" compact resetKeys={[entries]}>
+            <FeatureErrorBoundary
+              title="Sanctuary Stats"
+              compact
+              resetKeys={[entries]}
+            >
               <Card className="p-6 border-border/60 bg-card/50 backdrop-blur-xl rounded-2xl">
                 <div className="flex items-center gap-2 mb-4">
                   <BarChart3 className="w-4 h-4 text-muted-foreground" />
@@ -235,9 +262,7 @@ function DashboardPage() {
                     <span className="text-sm text-muted-foreground">
                       Consistency
                     </span>
-                    <span className="font-bold">
-                      {journalConsistency}%
-                    </span>
+                    <span className="font-bold">{journalConsistency}%</span>
                   </div>
                 </div>
               </Card>

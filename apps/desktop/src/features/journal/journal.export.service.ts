@@ -31,7 +31,8 @@ export async function runHumanReadableExport() {
       const fileName = `entries/${dateStr}_${timeStr}_${entry.id}.md`
 
       const parsedTags = parseCommaList(entry.tags)
-      const tags = parsedTags.length > 0 ? parsedTags.map((t) => `"${t}"`).join(', ') : ''
+      const tags =
+        parsedTags.length > 0 ? parsedTags.map((t) => `"${t}"`).join(', ') : ''
 
       const frontmatter = [
         '---',
@@ -61,10 +62,10 @@ export async function runHumanReadableExport() {
 
     for (const habit of data.habits) {
       habitMd += `## ${habit.name}\n`
-      habitMd += `- Category: ${habit.category}\n`
+      habitMd += `- Category ID: ${habit.categoryId ?? 'Uncategorized'}\n`
       habitMd += `- Frequency: ${habit.frequency}\n`
       habitMd += `- Total Completions: ${habit.completions.length}\n\n`
-      
+
       if (habit.completions.length > 0) {
         habitMd += '### Recent Completions\n'
         const recent = habit.completions.slice(0, 20)

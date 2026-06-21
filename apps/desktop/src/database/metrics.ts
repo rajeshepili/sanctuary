@@ -45,11 +45,13 @@ export function getMetricsSummary() {
 
 export function logMetricsSummary() {
   const summary = getMetricsSummary()
-  
+
   if (summary.total === 0) return
 
-  logger.info(`Database Summary: ${summary.total} queries, avg ${summary.avgDuration}ms, ${summary.slowCount} slow`)
-  
+  logger.info(
+    `Database Summary: ${summary.total} queries, avg ${summary.avgDuration}ms, ${summary.slowCount} slow`,
+  )
+
   if (summary.slowQueries.length > 0) {
     logger.warn('Slow Queries Detected', summary.slowQueries)
   }

@@ -1,7 +1,6 @@
 import type { LibSQLDatabase } from 'drizzle-orm/libsql'
 import * as schema from '#/database/schema'
 import {
-  createCustomPromptFixture,
   createEntryFixture,
   createHabitCompletionFixture,
   createHabitFixture,
@@ -75,13 +74,3 @@ export async function seedPreferences(
   return requireRow(prefs, 'user preferences')
 }
 
-export async function seedPrompt(
-  db: TestDb,
-  overrides?: Parameters<typeof createCustomPromptFixture>[0],
-) {
-  const [prompt] = await db
-    .insert(schema.customPrompts)
-    .values(createCustomPromptFixture(overrides))
-    .returning()
-  return requireRow(prompt, 'custom prompt')
-}

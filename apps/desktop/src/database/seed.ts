@@ -16,20 +16,34 @@
  */
 
 import type { Database } from '#/database'
-import { userPreferences } from './schema'
+import { userPreferences, habitCategories } from './schema'
 
 export async function seedDatabase(db: Database): Promise<void> {
+  // 1. Preferences Singleton
   await db
     .insert(userPreferences)
     .values({
       id: 1,
-      firstName: null,
+      name: null,
       onboardedAt: null,
       disclaimerAgreed: false,
-      showPromptInspire: true,
-      showBreathingSpace: true,
-      showHabits: true,
-      showDailyIntention: true,
     })
     .onConflictDoNothing({ target: userPreferences.id })
+
+  // 2. Default Habit Categories
+  const defaultCategories = [
+    { id: 1, name: 'Health' },
+    { id: 2, name: 'Productivity' },
+    { id: 3, name: 'Mindfulness' },
+    { id: 4, name: 'Learning' },
+    { id: 5, name: 'Creativity' },
+    { id: 6, name: 'Financial' },
+  ]
+
+  for (const cat of defaultCategories) {
+    await db
+      .insert(habitCategories)
+      .values(cat)
+      .onConflictDoNothing({ target: habitCategories.id })
+  }
 }

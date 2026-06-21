@@ -12,6 +12,7 @@ describe('journalCache', () => {
       id: 1,
       content: 'Pinned entry',
       isPinned: true,
+      mood: null,
       createdAt: new Date('2024-01-02'),
       updatedAt: new Date('2024-01-02'),
       deletedAt: null,
@@ -22,6 +23,7 @@ describe('journalCache', () => {
       id: 2,
       content: 'Newer unpinned',
       isPinned: false,
+      mood: null,
       createdAt: new Date('2024-01-03'),
       updatedAt: new Date('2024-01-03'),
       deletedAt: null,
@@ -32,6 +34,7 @@ describe('journalCache', () => {
       id: 3,
       content: 'Older unpinned',
       isPinned: false,
+      mood: null,
       createdAt: new Date('2024-01-01'),
       updatedAt: new Date('2024-01-01'),
       deletedAt: null,
@@ -62,6 +65,7 @@ describe('journalCache', () => {
       id: 4,
       content: 'Very new',
       isPinned: false,
+      mood: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       deletedAt: null,
@@ -87,17 +91,19 @@ describe('journalCache', () => {
   it('togglePin() re-sorts entries correctly (pinned first, then by date)', () => {
     // We need to test the logic inside the setQueryData updater
     let capturedFlatUpdater: any
-    vi.spyOn(queryClient, 'setQueryData').mockImplementation((key: any, updater: any) => {
-      if (JSON.stringify(key) === JSON.stringify(journalKeys.entries)) {
-        capturedFlatUpdater = updater
-      }
-      return undefined
-    })
+    vi.spyOn(queryClient, 'setQueryData').mockImplementation(
+      (key: any, updater: any) => {
+        if (JSON.stringify(key) === JSON.stringify(journalKeys.entries)) {
+          capturedFlatUpdater = updater
+        }
+        return undefined
+      },
+    )
 
     journalCache.togglePin(queryClient, 2) // Pin the newer unpinned entry (id: 2)
 
     const updated = capturedFlatUpdater(mockEntries)
-    
+
     expect(updated[0].id).toBe(2) // Newer pinned
     expect(updated[1].id).toBe(1) // Older pinned
     expect(updated[2].id).toBe(3) // Unpinned
@@ -106,12 +112,14 @@ describe('journalCache', () => {
 
   it('remove() filters entry from cache', () => {
     let capturedFlatUpdater: any
-    vi.spyOn(queryClient, 'setQueryData').mockImplementation((key: any, updater: any) => {
-      if (JSON.stringify(key) === JSON.stringify(journalKeys.entries)) {
-        capturedFlatUpdater = updater
-      }
-      return undefined
-    })
+    vi.spyOn(queryClient, 'setQueryData').mockImplementation(
+      (key: any, updater: any) => {
+        if (JSON.stringify(key) === JSON.stringify(journalKeys.entries)) {
+          capturedFlatUpdater = updater
+        }
+        return undefined
+      },
+    )
 
     journalCache.remove(queryClient, 1)
 

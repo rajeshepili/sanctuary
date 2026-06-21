@@ -8,6 +8,7 @@ export const TEST_SCHEMA_STATEMENTS = [
       content TEXT NOT NULL,
       tags TEXT,
       isPinned INTEGER DEFAULT 0 NOT NULL,
+      mood TEXT,
       created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
       updated_at INTEGER DEFAULT (unixepoch()) NOT NULL,
       deleted_at INTEGER
@@ -22,6 +23,10 @@ export const TEST_SCHEMA_STATEMENTS = [
       created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
       FOREIGN KEY (entry_id) REFERENCES journal_entries(id) ON DELETE CASCADE
     )`,
+  `CREATE TABLE habit_categories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+      name TEXT NOT NULL
+  )`,
   `CREATE TABLE habits (
       id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
       name TEXT NOT NULL,
@@ -29,14 +34,16 @@ export const TEST_SCHEMA_STATEMENTS = [
       mini_desc TEXT,
       plus_desc TEXT,
       elite_desc TEXT,
-      frequency TEXT DEFAULT 'every_day' NOT NULL,
+      frequency TEXT DEFAULT 'daily' NOT NULL,
+      interval INTEGER DEFAULT 1 NOT NULL,
       days_of_week TEXT,
       priority TEXT DEFAULT 'medium' NOT NULL,
-      category TEXT DEFAULT 'growth' NOT NULL,
+      category_id INTEGER,
       status TEXT DEFAULT 'active' NOT NULL,
       rest_until INTEGER,
       intention TEXT,
-      created_at INTEGER DEFAULT (unixepoch()) NOT NULL
+      created_at INTEGER DEFAULT (unixepoch()) NOT NULL,
+      FOREIGN KEY (category_id) REFERENCES habit_categories(id) ON DELETE SET NULL
     )`,
   `CREATE TABLE habit_completions (
       id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -47,22 +54,16 @@ export const TEST_SCHEMA_STATEMENTS = [
     )`,
   `CREATE TABLE user_preferences (
       id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-      first_name TEXT,
+      name TEXT,
       onboarded_at INTEGER,
       disclaimerAgreed INTEGER DEFAULT 0 NOT NULL,
-      showPromptInspire INTEGER DEFAULT 1 NOT NULL,
-      showBreathingSpace INTEGER DEFAULT 1 NOT NULL,
-      showHabits INTEGER DEFAULT 1 NOT NULL,
-      showDailyIntention INTEGER DEFAULT 1 NOT NULL,
       privacy_pin TEXT,
       latitude REAL,
       longitude REAL,
-      location_label TEXT
-    )`,
-  `CREATE TABLE custom_prompts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-      text TEXT NOT NULL,
-      created_at INTEGER DEFAULT (unixepoch()) NOT NULL
+      location_label TEXT,
+      sync_directory TEXT,
+      sync_passphrase_hash TEXT,
+      last_synced_at INTEGER
     )`,
   `CREATE INDEX IF NOT EXISTS idx_journal_entries_created_at ON journal_entries(created_at)`,
   `CREATE INDEX IF NOT EXISTS idx_journal_entries_deleted_at ON journal_entries(deleted_at)`,

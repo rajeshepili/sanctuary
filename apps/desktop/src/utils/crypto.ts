@@ -20,7 +20,7 @@ export async function hashPin(pin: string, salt?: string): Promise<string> {
   const hashBuffer = await crypto.subtle.digest('SHA-256', data)
   const hashArray = Array.from(new Uint8Array(hashBuffer))
   const hash = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
-  
+
   return `${finalSalt}$${hash}`
 }
 
@@ -38,7 +38,7 @@ export async function verifyPin(pin: string, stored: string): Promise<boolean> {
     const legacyHash = Array.from(new Uint8Array(hashBuffer))
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('')
-    
+
     return legacyHash === stored || pin === stored
   }
 
@@ -50,7 +50,10 @@ export async function verifyPin(pin: string, stored: string): Promise<boolean> {
 /**
  * Derives a CryptoKey from a passphrase using PBKDF2.
  */
-async function deriveKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
+async function deriveKey(
+  passphrase: string,
+  salt: Uint8Array,
+): Promise<CryptoKey> {
   const encoder = new TextEncoder()
   const passphraseKey = await crypto.subtle.importKey(
     'raw',
@@ -78,7 +81,10 @@ async function deriveKey(passphrase: string, salt: Uint8Array): Promise<CryptoKe
  * Encrypts data using AES-GCM and a passphrase.
  * Returns a base64 string containing salt + iv + ciphertext.
  */
-export async function encryptData(data: string, passphrase: string): Promise<string> {
+export async function encryptData(
+  data: string,
+  passphrase: string,
+): Promise<string> {
   const salt = crypto.getRandomValues(new Uint8Array(16))
   const iv = crypto.getRandomValues(new Uint8Array(12))
   const key = await deriveKey(passphrase, salt)
@@ -89,7 +95,9 @@ export async function encryptData(data: string, passphrase: string): Promise<str
     encoder.encode(data),
   )
 
-  const combined = new Uint8Array(salt.length + iv.length + encrypted.byteLength)
+  const combined = new Uint8Array(
+    salt.length + iv.length + encrypted.byteLength,
+  )
   combined.set(salt, 0)
   combined.set(iv, salt.length)
   combined.set(new Uint8Array(encrypted), salt.length + iv.length)
@@ -100,7 +108,10 @@ export async function encryptData(data: string, passphrase: string): Promise<str
 /**
  * Decrypts data using AES-GCM and a passphrase.
  */
-export async function decryptData(encryptedBase64: string, passphrase: string): Promise<string> {
+export async function decryptData(
+  encryptedBase64: string,
+  passphrase: string,
+): Promise<string> {
   const combined = new Uint8Array(
     atob(encryptedBase64)
       .split('')

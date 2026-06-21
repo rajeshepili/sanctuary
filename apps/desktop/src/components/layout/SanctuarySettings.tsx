@@ -26,7 +26,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '#/components/ui/drawer'
-import type { UserPreferences } from '#/types'
+import { CategoryManager } from '#/features/habits/components/CategoryManager'
 import {
   exportMarkdown,
   exportAllData,
@@ -97,9 +97,6 @@ export function SanctuarySettings() {
       onSuccess: () => {
         if (successMessage) toast.success(successMessage)
       },
-      onError: (err) => {
-        toast.error(err instanceof Error ? err.message : 'Failed to save settings.')
-      },
     })
   }
 
@@ -119,7 +116,9 @@ export function SanctuarySettings() {
         setLocLoading(false)
       },
       () => {
-        toast.error('Location access denied. Scenes use your local timezone instead.')
+        toast.error(
+          'Location access denied. Scenes use your local timezone instead.',
+        )
         setLocLoading(false)
       },
       { timeout: 8000 },
@@ -160,10 +159,13 @@ export function SanctuarySettings() {
 
     const hashed = await hashPin(passphrase) // We can reuse hashPin for simplicity or just use raw if it's high entropy
 
-    update({
-      syncDirectory: dir,
-      syncPassphraseHash: hashed,
-    }, 'Sync directory configured.')
+    update(
+      {
+        syncDirectory: dir,
+        syncPassphraseHash: hashed,
+      },
+      'Sync directory configured.',
+    )
   }
 
   const handleRunSync = async () => {
@@ -177,7 +179,10 @@ export function SanctuarySettings() {
         return
       }
 
-      const syncedAt = await performEncryptedSync(prefs.syncDirectory, passphrase)
+      const syncedAt = await performEncryptedSync(
+        prefs.syncDirectory,
+        passphrase,
+      )
       if (syncedAt) {
         update({ lastSyncedAt: syncedAt }, 'Sync complete.')
       }
@@ -187,33 +192,6 @@ export function SanctuarySettings() {
       setSyncLoading(false)
     }
   }
-
-  const toggles: Array<{
-    label: string
-    description: string
-    key: keyof UserPreferences
-  }> = [
-    {
-      label: 'Daily Intention Banner',
-      description: 'Show the daily intention banner in the hero section.',
-      key: 'showDailyIntention',
-    },
-    {
-      label: 'Prompt Inspiration',
-      description: 'Show a rotating writing prompt above the journal editor.',
-      key: 'showPromptInspire',
-    },
-    {
-      label: 'Habits Tracker',
-      description: 'Show the habits sidebar on the journal page.',
-      key: 'showHabits',
-    },
-    {
-      label: 'Breathing Space',
-      description: 'Show the mindful breathing space widget.',
-      key: 'showBreathingSpace',
-    },
-  ]
 
   return (
     <>
@@ -240,21 +218,11 @@ export function SanctuarySettings() {
                 </DrawerDescription>
               </DrawerHeader>
 
-              <div className="space-y-4">
+              <div className="pt-4 border-t border-border/10 space-y-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground pb-2">
-                  Dashboard
+                  Habit Categories
                 </h3>
-                <div className="space-y-3">
-                  {toggles.map(({ label, description, key }) => (
-                    <ToggleRow
-                      key={key}
-                      label={label}
-                      description={description}
-                      checked={!!prefs[key]}
-                      onChange={(val) => update({ [key]: val })}
-                    />
-                  ))}
-                </div>
+                <CategoryManager />
               </div>
 
               <div className="pt-4 border-t border-border/10 space-y-4">
@@ -271,11 +239,12 @@ export function SanctuarySettings() {
                     >
                       <div>
                         <div className="text-sm font-bold flex items-center gap-2 text-foreground">
-                          <FolderArchive className="w-4 h-4 text-primary" /> Export
-                          Human-Readable Archive
+                          <FolderArchive className="w-4 h-4 text-primary" />{' '}
+                          Export Human-Readable Archive
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-1 font-normal">
-                          Creates a structured folder with Markdown entries, media, and a local viewer.
+                          Creates a structured folder with Markdown entries,
+                          media, and a local viewer.
                         </div>
                       </div>
                     </Button>
@@ -304,8 +273,8 @@ export function SanctuarySettings() {
                   >
                     <div>
                       <div className="text-sm font-bold flex items-center gap-2 text-foreground/80">
-                        <Download className="w-4 h-4 text-muted-foreground" /> Export
-                        Single Markdown
+                        <Download className="w-4 h-4 text-muted-foreground" />{' '}
+                        Export Single Markdown
                       </div>
                     </div>
                   </Button>
@@ -338,8 +307,8 @@ export function SanctuarySettings() {
                   >
                     <div>
                       <div className="text-sm font-bold flex items-center gap-2 text-foreground/80">
-                        <Download className="w-4 h-4 text-muted-foreground" /> Export
-                        JSON Backup
+                        <Download className="w-4 h-4 text-muted-foreground" />{' '}
+                        Export JSON Backup
                       </div>
                     </div>
                   </Button>
@@ -381,7 +350,8 @@ export function SanctuarySettings() {
                           </div>
                           {prefs.lastSyncedAt && (
                             <div className="text-[9px] text-primary/70 mt-1 uppercase font-bold">
-                              Last synced: {new Date(prefs.lastSyncedAt).toLocaleString()}
+                              Last synced:{' '}
+                              {new Date(prefs.lastSyncedAt).toLocaleString()}
                             </div>
                           )}
                         </div>
@@ -456,7 +426,8 @@ export function SanctuarySettings() {
                             `${prefs.latitude.toFixed(2)}°, ${prefs.longitude.toFixed(2)}°`}
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
-                          Saved locally. Coordinates are never sent over the network.
+                          Saved locally. Coordinates are never sent over the
+                          network.
                         </div>
                       </div>
                     </div>
@@ -475,7 +446,11 @@ export function SanctuarySettings() {
                         tooltip="Clear location"
                         onClick={() =>
                           update(
-                            { latitude: null, longitude: null, locationLabel: null },
+                            {
+                              latitude: null,
+                              longitude: null,
+                              locationLabel: null,
+                            },
                             'Location cleared.',
                           )
                         }
@@ -499,7 +474,8 @@ export function SanctuarySettings() {
                           : 'Enable Location-Aware Scenes'}
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-1">
-                        Uses the OS location API only — no internet lookup. Falls back to timezone if denied.
+                        Uses the OS location API only — no internet lookup.
+                        Falls back to timezone if denied.
                       </div>
                     </div>
                   </button>
@@ -596,9 +572,7 @@ export function SanctuarySettings() {
                   <ShieldAlert className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
 
                   <div className="text-xs flex-1">
-                    <div className="font-bold">
-                      Privacy & Disclaimer
-                    </div>
+                    <div className="font-bold">Privacy & Disclaimer</div>
                     <p className="opacity-90 mt-1">
                       All data is stored locally on your device. This is not a
                       substitute for professional mental health care.

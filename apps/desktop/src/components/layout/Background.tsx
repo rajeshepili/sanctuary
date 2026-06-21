@@ -22,7 +22,12 @@ export function Background({ mood }: Props) {
   }, [])
 
   if (!shouldRender) {
-    return <div className="fixed inset-0 bg-background pointer-events-none z-0" aria-hidden />
+    return (
+      <div
+        className="fixed inset-0 bg-background pointer-events-none z-0"
+        aria-hidden
+      />
+    )
   }
 
   return (

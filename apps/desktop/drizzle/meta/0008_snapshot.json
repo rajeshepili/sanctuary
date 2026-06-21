@@ -93,9 +93,7 @@
       "indexes": {
         "entry_id_idx": {
           "name": "entry_id_idx",
-          "columns": [
-            "entry_id"
-          ],
+          "columns": ["entry_id"],
           "isUnique": false
         }
       },
@@ -104,12 +102,8 @@
           "name": "entry_media_entry_id_journal_entries_id_fk",
           "tableFrom": "entry_media",
           "tableTo": "journal_entries",
-          "columnsFrom": [
-            "entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["entry_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -154,17 +148,12 @@
       "indexes": {
         "completed_at_idx": {
           "name": "completed_at_idx",
-          "columns": [
-            "completed_at"
-          ],
+          "columns": ["completed_at"],
           "isUnique": false
         },
         "habit_completions_habit_id_completed_at_unique": {
           "name": "habit_completions_habit_id_completed_at_unique",
-          "columns": [
-            "habit_id",
-            "completed_at"
-          ],
+          "columns": ["habit_id", "completed_at"],
           "isUnique": true
         }
       },
@@ -173,12 +162,8 @@
           "name": "habit_completions_habit_id_habits_id_fk",
           "tableFrom": "habit_completions",
           "tableTo": "habits",
-          "columnsFrom": [
-            "habit_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["habit_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -359,23 +344,17 @@
       "indexes": {
         "deleted_at_idx": {
           "name": "deleted_at_idx",
-          "columns": [
-            "deleted_at"
-          ],
+          "columns": ["deleted_at"],
           "isUnique": false
         },
         "pinned_idx": {
           "name": "pinned_idx",
-          "columns": [
-            "isPinned"
-          ],
+          "columns": ["isPinned"],
           "isUnique": false
         },
         "created_at_idx": {
           "name": "created_at_idx",
-          "columns": [
-            "created_at"
-          ],
+          "columns": ["created_at"],
           "isUnique": false
         }
       },

@@ -84,7 +84,12 @@ export const habitsCache = {
           )
         }
       } else {
-        completions.push({ id: -Date.now(), habitId, completedAt: date, tier: tier ?? 'plus' })
+        completions.push({
+          id: -Date.now(),
+          habitId,
+          completedAt: date,
+          tier: tier ?? 'plus',
+        })
       }
       return { ...old, completions }
     })

@@ -16,7 +16,10 @@ export function injectPromptIntoContent(
  * Computes journaling consistency (%) over the last 30 days.
  * Skips soft-deleted entries.
  */
-export function computeJournalConsistency(entries: Entry[], daysWindow: number = CONSISTENCY_WINDOW_DAYS): number {
+export function computeJournalConsistency(
+  entries: Entry[],
+  daysWindow: number = CONSISTENCY_WINDOW_DAYS,
+): number {
   if (entries.length === 0) return 0
 
   const completionDays = new Set(

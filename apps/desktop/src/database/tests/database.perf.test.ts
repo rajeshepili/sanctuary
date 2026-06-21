@@ -67,7 +67,7 @@ describe('Database Performance', () => {
       for (let i = 0; i < 20; i++) {
         const result = await testDb.insert(schema.habits).values({
           name: `Habit ${i}`,
-          frequency: 'every_day',
+          frequency: 'daily',
           status: 'active',
           createdAt: new Date(),
         })
@@ -158,7 +158,7 @@ describe('Database Performance', () => {
         await testDb.insert(schema.habits).values({
           name: `Habit ${i}`,
           status: i % 2 === 0 ? 'active' : 'resting',
-          frequency: 'every_day',
+          frequency: 'daily',
           createdAt: new Date(),
         })
       }
@@ -252,7 +252,7 @@ describe('Database Performance', () => {
     it('should maintain habit-completion relationships', async () => {
       const habitResult = await testDb.insert(schema.habits).values({
         name: 'Test habit',
-        frequency: 'every_day',
+        frequency: 'daily',
         status: 'active',
         createdAt: new Date(),
       })

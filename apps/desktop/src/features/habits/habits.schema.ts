@@ -1,19 +1,12 @@
 import z from 'zod'
 
 export const habitFrequencySchema = z.enum([
-  'every_day',
-  'weekdays',
-  'weekends',
+  'daily',
+  'weekly',
+  'monthly',
   'custom',
 ])
-export const habitPrioritySchema = z.enum(['easy', 'medium', 'hard'])
-export const habitCategorySchema = z.enum([
-  'mind',
-  'body',
-  'connection',
-  'rest',
-  'growth',
-])
+export const habitPrioritySchema = z.enum(['low', 'medium', 'high'])
 export const habitStatusSchema = z.enum(['active', 'resting'])
 
 export const habitTierSchema = z.enum(['mini', 'plus', 'elite', 'skipped'])
@@ -24,10 +17,11 @@ export const createHabitSchema = z.object({
   miniDesc: z.string().nullable().optional(),
   plusDesc: z.string().nullable().optional(),
   eliteDesc: z.string().nullable().optional(),
-  frequency: habitFrequencySchema.default('every_day'),
-  daysOfWeek: z.string().nullable().optional(),
+  frequency: habitFrequencySchema.default('daily'),
+  interval: z.number().int().min(1).default(1),
+  daysOfWeek: z.array(z.number()).nullable().optional(),
   priority: habitPrioritySchema.default('medium'),
-  category: habitCategorySchema.default('growth'),
+  categoryId: z.number().int().positive().nullable().optional(),
   intention: z.string().nullable().optional(),
 })
 
@@ -39,9 +33,10 @@ export const updateHabitSchema = z.object({
   plusDesc: z.string().nullable().optional(),
   eliteDesc: z.string().nullable().optional(),
   frequency: habitFrequencySchema,
-  daysOfWeek: z.string().nullable().optional(),
+  interval: z.number().int().min(1),
+  daysOfWeek: z.array(z.number()).nullable().optional(),
   priority: habitPrioritySchema,
-  category: habitCategorySchema,
+  categoryId: z.number().int().positive().nullable().optional(),
   intention: z.string().nullable().optional(),
 })
 
@@ -61,7 +56,7 @@ export const toggleCompletionSchema = z.object({
   tier: habitTierSchema.optional(),
 })
 
-export type CreateHabitInput = z.infer<typeof createHabitSchema>
+export type CreateHabitInput = z.input<typeof createHabitSchema>
 export type UpdateHabitInput = z.infer<typeof updateHabitSchema>
 export type UpdateHabitStatusInput = z.infer<typeof updateHabitStatusSchema>
 export type DeleteHabitInput = z.infer<typeof deleteHabitSchema>

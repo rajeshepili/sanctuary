@@ -17,9 +17,12 @@ export function SanctuaryDevPanel() {
 
   const handleMoodChange = (mood: ThemeMood | null) => {
     setForcedMood(mood)
-    toast.info(mood ? `Theme forced to: ${mood}` : 'Theme reset to automatic.', {
-      duration: 1500,
-    })
+    toast.info(
+      mood ? `Theme forced to: ${mood}` : 'Theme reset to automatic.',
+      {
+        duration: 1500,
+      },
+    )
   }
 
   return (

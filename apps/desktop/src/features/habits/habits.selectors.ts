@@ -37,21 +37,27 @@ export function calculateConsistency(
   days: number = CONSISTENCY_WINDOW_DAYS,
 ) {
   const now = new Date()
+  const createdAt = habit.createdAt instanceof Date ? habit.createdAt : new Date(habit.createdAt)
   let completedCount = 0
   let scheduledCount = 0
-  let skippedCount = 0
 
   for (let i = 0; i < days; i++) {
     const d = new Date(now)
     d.setDate(d.getDate() - i)
     const dateStr = toLocalDateString(d)
 
-    const isScheduled = isScheduledOnDate(d, habit.frequency, habit.daysOfWeek)
+    const isScheduled = isScheduledOnDate(
+      d,
+      habit.frequency,
+      habit.interval,
+      habit.daysOfWeek,
+      createdAt,
+    )
     const tier = completions.get(dateStr)
 
     if (isScheduled) {
       if (tier === 'skipped') {
-        skippedCount++
+        // skipped days don't count for or against
       } else {
         scheduledCount++
         if (tier) completedCount++
@@ -62,9 +68,11 @@ export function calculateConsistency(
     }
   }
 
-  const effectiveScheduledCount = scheduledCount // skipped days are already excluded from scheduledCount
-  if (effectiveScheduledCount === 0) return completedCount > 0 ? 100 : 0
-  return Math.min(100, Math.round((completedCount / effectiveScheduledCount) * 100))
+  if (scheduledCount === 0) return completedCount > 0 ? 100 : 0
+  return Math.min(
+    100,
+    Math.round((completedCount / scheduledCount) * 100),
+  )
 }
 
 export function calculateIdentityVotes(completions: Map<string, string>) {
@@ -81,14 +89,21 @@ export function calculateIdentityVotes(completions: Map<string, string>) {
 export function calculateMissedYesterday(
   habit: Habit,
   completions: Map<string, string>,
-  todayStr: string
+  todayStr: string,
 ) {
   const d = new Date()
   d.setDate(d.getDate() - 1)
   const yesterdayStr = toLocalDateString(d)
+  const createdAt = habit.createdAt instanceof Date ? habit.createdAt : new Date(habit.createdAt)
 
   return (
-    isScheduledOnDate(d, habit.frequency, habit.daysOfWeek) &&
+    isScheduledOnDate(
+      d,
+      habit.frequency,
+      habit.interval,
+      habit.daysOfWeek,
+      createdAt,
+    ) &&
     !completions.has(yesterdayStr) &&
     !completions.has(todayStr)
   )

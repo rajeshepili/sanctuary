@@ -54,7 +54,10 @@ export async function getSharedTestDatabase(): Promise<
     return sharedTestDb
   }
 
-  const dbPath = path.join(os.tmpdir(), `sanctuary-test-${Math.random().toString(36).slice(2)}.db`)
+  const dbPath = path.join(
+    os.tmpdir(),
+    `sanctuary-test-${Math.random().toString(36).slice(2)}.db`,
+  )
   const client = createClient({ url: `file:${dbPath}` })
   sharedTestDb = await initTestOrm(client, false)
   return sharedTestDb
@@ -66,7 +69,10 @@ export async function getSharedTestDatabase(): Promise<
 export async function createIsolatedTestDatabase(): Promise<
   LibSQLDatabase<typeof schema>
 > {
-  const dbPath = path.join(os.tmpdir(), `sanctuary-test-${Math.random().toString(36).slice(2)}.db`)
+  const dbPath = path.join(
+    os.tmpdir(),
+    `sanctuary-test-${Math.random().toString(36).slice(2)}.db`,
+  )
   const client = createClient({ url: `file:${dbPath}` })
   return initTestOrm(client, false)
 }
@@ -86,8 +92,8 @@ export async function resetTestDatabase(
     DELETE FROM habit_completions;
     DELETE FROM entry_media;
     DELETE FROM habits;
+    DELETE FROM habit_categories;
     DELETE FROM journal_entries;
-    DELETE FROM custom_prompts;
     DELETE FROM user_preferences;
   `)
 }

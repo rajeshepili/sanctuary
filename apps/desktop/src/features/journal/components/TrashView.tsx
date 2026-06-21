@@ -7,9 +7,17 @@ import { FocusSection } from '#/components/layout/FocusSection'
 import { Hero } from '#/components/layout/Hero'
 import { EntryListPane } from '#/features/journal/components/EntryListPane'
 import { EntryViewerPane } from '#/features/journal/components/EntryViewerPane'
+import { getMoodDetails } from '#/features/journal/moods'
 import type { Entry } from '#/types'
 import type { EntryListViewModel } from '#/features/journal/hooks/useEntryList'
 import { FeatureErrorBoundary } from '#/components/errors/FeatureErrorBoundary'
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+} from '#/components/ui/empty'
 
 interface TrashViewProps {
   entries: Entry[]
@@ -35,7 +43,10 @@ export function TrashView({
       <FocusSection>
         <div className="flex flex-col lg:flex-row gap-4 h-[calc(100dvh-12rem)] min-h-[600px]">
           {/* LEFT PANE */}
-          <FeatureErrorBoundary title="Deleted Reflections" className="w-full lg:w-80 shrink-0">
+          <FeatureErrorBoundary
+            title="Deleted Reflections"
+            className="w-full lg:w-80 shrink-0"
+          >
             <EntryListPane
               searchQuery={list.searchQuery}
               onSearchChange={list.setSearchQuery}
@@ -45,8 +56,9 @@ export function TrashView({
               itemCount={entries.length}
               searchPlaceholder="Search deleted entries…"
               header={
-                <span className="text-sm font-semibold text-muted-foreground">
-                  {entries.length} item{entries.length !== 1 ? 's' : ''} in trash
+                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                  {entries.length} item{entries.length !== 1 ? 's' : ''} in
+                  trash
                 </span>
               }
             >
@@ -54,52 +66,98 @@ export function TrashView({
                 <button
                   key={entry.id}
                   onClick={() => onSelect(entry.id)}
-                  className={`w-full text-left p-4 rounded-xl border transition-all ${
+                  className={`w-full text-left p-3.5 rounded-xl border transition-all ${
                     activeEntry?.id === entry.id
                       ? 'border-primary/50 bg-primary/5 shadow-sm'
                       : 'border-border/30 bg-background/30 hover:bg-background/60 hover:border-border/60'
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium mb-2">
-                    <Clock className="w-3.5 h-3.5" />
-                    {formatEntryDate(entry.createdAt)}
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium">
+                      <Clock className="w-3 h-3" />
+                      {formatEntryDate(entry.createdAt)}
+                    </div>
+                    {entry.mood &&
+                      (() => {
+                        const md = getMoodDetails(entry.mood)
+                        return md ? (
+                          <span
+                            title={md.label}
+                            className="text-[11px] opacity-60"
+                          >
+                            {md.emoji}
+                          </span>
+                        ) : null
+                      })()}
                   </div>
-                  <div className="text-sm text-foreground/90 line-clamp-2 leading-relaxed">
+                  <div className="text-sm text-foreground/80 line-clamp-2 leading-relaxed">
                     {entry.content}
                   </div>
                 </button>
               ))}
 
               {list.filteredEntries.length === 0 && (
-                <div className="py-12 text-center text-sm text-muted-foreground">
-                  {entries.length === 0
-                    ? 'Trash is empty.'
-                    : 'No reflections found.'}
-                </div>
+                <Empty className="py-12 border-none px-4">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <Trash2 />
+                    </EmptyMedia>
+                    <EmptyTitle>
+                      {entries.length === 0
+                        ? 'Trash is empty'
+                        : 'No reflections found'}
+                    </EmptyTitle>
+                  </EmptyHeader>
+                </Empty>
               )}
             </EntryListPane>
           </FeatureErrorBoundary>
 
           {/* RIGHT PANE */}
-          <FeatureErrorBoundary title="Reflection Preview" className="flex-1 min-w-0">
+          <FeatureErrorBoundary
+            title="Reflection Preview"
+            className="flex-1 flex flex-col min-w-0"
+          >
             <EntryViewerPane
               hasActiveEntry={!!activeEntry}
               activeKey={`trash-${activeEntry?.id}`}
               emptyState={
-                <>
-                  <Trash2 className="w-12 h-12 opacity-20" />
-                  <p className="text-base font-medium">
-                    Select a reflection to view
-                  </p>
-                </>
+                <Empty className="border-none bg-transparent">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <Trash2 />
+                    </EmptyMedia>
+                    <EmptyTitle>Nothing selected</EmptyTitle>
+                    <EmptyDescription>
+                      Select a deleted reflection to preview or restore it.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
               }
             >
               {activeEntry && (
                 <>
+                  {/* Header */}
                   <div className="flex items-center justify-between border-b border-border/40 pb-4">
-                    <div className="flex items-center gap-3 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
+                    <div className="flex items-center gap-2 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
                       <Trash2 className="w-4 h-4" />
-                      Deleted on {formatEntryDate(activeEntry.deletedAt ?? activeEntry.createdAt)}
+                      Deleted{' '}
+                      {formatEntryDate(
+                        activeEntry.deletedAt ?? activeEntry.createdAt,
+                      )}
+                      {activeEntry.mood &&
+                        (() => {
+                          const md = getMoodDetails(activeEntry.mood)
+                          return md ? (
+                            <>
+                              <span className="mx-1.5 opacity-30">•</span>
+                              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-border/40 text-foreground/60 lowercase text-xs">
+                                <span>{md.emoji}</span>
+                                {md.label}
+                              </span>
+                            </>
+                          ) : null
+                        })()}
                     </div>
                     <div className="flex items-center gap-2">
                       <IconButton
@@ -119,10 +177,13 @@ export function TrashView({
                     </div>
                   </div>
 
-                  <MarkdownViewer
-                    content={activeEntry.content}
-                    className="text-base leading-relaxed opacity-75"
-                  />
+                  {/* Content — slightly faded to signal deleted state */}
+                  <div className="opacity-75">
+                    <MarkdownViewer
+                      content={activeEntry.content}
+                      className="text-base leading-relaxed"
+                    />
+                  </div>
 
                   {activeEntry.media.length > 0 && (
                     <div className="pt-4 border-t border-border/20 opacity-75">

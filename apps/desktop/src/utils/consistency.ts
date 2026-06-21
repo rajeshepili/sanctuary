@@ -1,41 +1,67 @@
-import { addDays, getDay } from 'date-fns'
+import { addDays, differenceInDays, differenceInCalendarWeeks, differenceInCalendarMonths, getDay } from 'date-fns'
 import type { HabitFrequency } from '#/types'
-import { parseCommaList } from './string'
 import { toLocalDateString, fromLocalDateString, getTodayStr } from './date'
 
 export function isScheduledOnDate(
   date: Date,
   frequency: HabitFrequency,
-  daysOfWeek: string | null,
+  interval: number,
+  daysOfWeek: number[] | null,
+  createdAt: Date,
 ): boolean {
-  if (frequency === 'every_day') return true
+  // Reset time to start of day for accurate day differences
+  const d1 = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const d2 = new Date(createdAt.getFullYear(), createdAt.getMonth(), createdAt.getDate())
+  
+  // You cannot be scheduled before the habit was created
+  if (d1 < d2) return false
 
-  const dayOfWeek = getDay(date) // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  if (frequency === 'daily') {
+    const diffDays = Math.abs(differenceInDays(d1, d2))
+    return diffDays % interval === 0
+  }
 
-  if (frequency === 'weekdays') return dayOfWeek >= 1 && dayOfWeek <= 5
-  if (frequency === 'weekends') return dayOfWeek === 0 || dayOfWeek === 6
+  if (frequency === 'weekly') {
+    const diffWeeks = Math.abs(differenceInCalendarWeeks(d1, d2, { weekStartsOn: 1 }))
+    if (diffWeeks % interval !== 0) return false
+    
+    // If daysOfWeek is provided, check if today is one of those days
+    // getDay: 0=Sun, 1=Mon...
+    if (daysOfWeek && daysOfWeek.length > 0) {
+      return daysOfWeek.includes(getDay(d1))
+    }
+    
+    // If no specific days, assume it's scheduled every day of the active week 
+    // (a "flexible" goal might just mean complete it once, but for strict UI logic, 
+    // it's available every day that week).
+    return true
+  }
 
-  if (!daysOfWeek) return false
+  if (frequency === 'monthly') {
+    const diffMonths = Math.abs(differenceInCalendarMonths(d1, d2))
+    if (diffMonths % interval !== 0) return false
+    
+    // If daysOfWeek is provided, it might mean "these days of the week, but only in this month".
+    if (daysOfWeek && daysOfWeek.length > 0) {
+      return daysOfWeek.includes(getDay(d1))
+    }
+    
+    // If no specific days, scheduled every day of the active month
+    return true
+  }
 
-  const activeDays = parseCommaList(daysOfWeek)
-  const dayNames = [
-    'sunday',
-    'monday',
-    'tuesday',
-    'wednesday',
-    'thursday',
-    'friday',
-    'saturday',
-  ]
-  return activeDays.includes(dayNames[dayOfWeek])
+  // Custom - default to always available if active
+  return true
 }
 
 export function isScheduledOn(
   dateStr: string,
   frequency: HabitFrequency,
-  daysOfWeek: string | null,
+  interval: number,
+  daysOfWeek: number[] | null,
+  createdAtStr: string,
 ): boolean {
-  return isScheduledOnDate(fromLocalDateString(dateStr), frequency, daysOfWeek)
+  return isScheduledOnDate(fromLocalDateString(dateStr), frequency, interval, daysOfWeek, fromLocalDateString(createdAtStr))
 }
 
 interface StreakResult {
@@ -47,7 +73,9 @@ interface StreakResult {
 export function computeHabitStreak(
   completions: string[],
   frequency: HabitFrequency,
-  daysOfWeek: string | null,
+  interval: number,
+  daysOfWeek: number[] | null,
+  createdAtStr: string,
 ): StreakResult {
   if (completions.length === 0) {
     return { currentStreak: 0, longestStreak: 0, completedToday: false }
@@ -58,21 +86,26 @@ export function computeHabitStreak(
 
   const todayStr = getTodayStr()
   const today = fromLocalDateString(todayStr)
-  const firstDate = fromLocalDateString(sortedDates[0])
+  const firstDateStr = sortedDates[0]
+  
+  // Start streak calculation from the earliest of (first completion, createdAt)
+  const created = fromLocalDateString(createdAtStr)
+  const firstComp = fromLocalDateString(firstDateStr)
+  let cursor = firstComp < created ? firstComp : created
 
   let current = 0
   let longest = 0
 
-  let cursor = firstDate
   while (cursor.getTime() <= today.getTime()) {
     const cursorStr = toLocalDateString(cursor)
-    const isScheduled = isScheduledOnDate(cursor, frequency, daysOfWeek)
+    const isScheduled = isScheduledOnDate(cursor, frequency, interval, daysOfWeek, created)
     const isCompleted = completionSet.has(cursorStr)
 
     if (isCompleted) {
       current++
       if (current > longest) longest = current
     } else if (isScheduled && cursorStr !== todayStr) {
+      // Missed a scheduled day in the past -> break streak
       current = 0
     }
 

@@ -65,7 +65,7 @@ export function EntryListPane({
               key={tag}
               onClick={() => onTagToggle(tag)}
               size="sm"
-              variant={selectedTag === tag ? "default" : "outline"}
+              variant={selectedTag === tag ? 'default' : 'outline'}
               className="rounded-full text-[10px] py-0 h-6 font-semibold tracking-wide transition-all cursor-pointer"
             >
               #{tag}

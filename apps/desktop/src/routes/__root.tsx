@@ -17,7 +17,9 @@ import { APP_META_DESCRIPTION, APP_NAME } from '#/config/branding'
 // Dev-only imports
 const DevTools = import.meta.env.DEV
   ? lazy(() =>
-      import('#/components/dev/DevTools').then((m) => ({ default: m.DevTools })),
+      import('#/components/dev/DevTools').then((m) => ({
+        default: m.DevTools,
+      })),
     )
   : () => null
 

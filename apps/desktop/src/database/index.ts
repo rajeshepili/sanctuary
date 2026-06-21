@@ -51,10 +51,9 @@ export async function initializeDatabase(): Promise<Database> {
       await client.execute('PRAGMA journal_mode=WAL')
       await client.execute('PRAGMA synchronous=NORMAL')
       await client.execute('PRAGMA foreign_keys=ON')
-      // Performance and concurrency pragmas
       await client.execute('PRAGMA busy_timeout=5000')
-      await client.execute('PRAGMA cache_size=-20000') // 20MB cache
-      await client.execute('PRAGMA mmap_size=2147483648') // 2GB memory map
+      await client.execute('PRAGMA cache_size=-20000')
+      await client.execute('PRAGMA mmap_size=2147483648')
 
       await migrate(db, {
         migrationsFolder: process.env.MIGRATIONS_PATH || './drizzle',
@@ -72,7 +71,9 @@ export async function initializeDatabase(): Promise<Database> {
         error instanceof DatabaseError
           ? error
           : new DatabaseError(
-              error instanceof Error ? error.message : 'Database initialization failed',
+              error instanceof Error
+                ? error.message
+                : 'Database initialization failed',
               error,
             )
 

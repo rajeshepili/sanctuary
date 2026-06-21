@@ -45,7 +45,9 @@ export async function purgeOrphanedMediaFiles(db: Database): Promise<void> {
     }
 
     if (purged > 0) {
-      logger.info(`Purged ${purged} orphaned media file${purged === 1 ? '' : 's'}`)
+      logger.info(
+        `Purged ${purged} orphaned media file${purged === 1 ? '' : 's'}`,
+      )
     }
   } catch (err) {
     logger.error('Failed to purge orphaned media:', err)

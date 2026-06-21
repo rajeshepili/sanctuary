@@ -1,4 +1,15 @@
-import { app, BrowserWindow, ipcMain, session, net, globalShortcut, Tray, Menu, nativeImage, dialog } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  session,
+  net,
+  globalShortcut,
+  Tray,
+  Menu,
+  nativeImage,
+  dialog,
+} from 'electron'
 import { join } from 'node:path'
 import { fork } from 'node:child_process'
 import type { ChildProcess } from 'node:child_process'
@@ -44,7 +55,11 @@ async function loadElectronPrefs(): Promise<ElectronPrefs> {
 
 async function saveElectronPrefs(prefs: ElectronPrefs) {
   await mkdir(app.getPath('userData'), { recursive: true })
-  await writeFile(getElectronPrefsPath(), JSON.stringify(prefs, null, 2), 'utf-8')
+  await writeFile(
+    getElectronPrefsPath(),
+    JSON.stringify(prefs, null, 2),
+    'utf-8',
+  )
 }
 
 function getPreloadPath() {
@@ -125,12 +140,15 @@ function registerIpcHandlers() {
     return prefs.autoUpdateEnabled
   })
 
-  ipcMain.handle('auto-update:set-enabled', async (_event, enabled: boolean) => {
-    await saveElectronPrefs({ autoUpdateEnabled: enabled })
-    if (enabled) {
-      await autoUpdater.checkForUpdatesAndNotify()
-    }
-  })
+  ipcMain.handle(
+    'auto-update:set-enabled',
+    async (_event, enabled: boolean) => {
+      await saveElectronPrefs({ autoUpdateEnabled: enabled })
+      if (enabled) {
+        await autoUpdater.checkForUpdatesAndNotify()
+      }
+    },
+  )
 
   ipcMain.handle('auto-update:check', async () => {
     await autoUpdater.checkForUpdatesAndNotify()
@@ -149,7 +167,16 @@ function registerIpcHandlers() {
 
   ipcMain.handle(
     'fs:write-file-structure',
-    async (_event, { basePath, files }: { basePath: string; files: Array<{ path: string; content: string | Uint8Array }> }) => {
+    async (
+      _event,
+      {
+        basePath,
+        files,
+      }: {
+        basePath: string
+        files: Array<{ path: string; content: string | Uint8Array }>
+      },
+    ) => {
       for (const file of files) {
         const fullPath = join(basePath, file.path)
         const dir = join(fullPath, '..')
@@ -351,16 +378,18 @@ app.whenReady().then(() => {
   tray = new Tray(nativeImage.createEmpty()) // Ideally replace with actual icon path later
   tray.setToolTip('Sanctuary')
   const contextMenu = Menu.buildFromTemplate([
-    { label: 'Open Sanctuary', click: () => {
+    {
+      label: 'Open Sanctuary',
+      click: () => {
         if (mainWindow) {
           if (mainWindow.isMinimized()) mainWindow.restore()
           mainWindow.show()
           mainWindow.focus()
         }
-      } 
+      },
     },
     { type: 'separator' },
-    { label: 'Quit', click: () => app.quit() }
+    { label: 'Quit', click: () => app.quit() },
   ])
   tray.setContextMenu(contextMenu)
 

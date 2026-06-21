@@ -1,6 +1,17 @@
 import { beforeAll, beforeEach, afterEach, afterAll, vi } from 'vitest'
 import '@testing-library/jest-dom'
 
+// Global mock for TanStack Start server functions to avoid AsyncLocalStorage context errors
+vi.mock('@tanstack/react-start', async (importOriginal) => {
+  const actual = await importOriginal<any>()
+  return {
+    ...actual,
+    createServerFn: vi.fn(() => ({
+      handler: vi.fn((fn) => fn),
+    })),
+  }
+})
+
 // Suppress console logs during tests unless explicitly needed
 const originalError = console.error
 const originalWarn = console.warn
@@ -17,7 +28,7 @@ function applyBrowserMocks() {
     window.URL.createObjectURL = vi.fn(() => 'blob:mock-url')
     window.URL.revokeObjectURL = vi.fn()
     // Must be a real class so `new ResizeObserver()` works (floating-ui requirement)
-    window.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver
+    window.ResizeObserver = ResizeObserverMock
     // Mock IntersectionObserver (used by some Radix primitives)
     window.IntersectionObserver = vi.fn().mockImplementation(() => ({
       observe: vi.fn(),

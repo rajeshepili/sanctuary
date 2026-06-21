@@ -9,12 +9,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '#/components/ui/popover'
-
-
-type Tier = 'mini' | 'plus' | 'elite' | 'skipped'
+import type { HabitTier } from '#/types'
 
 const TIERS: {
-  value: Tier
+  value: HabitTier
   label: string
   desc: string
   activeClass: string
@@ -24,28 +22,32 @@ const TIERS: {
     value: 'mini',
     label: '2-Min',
     desc: 'Minimum dose',
-    activeClass: 'bg-sky-500/20 text-sky-400 border-sky-400/40 ring-1 ring-sky-400/30',
+    activeClass:
+      'bg-sky-500/20 text-sky-400 border-sky-400/40 ring-1 ring-sky-400/30',
     idleClass: 'text-sky-400 border-sky-400/20 hover:bg-sky-500/10',
   },
   {
     value: 'plus',
     label: 'Target',
     desc: 'Full habit done',
-    activeClass: 'bg-primary/20 text-primary border-primary/40 ring-1 ring-primary/30',
+    activeClass:
+      'bg-primary/20 text-primary border-primary/40 ring-1 ring-primary/30',
     idleClass: 'text-primary border-primary/20 hover:bg-primary/10',
   },
   {
     value: 'elite',
     label: 'Bonus',
     desc: 'Above & beyond',
-    activeClass: 'bg-amber-400/20 text-amber-400 border-amber-400/40 ring-1 ring-amber-400/30',
+    activeClass:
+      'bg-amber-400/20 text-amber-400 border-amber-400/40 ring-1 ring-amber-400/30',
     idleClass: 'text-amber-400 border-amber-400/20 hover:bg-amber-400/10',
   },
   {
     value: 'skipped',
     label: 'Forgive',
     desc: 'Mark as forgiven',
-    activeClass: 'bg-foreground/10 text-muted-foreground border-border/40 ring-1 ring-border/30',
+    activeClass:
+      'bg-foreground/10 text-muted-foreground border-border/40 ring-1 ring-border/30',
     idleClass: 'text-muted-foreground border-border/30 hover:bg-foreground/5',
   },
 ]
@@ -53,12 +55,12 @@ const TIERS: {
 interface HabitDayCellProps {
   dayStr: string
   isCompleted: boolean
-  tier?: Tier
+  tier?: HabitTier
   isToday: boolean
   activeOnDate: boolean
   dateLabel: string
   dayNumber: number
-  onToggle: (dayStr: string, tier: Tier) => void
+  onToggle: (dayStr: string, tier: HabitTier) => void
 }
 
 export const HabitDayCell = memo(function HabitDayCellComponent({
@@ -74,7 +76,7 @@ export const HabitDayCell = memo(function HabitDayCellComponent({
   const [open, setOpen] = useState(false)
 
   const handleSelect = useCallback(
-    (selectedTier: Tier) => {
+    (selectedTier: HabitTier) => {
       // If same tier → treat as toggle-off (pass same tier, service handles removal)
       onToggle(dayStr, selectedTier)
       setOpen(false)
@@ -98,10 +100,11 @@ export const HabitDayCell = memo(function HabitDayCellComponent({
     )
   }
 
-  const tierStyles: Record<Tier, string> = {
+  const tierStyles: Record<HabitTier, string> = {
     mini: 'bg-sky-500/50 text-white shadow-sm shadow-sky-500/20',
     plus: 'bg-primary text-primary-foreground shadow-sm shadow-primary/30',
-    elite: 'bg-amber-400 text-amber-950 scale-110 shadow-md shadow-amber-400/40',
+    elite:
+      'bg-amber-400 text-amber-950 scale-110 shadow-md shadow-amber-400/40',
     skipped: 'bg-foreground/15 text-muted-foreground opacity-60',
   }
 
@@ -134,7 +137,9 @@ export const HabitDayCell = memo(function HabitDayCellComponent({
             <PopoverTrigger asChild>{cellButton}</PopoverTrigger>
           </TooltipTrigger>
           <TooltipContent side="top">
-            <div className="text-[11px] font-bold">{isToday ? 'Today' : dateLabel}</div>
+            <div className="text-[11px] font-bold">
+              {isToday ? 'Today' : dateLabel}
+            </div>
             <div className="text-[10px] opacity-75">
               {isCompleted
                 ? tier === 'skipped'
@@ -170,7 +175,9 @@ export const HabitDayCell = memo(function HabitDayCellComponent({
                 }`}
               >
                 <span className="text-[11px] font-bold">{t.label}</span>
-                <span className="text-[10px] text-muted-foreground">{t.desc}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {t.desc}
+                </span>
               </button>
             )
           })}

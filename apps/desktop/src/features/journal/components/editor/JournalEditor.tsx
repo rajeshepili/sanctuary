@@ -1,12 +1,7 @@
 import { Button } from '#/components/ui/button'
 import { Kbd } from '#/components/ui/kbd'
 import { IconButton } from '#/components/ui/icon-button'
-import {
-  Image as ImageIcon,
-  HelpCircle,
-  Feather,
-  X,
-} from 'lucide-react'
+import { Image as ImageIcon, HelpCircle, Feather, X } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { EditorContent } from '@tiptap/react'
@@ -20,15 +15,24 @@ import type { DraftStatus } from '#/hooks/use-draft'
 import { JournalBubbleMenu } from './JournalBubbleMenu'
 import { JournalMarkdownGuide } from './JournalMarkdownGuide'
 import { JournalDraftBanner } from './JournalDraftBanner'
-import type { EntryMedia } from '#/types'
-import { JournalEditorProvider, useJournalEditorContext } from './JournalEditorContext'
-import type { PendingMedia, JournalEditorContextValue } from './JournalEditorContext';
+import type { EntryMedia, JournalMood } from '#/types'
+import {
+  JournalEditorProvider,
+  useJournalEditorContext,
+} from './JournalEditorContext'
+import type {
+  PendingMedia,
+  JournalEditorContextValue,
+} from './JournalEditorContext'
 import { FeatureErrorBoundary } from '#/components/errors/FeatureErrorBoundary'
 import { isMac } from '#/utils/platform'
+import { MoodSelector } from './MoodSelector'
 
 interface JournalEditorProps {
   value: string
   setValue: (v: string | ((prev: string) => string)) => void
+  mood: JournalMood | null
+  setMood: (mood: JournalMood | null) => void
   onSave: () => void
   onCancel?: () => void
   // Pending (newly attached) media
@@ -47,6 +51,7 @@ interface JournalEditorProps {
   // Layout
   /** True when embedded in split-pane viewer — renders without card wrapper */
   isInlinePane?: boolean
+  isSaving?: boolean
   isSaveDisabled?: boolean
 }
 
@@ -60,8 +65,12 @@ export function JournalEditor(props: JournalEditorProps) {
     isInlinePane: props.isInlinePane,
   })
 
-  const { fileInputRef, open: openMediaPicker, handleFileChange } = useMediaPicker({
-    onAddMedia: props.onAddMedia ?? (() => { }),
+  const {
+    fileInputRef,
+    open: openMediaPicker,
+    handleFileChange,
+  } = useMediaPicker({
+    onAddMedia: props.onAddMedia ?? (() => {}),
   })
 
   const contextValue: JournalEditorContextValue = {
@@ -72,6 +81,7 @@ export function JournalEditor(props: JournalEditorProps) {
     showMdGuide,
     setShowMdGuide,
     isInlinePane: props.isInlinePane ?? false,
+    isSaving: props.isSaving ?? false,
     openMediaPicker,
     fileInputRef,
     handleFileChange,
@@ -86,6 +96,7 @@ export function JournalEditor(props: JournalEditorProps) {
         </JournalEditorMain>
         <JournalEditorBanner />
         <JournalEditorMediaGallery />
+        <MoodSelector />
         <JournalEditorToolbar />
       </JournalEditorRoot>
     </JournalEditorProvider>
@@ -98,9 +109,10 @@ function JournalEditorRoot({ children }: { children: React.ReactNode }) {
     <div
       className={`
         transition-all duration-300 flex flex-col relative
-        ${isInlinePane
-          ? 'flex-1 flex flex-col min-h-0'
-          : 'bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(15,23,42,0.04))] backdrop-blur-2xl hover:border-primary/20 p-5 sm:p-6 rounded-[1.75rem] border border-border/70 shadow-[0_24px_80px_rgba(15,23,42,0.14)] space-y-4'
+        ${
+          isInlinePane
+            ? 'flex-1 flex flex-col min-h-0'
+            : 'bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(15,23,42,0.04))] backdrop-blur-2xl hover:border-primary/20 p-5 sm:p-6 rounded-[1.75rem] border border-border/70 shadow-[0_24px_80px_rgba(15,23,42,0.14)] space-y-4'
         }
       `}
     >
@@ -116,10 +128,11 @@ function JournalEditorHeader() {
 function JournalEditorMain({ children }: { children: React.ReactNode }) {
   const { isInlinePane } = useJournalEditorContext()
   return (
-    <div className={`relative ${isInlinePane
-        ? 'flex-1 flex flex-col min-h-0'
-        : ''
-      }`}>
+    <div
+      className={`relative ${
+        isInlinePane ? 'flex-1 flex flex-col min-h-0' : ''
+      }`}
+    >
       {children}
     </div>
   )
@@ -156,9 +169,7 @@ function JournalEditorContent() {
       )}
 
       <AnimatePresence>
-        {showMdGuide && (
-          <JournalMarkdownGuide />
-        )}
+        {showMdGuide && <JournalMarkdownGuide />}
       </AnimatePresence>
     </FeatureErrorBoundary>
   )
@@ -169,7 +180,8 @@ function JournalEditorContent() {
 }
 
 function JournalEditorBanner() {
-  const { draftStatus, draftError, retryDraftSave, copyDraft } = useJournalEditorContext()
+  const { draftStatus, draftError, retryDraftSave, copyDraft } =
+    useJournalEditorContext()
   if (draftStatus !== 'error') return null
 
   return (
@@ -182,7 +194,13 @@ function JournalEditorBanner() {
 }
 
 function JournalEditorMediaGallery() {
-  const { existingMedia, removedMediaIds, onRemoveExisting, pendingMedia, onRemovePending } = useJournalEditorContext()
+  const {
+    existingMedia,
+    removedMediaIds,
+    onRemoveExisting,
+    pendingMedia,
+    onRemovePending,
+  } = useJournalEditorContext()
 
   const visibleExisting = existingMedia?.filter(
     (m) => !removedMediaIds?.includes(m.id),
@@ -253,14 +271,16 @@ function JournalEditorToolbar() {
     draftError,
     onCancel,
     onSave,
+    isSaving,
     isSaveDisabled,
     value,
     pendingMedia,
     existingMedia,
-    removedMediaIds
+    removedMediaIds,
   } = useJournalEditorContext()
 
   const saveDisabled = useMemo(() => {
+    if (isSaving) return true
     if (isSaveDisabled !== undefined) return isSaveDisabled
 
     const visibleExistingCount =
@@ -269,7 +289,14 @@ function JournalEditorToolbar() {
     return (
       !value.trim() && pendingMedia.length === 0 && visibleExistingCount === 0
     )
-  }, [isSaveDisabled, value, pendingMedia, existingMedia, removedMediaIds])
+  }, [
+    isSaveDisabled,
+    value,
+    pendingMedia,
+    existingMedia,
+    removedMediaIds,
+    isSaving,
+  ])
 
   return (
     <div
@@ -290,18 +317,13 @@ function JournalEditorToolbar() {
           onChange={handleFileChange}
         />
         {onAddMedia && (
-          <IconButton
-            tooltip="Attach image"
-            onClick={openMediaPicker}
-          >
+          <IconButton tooltip="Attach image" onClick={openMediaPicker}>
             <ImageIcon className="w-4 h-4" />
           </IconButton>
         )}
 
         <IconButton
-          tooltip={
-            showMdGuide ? 'Hide markdown guide' : 'Show markdown guide'
-          }
+          tooltip={showMdGuide ? 'Hide markdown guide' : 'Show markdown guide'}
           active={showMdGuide}
           onClick={() => setShowMdGuide((v) => !v)}
         >
@@ -310,10 +332,7 @@ function JournalEditorToolbar() {
       </div>
 
       <div className="flex flex-col items-end gap-2">
-        <AutoSaveIndicator
-          status={draftStatus ?? 'idle'}
-          error={draftError}
-        />
+        <AutoSaveIndicator status={draftStatus ?? 'idle'} error={draftError} />
         <div className="flex items-center gap-2">
           {onCancel && (
             <Button
@@ -321,6 +340,7 @@ function JournalEditorToolbar() {
               variant="outline"
               size="sm"
               className="h-9"
+              disabled={isSaving}
             >
               Cancel
             </Button>
@@ -331,11 +351,20 @@ function JournalEditorToolbar() {
             className={onCancel ? 'h-9' : ''}
             disabled={saveDisabled}
           >
-            {onCancel ? 'Save Changes' : 'Save entry'}
-            {!onCancel && (
-              <Kbd className="bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30 px-1 py-0 text-[10px]">
-                {isMac() ? '⌘' : 'Ctrl'} ↵
-              </Kbd>
+            {isSaving ? (
+              <span className="flex items-center gap-2">
+                <div className="w-3.5 h-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                Saving…
+              </span>
+            ) : (
+              <>
+                {onCancel ? 'Save Changes' : 'Save entry'}
+                {!onCancel && (
+                  <Kbd className="bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30 px-1 py-0 text-[10px] ml-2">
+                    {isMac() ? '⌘' : 'Ctrl'} ↵
+                  </Kbd>
+                )}
+              </>
             )}
           </Button>
         </div>

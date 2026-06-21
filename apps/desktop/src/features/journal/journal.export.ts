@@ -33,7 +33,7 @@ export const exportMarkdown = createServerFn({ method: 'GET' }).handler(
 export const getExportData = createServerFn({ method: 'GET' }).handler(
   async () => {
     const db = await getDb()
-    
+
     const entries = await db.query.journalEntries.findMany({
       with: { media: true },
       where: isNull(journalEntries.deletedAt),

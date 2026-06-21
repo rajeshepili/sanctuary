@@ -4,22 +4,25 @@ import { encryptData, decryptData } from '#/utils/crypto'
 const SYNC_FILE_PREFIX = 'sanctuary_sync_'
 const SYNC_FILE_EXT = '.enc'
 
-export async function performEncryptedSync(directory: string, passphrase: string) {
+export async function performEncryptedSync(
+  directory: string,
+  passphrase: string,
+) {
   if (!window.sanctuary) return
 
   const data = await getExportData()
   const encrypted = await encryptData(JSON.stringify(data), passphrase)
-  
+
   const fileName = `${SYNC_FILE_PREFIX}${new Date().getTime()}${SYNC_FILE_EXT}`
-  
+
   await window.sanctuary.writeFileStructure(directory, [
-    { path: fileName, content: encrypted }
+    { path: fileName, content: encrypted },
   ])
 
   // Cleanup old sync files (keep only last 5)
   const allFiles = await window.sanctuary.listFiles(directory)
   const syncFiles = allFiles
-    .filter(f => f.startsWith(SYNC_FILE_PREFIX) && f.endsWith(SYNC_FILE_EXT))
+    .filter((f) => f.startsWith(SYNC_FILE_PREFIX) && f.endsWith(SYNC_FILE_EXT))
     .sort()
 
   if (syncFiles.length > 5) {

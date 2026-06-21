@@ -41,7 +41,10 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error, prevResetKeys: [] } // prevResetKeys updated in componentDidUpdate
   }
 
-  static getDerivedStateFromProps(props: Props, state: State): Partial<State> | null {
+  static getDerivedStateFromProps(
+    props: Props,
+    state: State,
+  ): Partial<State> | null {
     const { resetKeys } = props
     const { prevResetKeys, hasError } = state
 
@@ -84,12 +87,7 @@ export class ErrorBoundary extends Component<Props, State> {
         return fallback
       }
 
-      return (
-        <GlobalErrorFallback
-          error={this.state.error}
-          reset={this.reset}
-        />
-      )
+      return <GlobalErrorFallback error={this.state.error} reset={this.reset} />
     }
 
     return this.props.children

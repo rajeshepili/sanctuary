@@ -22,7 +22,7 @@ export function Hero({ title, description, greeting, children }: Props) {
           transition={{
             duration: 10,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: 'easeInOut',
           }}
           className="w-[800px] h-[800px] rounded-full"
           style={{

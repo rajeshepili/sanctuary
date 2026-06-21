@@ -4,9 +4,20 @@ export const mediaItemSchema = z.object({
   base64Data: z.string().min(1),
 })
 
+export const journalMoodSchema = z.enum([
+  'happy',
+  'calm',
+  'focused',
+  'anxious',
+  'sad',
+  'energetic',
+  'tired',
+])
+
 export const createEntrySchema = z.object({
   content: z.string().min(1, 'Content is required'),
   media: z.array(mediaItemSchema).default([]),
+  mood: journalMoodSchema.nullable().optional(),
 })
 
 export const updateEntrySchema = z.object({
@@ -14,6 +25,7 @@ export const updateEntrySchema = z.object({
   content: z.string().min(1, 'Content is required'),
   addedMedia: z.array(mediaItemSchema).default([]),
   removedMediaIds: z.array(z.number().int()).default([]),
+  mood: journalMoodSchema.nullable().optional(),
 })
 
 export const deleteEntrySchema = z.object({
@@ -29,7 +41,7 @@ export const togglePinSchema = z.object({
 })
 
 export const listEntriesSchema = z.object({
-  cursor: z.number().int().positive().optional(),
+  cursor: z.number().int().nonnegative().optional(),
   limit: z.number().int().min(1).max(100).default(50),
 })
 

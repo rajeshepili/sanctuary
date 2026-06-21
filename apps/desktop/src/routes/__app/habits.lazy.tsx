@@ -1,6 +1,5 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
-import { toast } from 'sonner'
+import { useState, useEffect, useCallback } from 'react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import {
   AlertDialog,
@@ -34,6 +33,7 @@ import { FeatureErrorBoundary } from '#/components/errors/FeatureErrorBoundary'
 import { getTodayStr } from '#/utils/date'
 
 import { PAGE_DESCRIPTIONS, PAGE_TITLES } from '#/config/branding'
+import type { HabitStatus } from '#/types'
 
 export const Route = createLazyFileRoute('/__app/habits')({
   component: HabitsPage,
@@ -41,12 +41,21 @@ export const Route = createLazyFileRoute('/__app/habits')({
 
 function HabitsPage() {
   const { data } = useSuspenseQuery(habitsQueryOptions())
-  const { createHabit, updateHabit, updateHabitStatus, deleteHabit, toggleCompletion } =
-    useHabitsMutations()
+  const {
+    createHabit,
+    updateHabit,
+    updateHabitStatus,
+    deleteHabit,
+    toggleCompletion,
+  } = useHabitsMutations()
 
-  useEffect(() => { void syncHabits() }, [])
+  useEffect(() => {
+    void syncHabits()
+  }, [])
 
-  const [activeHabitId, setActiveHabitId] = useState<number | 'new' | null>(null)
+  const [activeHabitId, setActiveHabitId] = useState<number | 'new' | null>(
+    null,
+  )
   const [deleteId, setDeleteId] = useState<number | null>(null)
 
   const activeHabit =
@@ -57,40 +66,93 @@ function HabitsPage() {
   const completionMap = buildCompletionMap(data.completions)
   const today = getTodayStr()
 
+  // ── Handlers ────────────────────────────────────────────────────────────
+
+  const handleSelect = useCallback((id: number) => setActiveHabitId(id), [])
+  const handleCreateNew = useCallback(() => setActiveHabitId('new'), [])
+  const handleCancelCreate = useCallback(() => setActiveHabitId(null), [])
+
+  const handleCreateSubmit = useCallback(
+    (habit: Parameters<typeof createHabit.mutate>[0]) => {
+      createHabit.mutate(habit, {
+        onSuccess: (created) => {
+          if (created?.id) setActiveHabitId(created.id)
+        },
+      })
+    },
+    [createHabit],
+  )
+
+  const handleUpdateStatus = useCallback(
+    (id: number, status: HabitStatus) => {
+      updateHabitStatus.mutate({ id, status })
+    },
+    [updateHabitStatus],
+  )
+
+  const handleDeleteRequest = useCallback((id: number) => setDeleteId(id), [])
+
+  const handleToggleCompletion = useCallback(
+    (
+      habitId: number,
+      date: string,
+      tier?: 'mini' | 'plus' | 'elite' | 'skipped',
+    ) => {
+      toggleCompletion.mutate({ habitId, date, tier })
+    },
+    [toggleCompletion],
+  )
+
+  const handleUpdateHabit = useCallback(
+    (habitData: Parameters<typeof updateHabit.mutate>[0]) => {
+      updateHabit.mutate(habitData)
+    },
+    [updateHabit],
+  )
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (deleteId === null) return
+    deleteHabit.mutate(deleteId, {
+      onSuccess: () => {
+        if (activeHabitId === deleteId) setActiveHabitId(null)
+        setDeleteId(null)
+      },
+    })
+  }, [deleteId, activeHabitId, deleteHabit])
+
   return (
     <>
       <Hero title={PAGE_TITLES.habits} description={PAGE_DESCRIPTIONS.habits} />
 
       <FocusSection>
         <div className="flex flex-col lg:flex-row gap-4 h-[calc(100dvh-12rem)] min-h-[600px]">
-          <FeatureErrorBoundary title="Identity List" className="w-full lg:w-80 shrink-0">
+          <FeatureErrorBoundary
+            title="Identity List"
+            className="w-full lg:w-80 shrink-0"
+          >
             <IdentityListPane
               habits={data.habits}
               completions={data.completions}
-              activeHabitId={typeof activeHabitId === 'number' ? activeHabitId : null}
-              onSelect={(id) => { setActiveHabitId(id) }}
-              onCreateNew={() => { setActiveHabitId('new') }}
+              activeHabitId={
+                typeof activeHabitId === 'number' ? activeHabitId : null
+              }
+              onSelect={handleSelect}
+              onCreateNew={handleCreateNew}
             />
           </FeatureErrorBoundary>
 
-          <FeatureErrorBoundary title="Identity Viewer" className="flex-1 min-w-0">
+          <FeatureErrorBoundary
+            title="Identity Viewer"
+            className="flex-1 min-w-0"
+          >
             <IdentityViewerPane
               hasContent={activeHabitId !== null}
               activeKey={activeHabitId ?? 'empty'}
             >
               {activeHabitId === 'new' ? (
                 <HabitCreateForm
-                  onCreate={async (habit) => {
-                    toast.promise(createHabit.mutateAsync(habit), {
-                      loading: 'Establishing identity…',
-                      success: (created) => {
-                        if (created?.id) setActiveHabitId(created.id)
-                        return 'Identity adopted!'
-                      },
-                      error: 'Failed to create identity.',
-                    })
-                  }}
-                  onCancel={() => setActiveHabitId(null)}
+                  onCreate={handleCreateSubmit}
+                  onCancel={handleCancelCreate}
                 />
               ) : activeHabit ? (
                 <HabitDetailView
@@ -109,27 +171,10 @@ function HabitsPage() {
                     completionMap.get(activeHabit.id) ?? new Map(),
                     today,
                   )}
-                  onUpdateStatus={(id, status) => {
-                    toast.promise(updateHabitStatus.mutateAsync({ id, status }), {
-                      loading: 'Updating habit…',
-                      success:
-                        status === 'resting'
-                          ? 'Habit resting for 7 days.'
-                          : 'Habit awakened.',
-                      error: 'Failed to update habit.',
-                    })
-                  }}
-                  onDelete={setDeleteId}
-                  onToggleCompletion={(habitId, date, tier) => {
-                    toggleCompletion.mutate({ habitId, date, tier })
-                  }}
-                  onUpdateHabit={async (data) => {
-                    toast.promise(updateHabit.mutateAsync(data), {
-                      loading: 'Saving changes…',
-                      success: 'Identity updated.',
-                      error: 'Failed to update identity.',
-                    })
-                  }}
+                  onUpdateStatus={handleUpdateStatus}
+                  onDelete={handleDeleteRequest}
+                  onToggleCompletion={handleToggleCompletion}
+                  onUpdateHabit={handleUpdateHabit}
                 />
               ) : null}
             </IdentityViewerPane>
@@ -145,27 +190,15 @@ function HabitsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Identity</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure? This will permanently erase all evidence logs for this
-              identity and cannot be undone.
+              Are you sure? This will permanently erase all evidence logs for
+              this identity and cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-500 hover:bg-red-600 text-white"
-              onClick={async () => {
-                if (deleteId !== null) {
-                  toast.promise(deleteHabit.mutateAsync(deleteId), {
-                    loading: 'Removing identity…',
-                    success: () => {
-                      if (activeHabitId === deleteId) setActiveHabitId(null)
-                      setDeleteId(null)
-                      return 'Identity removed.'
-                    },
-                    error: 'Failed to remove identity.',
-                  })
-                }
-              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteConfirm}
             >
               Delete
             </AlertDialogAction>

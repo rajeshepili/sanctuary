@@ -1,4 +1,4 @@
-import { useState, useMemo, useDeferredValue } from 'react'
+import { useState, useMemo, useCallback, useDeferredValue } from 'react'
 import { parseCommaList } from '#/utils/string'
 import type { Entry } from '#/types'
 
@@ -22,17 +22,29 @@ export function useEntryList(entries: Entry[]): EntryListViewModel {
 
   const allTags = useMemo(() => {
     const set = new Set<string>()
-    entries.forEach((e) => parseCommaList(e.tags).forEach((t) => set.add(t)))
+    for (const e of entries) {
+      for (const t of parseCommaList(e.tags)) set.add(t)
+    }
     return Array.from(set).sort()
   }, [entries])
 
-  const filteredEntries = useMemo(() => {
-    return entries.filter((entry) => {
-      if (selectedTag && !parseCommaList(entry.tags).includes(selectedTag))
-        return false
+  // Pre-process search term once per render rather than inside the filter loop
+  const normalizedQuery = useMemo(
+    () => deferredSearchQuery.trim().toLowerCase(),
+    [deferredSearchQuery],
+  )
 
-      if (deferredSearchQuery.trim()) {
-        const q = deferredSearchQuery.toLowerCase().trim()
+  const filteredEntries = useMemo(() => {
+    if (!selectedTag && !normalizedQuery) return entries
+
+    return entries.filter((entry) => {
+      // Tag filter
+      if (selectedTag && !parseCommaList(entry.tags).includes(selectedTag)) {
+        return false
+      }
+
+      // Full-text search across content, tags, and date
+      if (normalizedQuery) {
         const dateStr = new Date(entry.createdAt)
           .toLocaleDateString(undefined, {
             month: 'short',
@@ -41,21 +53,26 @@ export function useEntryList(entries: Entry[]): EntryListViewModel {
             minute: '2-digit',
           })
           .toLowerCase()
-        if (
-          !entry.content.toLowerCase().includes(q) &&
-          !entry.tags?.toLowerCase().includes(q) &&
-          !dateStr.includes(q)
-        )
-          return false
+
+        const matchesContent = entry.content
+          .toLowerCase()
+          .includes(normalizedQuery)
+        const matchesTags = !!entry.tags
+          ?.toLowerCase()
+          .includes(normalizedQuery)
+        const matchesDate = dateStr.includes(normalizedQuery)
+
+        if (!matchesContent && !matchesTags && !matchesDate) return false
       }
 
       return true
     })
-  }, [entries, selectedTag, deferredSearchQuery])
+  }, [entries, selectedTag, normalizedQuery])
 
-
-  const toggleTag = (tag: string) =>
-    setSelectedTag((prev) => (prev === tag ? null : tag))
+  const toggleTag = useCallback(
+    (tag: string) => setSelectedTag((prev) => (prev === tag ? null : tag)),
+    [],
+  )
 
   return {
     searchQuery,

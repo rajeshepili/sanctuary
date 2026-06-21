@@ -1,39 +1,44 @@
 import { create } from 'zustand'
-import type { Entry } from '#/types'
+import type { Entry, JournalMood } from '#/types'
 
 export type PendingMedia = { file: File; url: string }
 
 interface EditorState {
   // Common state
   content: string
+  mood: JournalMood | null
   pendingMedia: PendingMedia[]
   isTyping: boolean
-  
+
   // Edit mode state
   isEditing: boolean
   activeEntryId: number | null
   removedMediaIds: number[]
-  
+
   // Actions
   setContent: (content: string | ((prev: string) => string)) => void
   setTyping: (isTyping: boolean) => void
   addMedia: (files: File[]) => void
   removePending: (index: number) => void
   clearMedia: () => void
-  
+
   startEdit: (entry: Entry) => void
   cancelEdit: () => void
   clear: () => void
   removeExisting: (id: number) => void
+  setMood: (mood: JournalMood | null) => void
 }
 
 export const useEditorStore = create<EditorState>((set, get) => ({
   content: '',
+  mood: null,
   pendingMedia: [],
   isTyping: false,
   isEditing: false,
   activeEntryId: null,
   removedMediaIds: [],
+
+  setMood: (mood) => set({ mood }),
 
   setContent: (content) => {
     if (typeof content === 'function') {
@@ -56,7 +61,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   removePending: (index) => {
     set((state) => {
       const item = state.pendingMedia[index]
-      if (item) URL.revokeObjectURL(item.url)
+      item && URL.revokeObjectURL(item.url)
       return {
         pendingMedia: state.pendingMedia.filter((_, i) => i !== index),
       }
@@ -74,6 +79,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       isEditing: true,
       activeEntryId: entry.id,
       content: entry.content,
+      mood: entry.mood ?? null,
       removedMediaIds: [],
     })
   },
@@ -84,6 +90,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       isEditing: false,
       activeEntryId: null,
       content: '',
+      mood: null,
       removedMediaIds: [],
     })
   },
@@ -92,6 +99,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     get().clearMedia()
     set({
       content: '',
+      mood: null,
       isEditing: false,
       activeEntryId: null,
       removedMediaIds: [],

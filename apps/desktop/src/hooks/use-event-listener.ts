@@ -7,7 +7,9 @@ import { useEffect, useRef } from 'react'
 export function useEventListener<TKey extends keyof WindowEventMap>(
   eventName: TKey,
   handler: (event: WindowEventMap[TKey]) => void,
-  element: Window | HTMLElement | null = typeof window !== 'undefined' ? window : null,
+  element: Window | HTMLElement | null = typeof window !== 'undefined'
+    ? window
+    : null,
 ) {
   const savedHandler = useRef(handler)
 
@@ -20,10 +22,10 @@ export function useEventListener<TKey extends keyof WindowEventMap>(
     if (!target) return
 
     // We rely on the browser's guarantee that the event type matches the event name.
-    // To avoid explicit 'as' casting in the middle of the logic, 
+    // To avoid explicit 'as' casting in the middle of the logic,
     // we use a local listener that accepts the base Event type.
     const eventListener = (event: Event) => {
-      // We call the current handler. 
+      // We call the current handler.
       // The implicit conversion from WindowEventMap[TKey] to Event is safe.
       // The reverse requires some trust or narrowing.
       const fn = savedHandler.current as (ev: Event) => void

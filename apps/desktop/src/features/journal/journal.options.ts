@@ -1,7 +1,12 @@
 import { queryOptions, infiniteQueryOptions } from '@tanstack/react-query'
 import type { InfiniteData } from '@tanstack/react-query'
 import { journalKeys } from './journal.keys'
-import { getAllEntries, getDeletedEntries, getEntry, listEntries } from './journal.api'
+import {
+  getAllEntries,
+  getDeletedEntries,
+  getEntry,
+  listEntries,
+} from './journal.api'
 import { withTimeout } from '#/lib/with-timeout'
 import type { Entry } from '#/types'
 
@@ -38,8 +43,7 @@ export const infiniteEntriesQueryOptions = () =>
 export const getEntryQueryOptions = (data: { id: number }) =>
   queryOptions({
     queryKey: [...journalKeys.entries, data.id, data],
-    queryFn: () =>
-      withTimeout(() => getEntry({ data }), { name: 'getEntry' }),
+    queryFn: () => withTimeout(() => getEntry({ data }), { name: 'getEntry' }),
   })
 
 export const trashQueryOptions = () =>

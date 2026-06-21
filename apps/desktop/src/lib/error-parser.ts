@@ -40,12 +40,17 @@ function getTitleForCode(code: string): string {
   if (code.startsWith('MEDIA_')) return 'Media Error'
   if (code.startsWith('PROMPT_')) return 'Prompt Error'
   if (code.startsWith('PREFERENCES_')) return 'Settings Error'
-  
+
   switch (code) {
-    case 'NOT_FOUND': return 'Not Found'
-    case 'VALIDATION_ERROR': return 'Invalid Data'
-    case 'UNEXPECTED_ERROR': return 'System Error'
-    case 'DATABASE_ERROR': return 'Database Error'
-    default: return 'Error'
+    case 'NOT_FOUND':
+      return 'Not Found'
+    case 'VALIDATION_ERROR':
+      return 'Invalid Data'
+    case 'UNEXPECTED_ERROR':
+      return 'System Error'
+    case 'DATABASE_ERROR':
+      return 'Database Error'
+    default:
+      return 'Error'
   }
 }

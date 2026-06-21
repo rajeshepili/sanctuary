@@ -12,9 +12,10 @@ describe('habitsCache', () => {
       id: 1,
       name: 'Test Habit',
       status: 'active',
-      frequency: 'every_day',
+      frequency: 'daily',
+      interval: 1,
       priority: 'medium',
-      category: 'growth',
+      categoryId: null,
       createdAt: new Date(),
 
       identityLabel: null,
@@ -50,47 +51,56 @@ describe('habitsCache', () => {
 
   it('removeHabit() filters habit and its completions', () => {
     let capturedUpdater: any
-    vi.spyOn(queryClient, 'setQueryData').mockImplementation((key: any, updater: any) => {
-      if (JSON.stringify(key) === JSON.stringify(habitsKeys.all)) {
-        capturedUpdater = updater
-      }
-      return undefined
-    })
+    vi.spyOn(queryClient, 'setQueryData').mockImplementation(
+      (key: any, updater: any) => {
+        if (JSON.stringify(key) === JSON.stringify(habitsKeys.all)) {
+          capturedUpdater = updater
+        }
+        return undefined
+      },
+    )
 
     habitsCache.removeHabit(queryClient, 1)
-    const updated = capturedUpdater({ habits: mockHabits, completions: [{ habitId: 1 }] })
-    
+    const updated = capturedUpdater({
+      habits: mockHabits,
+      completions: [{ habitId: 1 }],
+    })
+
     expect(updated.habits).toHaveLength(0)
     expect(updated.completions).toHaveLength(0)
   })
 
   it('patchHabitStatus() updates only the targeted habit', () => {
     let capturedUpdater: any
-    vi.spyOn(queryClient, 'setQueryData').mockImplementation((key: any, updater: any) => {
-      if (JSON.stringify(key) === JSON.stringify(habitsKeys.all)) {
-        capturedUpdater = updater
-      }
-      return undefined
-    })
+    vi.spyOn(queryClient, 'setQueryData').mockImplementation(
+      (key: any, updater: any) => {
+        if (JSON.stringify(key) === JSON.stringify(habitsKeys.all)) {
+          capturedUpdater = updater
+        }
+        return undefined
+      },
+    )
 
     habitsCache.patchHabitStatus(queryClient, 1, 'resting')
     const updated = capturedUpdater({ habits: mockHabits, completions: [] })
-    
+
     expect(updated.habits[0].status).toBe('resting')
   })
 
   it('toggleCompletion() adds a new completion if none exists', () => {
     let capturedUpdater: any
-    vi.spyOn(queryClient, 'setQueryData').mockImplementation((key: any, updater: any) => {
-      if (JSON.stringify(key) === JSON.stringify(habitsKeys.all)) {
-        capturedUpdater = updater
-      }
-      return undefined
-    })
+    vi.spyOn(queryClient, 'setQueryData').mockImplementation(
+      (key: any, updater: any) => {
+        if (JSON.stringify(key) === JSON.stringify(habitsKeys.all)) {
+          capturedUpdater = updater
+        }
+        return undefined
+      },
+    )
 
     habitsCache.toggleCompletion(queryClient, 1, '2024-01-01', 'plus')
     const updated = capturedUpdater({ habits: mockHabits, completions: [] })
-    
+
     expect(updated.completions).toHaveLength(1)
     expect(updated.completions[0].habitId).toBe(1)
     expect(updated.completions[0].tier).toBe('plus')

@@ -1,7 +1,7 @@
 import { getDb } from '#/database'
 import type { Database } from '#/database'
 import { habits, habitCompletions } from '#/database/schema'
-import { eq, and, gte } from 'drizzle-orm'
+import { eq, and, gte, lt } from 'drizzle-orm'
 import type {
   CreateHabitInput,
   UpdateHabitInput,
@@ -10,7 +10,7 @@ import type {
   ToggleCompletionInput,
 } from './habits.schema'
 
-import type { Habit, HabitsData } from '#/types'
+import type { Habit, HabitsData, HabitTier } from '#/types'
 import { HabitError } from './habits.errors'
 import { getFirstOrThrow, ensureRowsAffected } from '#/database/utils'
 
@@ -37,16 +37,17 @@ export async function createHabitService(data: CreateHabitInput): Promise<Habit>
   const results = await db
     .insert(habits)
     .values({
-      name: data.name,
-      identityLabel: data.identityLabel ?? null,
-      miniDesc: data.miniDesc ?? null,
-      plusDesc: data.plusDesc ?? null,
-      eliteDesc: data.eliteDesc ?? null,
+      name: data.name.trim(),
+      identityLabel: data.identityLabel?.trim() ?? null,
+      miniDesc: data.miniDesc?.trim() ?? null,
+      plusDesc: data.plusDesc?.trim() ?? null,
+      eliteDesc: data.eliteDesc?.trim() ?? null,
       frequency: data.frequency,
+      interval: data.interval,
       daysOfWeek: data.daysOfWeek ?? null,
       priority: data.priority,
-      category: data.category,
-      intention: data.intention ?? null,
+      categoryId: data.categoryId ?? null,
+      intention: data.intention?.trim() ?? null,
     })
     .returning()
 
@@ -58,26 +59,35 @@ export async function updateHabitService(data: UpdateHabitInput): Promise<Habit>
   const results = await db
     .update(habits)
     .set({
-      name: data.name,
-      identityLabel: data.identityLabel ?? null,
-      miniDesc: data.miniDesc ?? null,
-      plusDesc: data.plusDesc ?? null,
-      eliteDesc: data.eliteDesc ?? null,
+      name: data.name.trim(),
+      identityLabel: data.identityLabel?.trim() ?? null,
+      miniDesc: data.miniDesc?.trim() ?? null,
+      plusDesc: data.plusDesc?.trim() ?? null,
+      eliteDesc: data.eliteDesc?.trim() ?? null,
       frequency: data.frequency,
+      interval: data.interval,
       daysOfWeek: data.daysOfWeek ?? null,
       priority: data.priority,
-      category: data.category,
-      intention: data.intention ?? null,
+      categoryId: data.categoryId ?? null,
+      intention: data.intention?.trim() ?? null,
     })
     .where(eq(habits.id, data.id))
     .returning()
 
-  return getFirstOrThrow(results, new HabitError('HABIT_UPDATE_FAILED', 'Failed to update habit'))
+  return getFirstOrThrow(
+    results,
+    new HabitError('HABIT_UPDATE_FAILED', 'Failed to update habit'),
+  )
 }
 
 export async function toggleHabitCompletionService(
   data: ToggleCompletionInput,
-): Promise<{ habitId: number; date: string; completed: boolean; tier?: string }> {
+): Promise<{
+  habitId: number
+  date: string
+  completed: boolean
+  tier?: HabitTier
+}> {
   const db = await getDb()
   const { habitId, date, tier = 'plus' } = data
 
@@ -108,7 +118,9 @@ export async function toggleHabitCompletionService(
         completed = true
       }
     } else {
-      await tx.insert(habitCompletions).values({ habitId, completedAt: date, tier })
+      await tx
+        .insert(habitCompletions)
+        .values({ habitId, completedAt: date, tier })
       completed = true
     }
 
@@ -118,26 +130,18 @@ export async function toggleHabitCompletionService(
 
 export async function reactivateHabits(
   db: Database,
-  habitsList?: Habit[],
+  _habitsList?: Habit[],
 ): Promise<void> {
-  const allHabits = habitsList || (await db.select().from(habits))
   const now = new Date()
-
-  for (const habit of allHabits) {
-    if (
-      habit.status === 'resting' &&
-      habit.restUntil &&
-      new Date(habit.restUntil) < now
-    ) {
-      await db
-        .update(habits)
-        .set({ status: 'active', restUntil: null })
-        .where(eq(habits.id, habit.id))
-    }
-  }
+  await db
+    .update(habits)
+    .set({ status: 'active', restUntil: null })
+    .where(and(eq(habits.status, 'resting'), lt(habits.restUntil, now)))
 }
 
-export async function updateHabitStatusService(data: UpdateHabitStatusInput): Promise<Habit> {
+export async function updateHabitStatusService(
+  data: UpdateHabitStatusInput,
+): Promise<Habit> {
   const db = await getDb()
   const results = await db
     .update(habits)
@@ -148,12 +152,30 @@ export async function updateHabitStatusService(data: UpdateHabitStatusInput): Pr
     .where(eq(habits.id, data.id))
     .returning()
 
-  return getFirstOrThrow(results, new HabitError('HABIT_UPDATE_FAILED', 'Failed to update habit status'))
+  return getFirstOrThrow(
+    results,
+    new HabitError('HABIT_UPDATE_FAILED', 'Failed to update habit status'),
+  )
 }
 
-export async function deleteHabitService(data: DeleteHabitInput): Promise<void> {
+export async function deleteHabitService(
+  data: DeleteHabitInput,
+): Promise<void> {
   const db = await getDb()
-  const results = await db.delete(habits).where(eq(habits.id, data.id)).returning()
 
-  ensureRowsAffected(results, new HabitError('HABIT_DELETE_FAILED', 'Failed to delete habit'))
+  await db.transaction(async (tx) => {
+    // Delete completions first (cascade is sometimes flaky in local SQLite implementations)
+    await tx
+      .delete(habitCompletions)
+      .where(eq(habitCompletions.habitId, data.id))
+
+    const results = await tx
+      .delete(habits)
+      .where(eq(habits.id, data.id))
+      .returning({ id: habits.id })
+    ensureRowsAffected(
+      results,
+      new HabitError('HABIT_DELETE_FAILED', 'Failed to delete habit'),
+    )
+  })
 }

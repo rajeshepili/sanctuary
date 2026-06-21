@@ -67,13 +67,17 @@ export function OnboardingFlow() {
 
   const handleFinish = async () => {
     if (!agreed) return
-    await updatePreferences.mutateAsync({
-      firstName: firstName.trim() || undefined,
-      ...selections,
-      privacyPin: pin.length === 4 ? pin : undefined,
-      disclaimerAgreed: true,
-    })
-    navigate({ to: '/' })
+    try {
+      await updatePreferences.mutateAsync({
+        firstName: firstName.trim() || undefined,
+        ...selections,
+        privacyPin: pin.length === 4 ? pin : undefined,
+        disclaimerAgreed: true,
+      })
+      navigate({ to: '/' })
+    } catch {
+      // Error is handled by global toast.error in mutation
+    }
   }
 
   const toggleFeature = (id: string) => {
@@ -89,19 +93,19 @@ export function OnboardingFlow() {
   return (
     <div className="min-h-dvh flex items-center justify-center bg-background text-foreground p-4 relative overflow-hidden">
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-      <motion.div
-        animate={{
-          scale: [1, 1.2, 1],
-          x: [-20, 20, -20],
-          y: [-20, 20, -20],
-        }}
-        transition={{
-          duration: 15,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-        className="absolute inset-0 bg-radial-gradient from-primary/15 to-transparent pointer-events-none opacity-50"
-      />
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            x: [-20, 20, -20],
+            y: [-20, 20, -20],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+          className="absolute inset-0 bg-radial-gradient from-primary/15 to-transparent pointer-events-none opacity-50"
+        />
       </div>
 
       <AnimatePresence mode="wait">
@@ -152,7 +156,8 @@ export function OnboardingFlow() {
                   Personalize Your Space
                 </h2>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  How would you like to be called? You can skip this if you'd like.
+                  How would you like to be called? You can skip this if you'd
+                  like.
                 </p>
                 <Input
                   value={firstName}
@@ -247,34 +252,37 @@ export function OnboardingFlow() {
                     <span>Local Data Only</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Sanctuary is a local-only application. Your data never leaves your device,
-                    and there are no cloud backups or account recovery options.
+                    Sanctuary is a local-only application. Your data never
+                    leaves your device, and there are no cloud backups or
+                    account recovery options.
                   </p>
                   <p className="text-[11px] text-foreground/90 font-semibold leading-relaxed">
-                    By using this app, you acknowledge that you are solely responsible
-                    for backing up your own data. If you lose your device or uninstall
-                    the app without a backup, your data will be permanently lost.
+                    By using this app, you acknowledge that you are solely
+                    responsible for backing up your own data. If you lose your
+                    device or uninstall the app without a backup, your data will
+                    be permanently lost.
                   </p>
                 </div>
 
                 <div className="flex items-start space-x-3 mt-6">
-                <Label className="flex items-start gap-3 p-4 rounded-xl border border-border/50 hover:bg-foreground/5 transition-colors cursor-pointer select-none group">
-                  <Checkbox
-                    id="agreed"
-                    checked={agreed}
-                    onCheckedChange={(checked) => setAgreed(!!checked)}
-                    className="mt-1 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
-                  />
-                  <div className="space-y-1">
-                    <div className="text-xs font-bold text-foreground uppercase tracking-wider transition-colors group-hover:text-amber-600">
-                      I understand the risks
+                  <Label className="flex items-start gap-3 p-4 rounded-xl border border-border/50 hover:bg-foreground/5 transition-colors cursor-pointer select-none group">
+                    <Checkbox
+                      id="agreed"
+                      checked={agreed}
+                      onCheckedChange={(checked) => setAgreed(!!checked)}
+                      className="mt-1 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+                    />
+                    <div className="space-y-1">
+                      <div className="text-xs font-bold text-foreground uppercase tracking-wider transition-colors group-hover:text-amber-600">
+                        I understand the risks
+                      </div>
+                      <p className="text-[10px] text-muted-foreground leading-tight normal-case font-medium">
+                        I acknowledge that my data is saved only on this device
+                        and cannot be recovered if lost.
+                      </p>
                     </div>
-                    <p className="text-[10px] text-muted-foreground leading-tight normal-case font-medium">
-                      I acknowledge that my data is saved only on this device and cannot be recovered if lost.
-                    </p>
-                  </div>
-                </Label>
-              </div>
+                  </Label>
+                </div>
               </div>
             )}
 
@@ -287,7 +295,8 @@ export function OnboardingFlow() {
                   Secure Your Sanctuary
                 </h2>
                 <p className="text-sm text-muted-foreground leading-relaxed text-center px-8">
-                  Add a 4-digit PIN to protect your reflections. You can skip this and add it later in Settings.
+                  Add a 4-digit PIN to protect your reflections. You can skip
+                  this and add it later in Settings.
                 </p>
 
                 <div className="flex flex-col items-center gap-8 py-4">

@@ -58,7 +58,10 @@ export async function updatePreferencesService(
     .returning()
 
   if (!updated) {
-    throw new PreferencesError('PREFERENCES_UPDATE_FAILED', 'Failed to update preferences')
+    throw new PreferencesError(
+      'PREFERENCES_UPDATE_FAILED',
+      'Failed to update preferences',
+    )
   }
 
   return updated

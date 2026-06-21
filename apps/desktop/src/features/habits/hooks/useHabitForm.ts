@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { HabitFrequency, HabitPriority, HabitCategory } from '#/types'
+import type { HabitFrequency, HabitPriority } from '#/types'
 
 interface HabitFormData {
   name: string
@@ -9,9 +9,10 @@ interface HabitFormData {
   eliteDesc: string
   intention: string
   frequency: HabitFrequency
-  customDays: string[]
+  interval: number
+  customDays: number[]
   priority: HabitPriority
-  category: HabitCategory
+  categoryId: number | null
 }
 
 export function useHabitForm(initialData?: Partial<HabitFormData>) {
@@ -21,10 +22,11 @@ export function useHabitForm(initialData?: Partial<HabitFormData>) {
   const [plusDesc, setPlusDesc] = useState(initialData?.plusDesc ?? '')
   const [eliteDesc, setEliteDesc] = useState(initialData?.eliteDesc ?? '')
   const [intention, setIntention] = useState(initialData?.intention ?? '')
-  const [frequency, setFrequency] = useState<HabitFrequency>(initialData?.frequency ?? 'every_day')
-  const [customDays, setCustomDays] = useState<string[]>(initialData?.customDays ?? [])
+  const [frequency, setFrequency] = useState<HabitFrequency>(initialData?.frequency ?? 'daily')
+  const [interval, setInterval] = useState<number>(initialData?.interval ?? 1)
+  const [customDays, setCustomDays] = useState<number[]>(initialData?.customDays ?? [])
   const [priority, setPriority] = useState<HabitPriority>(initialData?.priority ?? 'medium')
-  const [category, setCategory] = useState<HabitCategory>(initialData?.category ?? 'growth')
+  const [categoryId, setCategoryId] = useState<number | null>(initialData?.categoryId ?? null)
 
   const resetForm = useCallback(() => {
     setName('')
@@ -33,13 +35,14 @@ export function useHabitForm(initialData?: Partial<HabitFormData>) {
     setPlusDesc('')
     setEliteDesc('')
     setIntention('')
-    setFrequency('every_day')
+    setFrequency('daily')
+    setInterval(1)
     setCustomDays([])
     setPriority('medium')
-    setCategory('growth')
+    setCategoryId(null)
   }, [])
 
-  const toggleCustomDay = useCallback((day: string) => {
+  const toggleCustomDay = useCallback((day: number) => {
     setCustomDays((prev) =>
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
     )
@@ -54,9 +57,10 @@ export function useHabitForm(initialData?: Partial<HabitFormData>) {
       eliteDesc: eliteDesc.trim() || null,
       intention: intention.trim() || null,
       frequency,
-      daysOfWeek: frequency === 'custom' ? customDays.join(',') : null,
+      interval,
+      daysOfWeek: frequency === 'weekly' || frequency === 'custom' || frequency === 'monthly' ? (customDays.length > 0 ? customDays : null) : null,
       priority,
-      category,
+      categoryId,
     }
   }, [
     name,
@@ -66,9 +70,10 @@ export function useHabitForm(initialData?: Partial<HabitFormData>) {
     eliteDesc,
     intention,
     frequency,
+    interval,
     customDays,
     priority,
-    category,
+    categoryId,
   ])
 
   return {
@@ -80,9 +85,10 @@ export function useHabitForm(initialData?: Partial<HabitFormData>) {
       eliteDesc,
       intention,
       frequency,
+      interval,
       customDays,
       priority,
-      category,
+      categoryId,
     },
     actions: {
       setName,
@@ -92,9 +98,10 @@ export function useHabitForm(initialData?: Partial<HabitFormData>) {
       setEliteDesc,
       setIntention,
       setFrequency,
+      setInterval,
       setCustomDays,
       setPriority,
-      setCategory,
+      setCategoryId,
       resetForm,
       toggleCustomDay,
     },

@@ -4,10 +4,7 @@ export abstract class SanctuaryError extends Error {
   public abstract readonly code: ErrorCode
   public readonly status: number
 
-  constructor(
-    message: string,
-    options?: { status?: number; cause?: unknown },
-  ) {
+  constructor(message: string, options?: { status?: number; cause?: unknown }) {
     super(message)
     this.name = this.constructor.name
     this.status = options?.status ?? 500

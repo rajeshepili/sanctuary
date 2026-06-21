@@ -1,10 +1,22 @@
-import { describe, expect, it } from 'vitest'
+import { exportAllData, exportMarkdown, getExportData } from '../journal.export'
 import {
   buildExportJsonPayload,
   buildExportMarkdown,
   EXPORT_VERSION,
 } from '../journal.export.lib'
 import type { ExportEntry } from '../journal.export.lib'
+import * as dbModule from '#/database'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock('@tanstack/react-start', async (importOriginal) => {
+  const actual = await importOriginal<any>()
+  return {
+    ...actual,
+    createServerFn: vi.fn(() => ({
+      handler: vi.fn((fn) => fn),
+    })),
+  }
+})
 
 const FIXTURE_ENTRIES: ExportEntry[] = [
   {
@@ -54,5 +66,60 @@ describe('journal export format', () => {
 
     const [, eveningBlock] = content.split('\n\n\n')
     expect(eveningBlock).not.toContain('## Memories Attached')
+  })
+})
+
+describe('journal export server functions', () => {
+  it('exportAllData returns valid JSON payload', async () => {
+    vi.spyOn(dbModule, 'getDb').mockResolvedValue({
+      query: {
+        journalEntries: {
+          findMany: vi.fn().mockResolvedValue(FIXTURE_ENTRIES),
+        },
+      },
+    } as any)
+
+    const result = await exportAllData()
+    expect(result.version).toBe(EXPORT_VERSION)
+    expect(result.entries).toEqual(FIXTURE_ENTRIES)
+  })
+
+  it('exportMarkdown returns generated markdown string', async () => {
+    vi.spyOn(dbModule, 'getDb').mockResolvedValue({
+      query: {
+        journalEntries: {
+          findMany: vi.fn().mockResolvedValue(FIXTURE_ENTRIES),
+        },
+      },
+    } as any)
+
+    const result = await exportMarkdown()
+    expect(result.count).toBe(2)
+    expect(result.content).toContain('Morning reflection #gratitude')
+  })
+
+  it('getExportData returns comprehensive backup payload', async () => {
+    const mockHabits = [{ id: 1, title: 'Read', completions: [] }]
+    const mockPrefs = { theme: 'dark' }
+
+    vi.spyOn(dbModule, 'getDb').mockResolvedValue({
+      query: {
+        journalEntries: {
+          findMany: vi.fn().mockResolvedValue(FIXTURE_ENTRIES),
+        },
+        habits: {
+          findMany: vi.fn().mockResolvedValue(mockHabits),
+        },
+        userPreferences: {
+          findFirst: vi.fn().mockResolvedValue(mockPrefs),
+        },
+      },
+    } as any)
+
+    const result = await getExportData()
+    expect(result.entries).toEqual(FIXTURE_ENTRIES)
+    expect(result.habits).toEqual(mockHabits)
+    expect(result.preferences).toEqual(mockPrefs)
+    expect(typeof result.exportedAt).toBe('string')
   })
 })

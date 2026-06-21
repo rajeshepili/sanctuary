@@ -19,9 +19,9 @@ export function useEditorInstance({
 }: UseEditorInstanceOptions) {
   const editorClassName = isInlinePane
     ? 'leading-8 flex-1 overflow-y-auto min-h-0 px-1 py-2 outline-none'
-    // Card widget — visual borders handled by wrapper in JournalEditor.tsx.
-    // We just need layout, height, and scroll behavior here.
-    : 'leading-8 max-h-[300px] overflow-y-auto min-h-[160px] px-4 py-4 outline-none'
+    : // Card widget — visual borders handled by wrapper in JournalEditor.tsx.
+      // We just need layout, height, and scroll behavior here.
+      'leading-8 max-h-[300px] overflow-y-auto min-h-[160px] px-4 py-4 outline-none'
 
   const editor = useJournalEditor({
     content: value,

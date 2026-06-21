@@ -96,12 +96,8 @@
           "name": "entry_media_entry_id_journal_entries_id_fk",
           "tableFrom": "entry_media",
           "tableTo": "journal_entries",
-          "columnsFrom": [
-            "entry_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["entry_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -138,10 +134,7 @@
       "indexes": {
         "habit_completions_habit_id_completed_at_unique": {
           "name": "habit_completions_habit_id_completed_at_unique",
-          "columns": [
-            "habit_id",
-            "completed_at"
-          ],
+          "columns": ["habit_id", "completed_at"],
           "isUnique": true
         }
       },
@@ -150,12 +143,8 @@
           "name": "habit_completions_habit_id_habits_id_fk",
           "tableFrom": "habit_completions",
           "tableTo": "habits",
-          "columnsFrom": [
-            "habit_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["habit_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

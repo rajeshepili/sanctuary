@@ -10,5 +10,5 @@ export const getPreferences = createServerFn({ method: 'GET' }).handler(() =>
 )
 
 export const updatePreferences = createServerFn({ method: 'POST' })
-  .inputValidator(updatePreferencesSchema)
+  .validator(updatePreferencesSchema)
   .handler(({ data }) => updatePreferencesService(data))

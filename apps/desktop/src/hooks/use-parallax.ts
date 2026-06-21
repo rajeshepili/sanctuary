@@ -1,8 +1,9 @@
 import { useMotionValue, useSpring } from 'framer-motion'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 interface ParallaxConfig {
   magnitude?: number
+  speed?: number
   springConfig?: {
     stiffness: number
     damping: number
@@ -10,33 +11,54 @@ interface ParallaxConfig {
   }
 }
 
+/**
+ * A simple 1D noise-like function using sine waves.
+ */
+function simpleNoise(t: number) {
+  return (
+    Math.sin(t) * 0.5 +
+    Math.sin(t * 1.5 + 1.2) * 0.25 +
+    Math.sin(t * 0.7 - 0.5) * 0.15 +
+    Math.sin(t * 2.1 + 2.5) * 0.1
+  )
+}
+
+/**
+ * Refactored useParallax: Now performs autonomous organic drifting
+ * instead of reacting to mouse movements.
+ */
 export function useParallax({
   magnitude = 20,
-  springConfig = { stiffness: 100, damping: 30, mass: 1 },
+  speed = 0.4,
+  springConfig = { stiffness: 40, damping: 20, mass: 1 },
 }: ParallaxConfig = {}) {
-  const mouseX = useMotionValue(0)
-  const mouseY = useMotionValue(0)
+  const driftX = useMotionValue(0)
+  const driftY = useMotionValue(0)
 
-  const x = useSpring(mouseX, springConfig)
-  const y = useSpring(mouseY, springConfig)
+  const x = useSpring(driftX, springConfig)
+  const y = useSpring(driftY, springConfig)
+
+  const timeRef = useRef(Math.random() * 100)
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const { innerWidth, innerHeight } = window
-      const centerX = innerWidth / 2
-      const centerY = innerHeight / 2
+    let frameId: number
 
-      // Normalize distance from center to -1 to 1
-      const normalizedX = (e.clientX - centerX) / centerX
-      const normalizedY = (e.clientY - centerY) / centerY
+    const update = () => {
+      timeRef.current += 0.016 * speed
 
-      mouseX.set(normalizedX * magnitude)
-      mouseY.set(normalizedY * magnitude)
+      // Generate two different noise values for X and Y
+      const noiseX = simpleNoise(timeRef.current)
+      const noiseY = simpleNoise(timeRef.current * 0.8 + 50)
+
+      driftX.set(noiseX * magnitude)
+      driftY.set(noiseY * magnitude)
+
+      frameId = requestAnimationFrame(update)
     }
 
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [magnitude, mouseX, mouseY])
+    frameId = requestAnimationFrame(update)
+    return () => cancelAnimationFrame(frameId)
+  }, [magnitude, speed, driftX, driftY])
 
   return { x, y }
 }

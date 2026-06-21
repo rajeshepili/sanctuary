@@ -11,44 +11,56 @@ import {
   Check,
   X,
 } from 'lucide-react'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { IconButton } from '#/components/ui/icon-button'
 import { HabitDayCell } from '#/features/habits/components/HabitDayCell'
 import { isScheduledOn } from '#/utils/consistency'
-import { getLast30DaysList, fromLocalDateString } from '#/utils/date'
+import { getDailyActivityWindow, fromLocalDateString } from '#/utils/date'
 import { formatScheduleLabel } from '#/utils/habits'
 import { format } from 'date-fns'
-import type { Habit } from '#/types'
+import type { Habit, HabitTier } from '#/types'
 import type { UpdateHabitInput } from '../habits.schema'
 import { useHabitForm } from '../hooks/useHabitForm'
+import { categoriesQueryOptions } from '../categories.options'
 import { Label } from '#/components/ui/label'
 import { Input } from '#/components/ui/input'
 import { Button } from '#/components/ui/button'
 import { AnimatePresence, motion } from 'framer-motion'
 
-type Tier = 'mini' | 'plus' | 'elite' | 'skipped'
-
 const FREQUENCIES = [
-  { value: 'every_day' as const, label: 'Every Day' },
-  { value: 'weekdays' as const, label: 'Weekdays' },
-  { value: 'weekends' as const, label: 'Weekends' },
-  { value: 'custom' as const, label: 'Custom' },
-]
-
-const CATEGORIES = [
-  { value: 'mind' as const, emoji: '🧠' },
-  { value: 'body' as const, emoji: '💪' },
-  { value: 'connection' as const, emoji: '🤝' },
-  { value: 'rest' as const, emoji: '😴' },
-  { value: 'growth' as const, emoji: '🌱' },
-]
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'custom', label: 'Flexible' },
+] as const
 
 const PRIORITIES = [
-  { value: 'easy' as const, label: 'Easy', color: 'text-green-500 bg-green-500/10 border-green-500/30' },
-  { value: 'medium' as const, label: 'Medium', color: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/30' },
-  { value: 'hard' as const, label: 'Hard', color: 'text-red-500 bg-red-500/10 border-red-500/30' },
-]
+  {
+    value: 'low',
+    label: 'Low',
+    color: 'text-green-500 bg-green-500/10 border-green-500/30',
+  },
+  {
+    value: 'medium',
+    label: 'Medium',
+    color: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/30',
+  },
+  {
+    value: 'high',
+    label: 'High',
+    color: 'text-red-500 bg-red-500/10 border-red-500/30',
+  },
+] as const
 
-const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+const WEEKDAYS = [
+  { label: 'mon', value: 1 },
+  { label: 'tue', value: 2 },
+  { label: 'wed', value: 3 },
+  { label: 'thu', value: 4 },
+  { label: 'fri', value: 5 },
+  { label: 'sat', value: 6 },
+  { label: 'sun', value: 0 },
+]
 
 interface HabitDetailViewProps {
   habit: Habit
@@ -59,8 +71,8 @@ interface HabitDetailViewProps {
   missedYesterday: boolean
   onUpdateStatus: (id: number, status: 'active' | 'resting') => void
   onDelete: (id: number) => void
-  onToggleCompletion: (id: number, day: string, tier: Tier) => void
-  onUpdateHabit: (data: UpdateHabitInput) => Promise<void>
+  onToggleCompletion: (id: number, day: string, tier: HabitTier) => void
+  onUpdateHabit: (data: UpdateHabitInput) => void
 }
 
 export function HabitDetailView({
@@ -77,6 +89,7 @@ export function HabitDetailView({
 }: HabitDetailViewProps) {
   const scheduleLabel = formatScheduleLabel(habit)
   const [isEditing, setIsEditing] = useState(false)
+  const { data: categories } = useSuspenseQuery(categoriesQueryOptions)
 
   const { state, actions, getSubmitData } = useHabitForm({
     name: habit.name,
@@ -86,15 +99,16 @@ export function HabitDetailView({
     eliteDesc: habit.eliteDesc ?? '',
     intention: habit.intention ?? '',
     frequency: habit.frequency,
-    customDays: habit.daysOfWeek ? habit.daysOfWeek.split(',') : [],
+    interval: habit.interval,
+    customDays: habit.daysOfWeek ?? [],
     priority: habit.priority,
-    category: habit.category,
+    categoryId: habit.categoryId,
   })
 
-  const handleSave = async () => {
+  const handleSave = () => {
     const data = getSubmitData()
     if (!data.name) return
-    await onUpdateHabit({ id: habit.id, ...data })
+    onUpdateHabit({ id: habit.id, ...data })
     setIsEditing(false)
   }
 
@@ -107,9 +121,10 @@ export function HabitDetailView({
     actions.setEliteDesc(habit.eliteDesc ?? '')
     actions.setIntention(habit.intention ?? '')
     actions.setFrequency(habit.frequency)
-    actions.setCustomDays(habit.daysOfWeek ? habit.daysOfWeek.split(',') : [])
+    actions.setInterval(habit.interval)
+    actions.setCustomDays(habit.daysOfWeek ?? [])
     actions.setPriority(habit.priority)
-    actions.setCategory(habit.category)
+    actions.setCategoryId(habit.categoryId)
     setIsEditing(false)
   }
 
@@ -136,7 +151,9 @@ export function HabitDetailView({
             </div>
           ) : (
             <>
-              <h2 className={`text-2xl font-bold ${habit.status === 'resting' ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+              <h2
+                className={`text-2xl font-bold ${habit.status === 'resting' ? 'text-muted-foreground line-through' : 'text-foreground'}`}
+              >
                 {habit.identityLabel ?? habit.name}
               </h2>
               {habit.identityLabel && (
@@ -196,16 +213,36 @@ export function HabitDetailView({
             </>
           ) : (
             <>
-              <IconButton tooltip="Edit habit" onClick={() => setIsEditing(true)}>
+              <IconButton
+                tooltip="Edit habit"
+                onClick={() => setIsEditing(true)}
+              >
                 <Pencil className="w-4 h-4" />
               </IconButton>
               <IconButton
-                tooltip={habit.status === 'active' ? 'Rest this habit' : 'Resume this habit'}
-                onClick={() => onUpdateStatus(habit.id, habit.status === 'active' ? 'resting' : 'active')}
+                tooltip={
+                  habit.status === 'active'
+                    ? 'Rest this habit'
+                    : 'Resume this habit'
+                }
+                onClick={() =>
+                  onUpdateStatus(
+                    habit.id,
+                    habit.status === 'active' ? 'resting' : 'active',
+                  )
+                }
               >
-                {habit.status === 'active' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                {habit.status === 'active' ? (
+                  <Moon className="w-4 h-4" />
+                ) : (
+                  <Sun className="w-4 h-4" />
+                )}
               </IconButton>
-              <IconButton tooltip="Delete this identity" variant="danger" onClick={() => onDelete(habit.id)}>
+              <IconButton
+                tooltip="Delete this identity"
+                variant="danger"
+                onClick={() => onDelete(habit.id)}
+              >
                 <Trash2 className="w-4 h-4" />
               </IconButton>
             </>
@@ -225,16 +262,37 @@ export function HabitDetailView({
             {/* Tier descriptions */}
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">2-Min Version</Label>
-                <Input value={state.miniDesc} onChange={(e) => actions.setMiniDesc(e.target.value)} placeholder="Minimum effective dose" className="bg-background/60 border-border/50 text-xs" />
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  2-Min Version
+                </Label>
+                <Input
+                  value={state.miniDesc}
+                  onChange={(e) => actions.setMiniDesc(e.target.value)}
+                  placeholder="Minimum effective dose"
+                  className="bg-background/60 border-border/50 text-xs"
+                />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] font-bold text-primary/70 uppercase tracking-wider">Target Action</Label>
-                <Input value={state.plusDesc} onChange={(e) => actions.setPlusDesc(e.target.value)} placeholder="The full habit" className="bg-background/60 border-border/50 text-xs" />
+                <Label className="text-[10px] font-bold text-primary/70 uppercase tracking-wider">
+                  Target Action
+                </Label>
+                <Input
+                  value={state.plusDesc}
+                  onChange={(e) => actions.setPlusDesc(e.target.value)}
+                  placeholder="The full habit"
+                  className="bg-background/60 border-border/50 text-xs"
+                />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Bonus Action</Label>
-                <Input value={state.eliteDesc} onChange={(e) => actions.setEliteDesc(e.target.value)} placeholder="Going above and beyond" className="bg-background/60 border-border/50 text-xs" />
+                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Bonus Action
+                </Label>
+                <Input
+                  value={state.eliteDesc}
+                  onChange={(e) => actions.setEliteDesc(e.target.value)}
+                  placeholder="Going above and beyond"
+                  className="bg-background/60 border-border/50 text-xs"
+                />
               </div>
             </div>
 
@@ -253,18 +311,21 @@ export function HabitDetailView({
                   </button>
                 ))}
               </div>
-              {state.frequency === 'custom' && (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {WEEKDAYS.map((day) => (
-                    <button
-                      key={day}
-                      type="button"
-                      onClick={() => actions.toggleCustomDay(day)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold capitalize transition-all border ${state.customDays.includes(day) ? 'bg-primary text-primary-foreground border-primary' : 'border-border/50 text-muted-foreground hover:border-primary/50'}`}
-                    >
-                      {day.substring(0, 3)}
-                    </button>
-                  ))}
+              {(state.frequency === 'weekly' || state.frequency === 'custom' || state.frequency === 'monthly') && (
+                <div className="flex flex-col gap-2 pt-1">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">On specific days (optional):</span>
+                  <div className="flex flex-wrap gap-2">
+                    {WEEKDAYS.map((day) => (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => actions.toggleCustomDay(day.value)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold capitalize transition-all border ${state.customDays.includes(day.value) ? 'bg-primary text-primary-foreground border-primary' : 'border-border/50 text-muted-foreground hover:border-primary/50'}`}
+                      >
+                        {day.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -272,22 +333,40 @@ export function HabitDetailView({
             {/* Category + Priority */}
             <div className="flex flex-wrap gap-4">
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Category</Label>
-                <div className="flex gap-1.5">
-                  {CATEGORIES.map((c) => (
-                    <button
-                      key={c.value}
-                      type="button"
-                      onClick={() => actions.setCategory(c.value)}
-                      className={`w-8 h-8 rounded-lg text-base transition-all border ${state.category === c.value ? 'border-primary bg-primary/10 scale-110' : 'border-border/40 hover:border-primary/40'}`}
-                    >
-                      {c.emoji}
-                    </button>
-                  ))}
+                <Label className="text-xs text-muted-foreground">
+                  Interval
+                </Label>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Every</span>
+                  <Input 
+                    type="number"
+                    min={1}
+                    value={state.interval}
+                    onChange={(e) => actions.setInterval(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-20 bg-background/60 border-border/50"
+                  />
+                  <span className="text-sm text-muted-foreground capitalize">
+                    {state.frequency === 'daily' ? 'days' : state.frequency === 'weekly' ? 'weeks' : state.frequency === 'monthly' ? 'months' : ''}
+                  </span>
                 </div>
               </div>
+              <div className="space-y-1.5 flex-1 min-w-[150px]">
+                <Label className="text-xs text-muted-foreground">Category</Label>
+                <select
+                  value={state.categoryId || ''}
+                  onChange={(e) => actions.setCategoryId(e.target.value ? parseInt(e.target.value) : null)}
+                  className="flex h-9 w-full rounded-md border border-border/50 bg-background/60 px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="">No Category</option>
+                  {categories.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Priority</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Priority
+                </Label>
                 <div className="flex gap-2">
                   {PRIORITIES.map((p) => (
                     <button
@@ -338,19 +417,25 @@ export function HabitDetailView({
         <div className="grid grid-cols-3 gap-3 text-xs">
           {habit.miniDesc && (
             <div className="p-3 rounded-xl bg-sky-500/5 border border-sky-500/20 space-y-1">
-              <p className="font-bold text-sky-400/80 uppercase tracking-wider text-[9px]">2-Min Version</p>
+              <p className="font-bold text-sky-400/80 uppercase tracking-wider text-[9px]">
+                2-Min Version
+              </p>
               <p className="text-foreground">{habit.miniDesc}</p>
             </div>
           )}
           {habit.plusDesc && (
             <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-1">
-              <p className="font-bold text-primary/70 uppercase tracking-wider text-[9px]">Target Action</p>
+              <p className="font-bold text-primary/70 uppercase tracking-wider text-[9px]">
+                Target Action
+              </p>
               <p className="text-foreground">{habit.plusDesc}</p>
             </div>
           )}
           {habit.eliteDesc && (
             <div className="p-3 rounded-xl bg-amber-400/5 border border-amber-400/20 space-y-1">
-              <p className="font-bold text-amber-400/80 uppercase tracking-wider text-[9px]">Bonus Action</p>
+              <p className="font-bold text-amber-400/80 uppercase tracking-wider text-[9px]">
+                Bonus Action
+              </p>
               <p className="text-foreground">{habit.eliteDesc}</p>
             </div>
           )}
@@ -362,7 +447,9 @@ export function HabitDetailView({
         <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
             <span>30-Day Evidence Log</span>
-            <span className="opacity-60 normal-case font-medium">Tap a day to log your effort</span>
+            <span className="opacity-60 normal-case font-medium">
+              Tap a day to log your effort
+            </span>
           </div>
 
           {/* Tier legend */}
@@ -386,7 +473,7 @@ export function HabitDetailView({
           </div>
 
           <div className="flex flex-wrap gap-1.5 sm:gap-2">
-            {getLast30DaysList().map((dayStr) => {
+            {getDailyActivityWindow().map((dayStr) => {
               const tier = completions.get(dayStr)
               const dateObj = fromLocalDateString(dayStr)
               return (
@@ -394,12 +481,20 @@ export function HabitDetailView({
                   key={dayStr}
                   dayStr={dayStr}
                   isCompleted={!!tier}
-                  tier={tier as Tier}
+                  tier={tier as HabitTier}
                   isToday={dayStr === today}
-                  activeOnDate={isScheduledOn(dayStr, habit.frequency, habit.daysOfWeek)}
+                  activeOnDate={isScheduledOn(
+                    dayStr,
+                    habit.frequency,
+                    habit.interval,
+                    habit.daysOfWeek,
+                    habit.createdAt.toISOString().split('T')[0]
+                  )}
                   dateLabel={format(dateObj, 'MMM d')}
                   dayNumber={dateObj.getDate()}
-                  onToggle={(day, selectedTier) => onToggleCompletion(habit.id, day, selectedTier)}
+                  onToggle={(day, selectedTier) =>
+                    onToggleCompletion(habit.id, day, selectedTier)
+                  }
                 />
               )
             })}

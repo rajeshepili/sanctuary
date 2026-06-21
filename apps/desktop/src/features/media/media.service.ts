@@ -42,7 +42,10 @@ export async function prepareMediaAsset(
   const fileType = await fileTypeFromBuffer(bytes)
 
   if (!fileType || !fileType.mime.startsWith('image/')) {
-    throw new MediaError('MEDIA_INVALID_FORMAT', 'Only images are allowed as media.')
+    throw new MediaError(
+      'MEDIA_INVALID_FORMAT',
+      'Only images are allowed as media.',
+    )
   }
 
   const id = crypto.randomUUID()
@@ -55,14 +58,22 @@ export async function prepareMediaAsset(
     const [originalImage, thumbImage] = await Promise.all([
       pipeline
         .clone()
-        .resize({ width: MAX_ORIGINAL_WIDTH, fit: 'inside', withoutEnlargement: true })
+        .resize({
+          width: MAX_ORIGINAL_WIDTH,
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
         .webp({ quality: 85 })
         .toBuffer(),
       pipeline
         .clone()
-        .resize({ width: MAX_THUMB_WIDTH, fit: 'inside', withoutEnlargement: true })
+        .resize({
+          width: MAX_THUMB_WIDTH,
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
         .webp({ quality: 80 })
-        .toBuffer()
+        .toBuffer(),
     ])
 
     await Promise.all([
@@ -77,12 +88,16 @@ export async function prepareMediaAsset(
       fileSize: originalImage.length,
     }
   } catch (error) {
-    throw new MediaError('MEDIA_PREPARATION_FAILED', 'Failed to process image', { cause: error })
+    throw new MediaError(
+      'MEDIA_PREPARATION_FAILED',
+      'Failed to process image',
+      { cause: error },
+    )
   }
 }
 
 export async function deleteMediaAssets(
-  paths: Array<{ filePath: string; thumbnailPath: string }>
+  paths: Array<{ filePath: string; thumbnailPath: string }>,
 ): Promise<void> {
   const allPaths = paths.flatMap((p) => [p.filePath, p.thumbnailPath])
   await Promise.allSettled(allPaths.map((p) => fs.remove(p)))

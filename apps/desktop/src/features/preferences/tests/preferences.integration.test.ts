@@ -18,7 +18,7 @@ describe('Preferences Integration Tests', () => {
 
   it('creates default preferences', async () => {
     const created = await seedPreferences(db, {
-      firstName: 'Test User',
+      name: 'Test User',
       disclaimerAgreed: true,
     })
 
@@ -26,19 +26,17 @@ describe('Preferences Integration Tests', () => {
       where: eq(schema.userPreferences.id, created.id),
     })
 
-    expect(retrieved?.firstName).toBe('Test User')
+    expect(retrieved?.name).toBe('Test User')
     expect(retrieved?.disclaimerAgreed).toBe(true)
   })
 
   it('updates preferences', async () => {
-    const created = await seedPreferences(db, { firstName: 'Initial Name' })
+    const created = await seedPreferences(db, { name: 'Initial Name' })
 
     await db
       .update(schema.userPreferences)
       .set({
-        firstName: 'Updated Name',
-        showHabits: false,
-        showPromptInspire: false,
+        name: 'Updated Name',
       })
       .where(eq(schema.userPreferences.id, created.id))
 
@@ -46,14 +44,12 @@ describe('Preferences Integration Tests', () => {
       where: eq(schema.userPreferences.id, created.id),
     })
 
-    expect(updated?.firstName).toBe('Updated Name')
-    expect(updated?.showHabits).toBe(false)
-    expect(updated?.showPromptInspire).toBe(false)
+    expect(updated?.name).toBe('Updated Name')
   })
 
   it('handles optional fields', async () => {
     const created = await seedPreferences(db, {
-      firstName: null,
+      name: null,
       privacyPin: null,
     })
 
@@ -61,7 +57,7 @@ describe('Preferences Integration Tests', () => {
       where: eq(schema.userPreferences.id, created.id),
     })
 
-    expect(retrieved?.firstName).toBeNull()
+    expect(retrieved?.name).toBeNull()
     expect(retrieved?.privacyPin).toBeNull()
   })
 
@@ -111,26 +107,6 @@ describe('Preferences Integration Tests', () => {
     )
   })
 
-  it('toggles feature flags', async () => {
-    const created = await seedPreferences(db)
-
-    await db
-      .update(schema.userPreferences)
-      .set({
-        showHabits: false,
-        showPromptInspire: false,
-        showBreathingSpace: false,
-      })
-      .where(eq(schema.userPreferences.id, created.id))
-
-    const updated = await db.query.userPreferences.findFirst({
-      where: eq(schema.userPreferences.id, created.id),
-    })
-
-    expect(updated?.showHabits).toBe(false)
-    expect(updated?.showPromptInspire).toBe(false)
-    expect(updated?.showBreathingSpace).toBe(false)
-  })
 
   it('stores privacy PIN', async () => {
     const created = await seedPreferences(db, { privacyPin: '1234' })

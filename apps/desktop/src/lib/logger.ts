@@ -1,4 +1,3 @@
-
 export class Logger {
   private readonly prefix: string
 

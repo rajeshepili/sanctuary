@@ -1,5 +1,5 @@
-import { getDb } from './index'
-import { purgeStaleEntries, purgeOrphanedMediaFiles } from './purge'
+import { getDb } from '#/database'
+import { purgeStaleEntries, purgeOrphanedMediaFiles } from '#/database/purge'
 import { reactivateHabits } from '#/features/habits/habits.service'
 import { exportAllData } from '#/features/journal/journal.export'
 import fs from 'fs-extra'
@@ -28,7 +28,7 @@ export function stopBackgroundJobs() {
   }
 }
 
-async function runJobs() {
+export async function runJobs() {
   logger.info('Running background jobs tick...')
   try {
     const db = await getDb()
@@ -39,10 +39,16 @@ async function runJobs() {
     await runDailyBackup()
   } catch (error) {
     logger.error('Error running background jobs:', error)
+    console.error('RUN_JOBS_ERROR:', error)
+    throw error // Re-throw so tests fail properly instead of silently ignoring
   }
 }
 
 let lastBackupDate = ''
+
+export function resetLastBackupDate() {
+  lastBackupDate = ''
+}
 
 async function runDailyBackup() {
   const today = new Date().toISOString().split('T')[0]

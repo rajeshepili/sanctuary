@@ -19,18 +19,17 @@ describe('Habits Integration Tests', () => {
 
   it('creates and retrieves a habit', async () => {
     const created = await seedHabit(db, {
-      name: 'Morning Meditation',
-      frequency: 'every_day',
-      category: 'mind',
+      name: 'Integration Habit',
+      frequency: 'daily',
     })
 
     const retrieved = await db.query.habits.findFirst({
       where: eq(schema.habits.id, created.id),
     })
 
-    expect(retrieved?.name).toBe('Morning Meditation')
-    expect(retrieved?.frequency).toBe('every_day')
-    expect(retrieved?.category).toBe('mind')
+    expect(retrieved?.name).toBe('Integration Habit')
+    expect(retrieved?.frequency).toBe('daily')
+    expect(retrieved?.categoryId).toBe(null)
   })
 
   it('updates habit fields', async () => {

@@ -334,6 +334,69 @@ describe('useDraft Hook', () => {
     // Should NOT call mockRestore2 because we already hydrated
     expect(mockRestore2).not.toHaveBeenCalled()
   })
+
+  it('should cancel existing reset timer when setIdleLater is called repeatedly', () => {
+    const { result, rerender } = renderHook(
+      ({ value }) =>
+        useDraft({
+          key: draftKey,
+          value,
+          debounceMs: 1,
+          resetDelayMs: 1000,
+        }),
+      {
+        initialProps: { value: 'initial' },
+      },
+    )
+
+    act(() => {
+      rerender({ value: 'draft 1' })
+    })
+    flushDraftSave()
+    expect(result.current.status).toBe('saved')
+
+    // Timer is scheduled to go to idle in 1000ms
+    act(() => {
+      vi.advanceTimersByTime(500)
+      rerender({ value: 'draft 2' })
+    })
+    flushDraftSave()
+    expect(result.current.status).toBe('saved')
+
+    // At 1000ms total, it should NOT go idle because the timer was reset!
+    act(() => {
+      vi.advanceTimersByTime(500)
+    })
+    expect(result.current.status).toBe('saved')
+
+    // But at 1500ms total, it should go idle
+    act(() => {
+      vi.advanceTimersByTime(500)
+    })
+    expect(result.current.status).toBe('idle')
+  })
+
+  it('should skip saving if retrySave is called manually with an unchanged value', () => {
+    const { result } = renderHook(() =>
+      useDraft({
+        key: draftKey,
+        value: 'initial',
+        debounceMs: 1,
+      }),
+    )
+
+    flushDraftSave()
+    expect(result.current.status).toBe('saved')
+
+    // We manually trigger retrySave without changing the value
+    // This should hit the early return `lastSavedValueRef.current === value`
+    act(() => {
+      // Manually set status to something else to see if it immediately goes back to 'saved'
+      result.current.retrySave()
+    })
+
+    expect(result.current.status).toBe('saved')
+  })
 })
 
 describe('getDraft function', () => {

@@ -14,16 +14,16 @@ The codebase is **above average for a solo-developer project** and shows genuine
 
 ### Overall Score: **7.4 / 10**
 
-| Dimension | Score | Summary |
-|---|---|---|
-| Architecture | 8.5 / 10 | Clean feature-sliced design, strong separation of concerns |
-| Code Quality | 7.5 / 10 | Strong TypeScript discipline, minimal `any` usage (1 instance) |
-| Performance | 6.5 / 10 | Heavy vendor bundles, scene rendering on every page, no lazy routes |
-| DRY Principles | 7.0 / 10 | Good utilities (`withOptimistic`, `toastAsync`), but habits page is monolithic |
-| Feature Completeness | 7.5 / 10 | Core features complete, but dangling state from removed `/write` route |
-| Production Readiness | 6.0 / 10 | Needs OSS polish: CI hardening, contributor DX, dead code removal |
-| Testing | 7.0 / 10 | Solid service-layer coverage, zero component/hook tests |
-| Security | 8.0 / 10 | Session token auth, CSP headers, sandboxed Electron |
+| Dimension            | Score    | Summary                                                                        |
+| -------------------- | -------- | ------------------------------------------------------------------------------ |
+| Architecture         | 8.5 / 10 | Clean feature-sliced design, strong separation of concerns                     |
+| Code Quality         | 7.5 / 10 | Strong TypeScript discipline, minimal `any` usage (1 instance)                 |
+| Performance          | 6.5 / 10 | Heavy vendor bundles, scene rendering on every page, no lazy routes            |
+| DRY Principles       | 7.0 / 10 | Good utilities (`withOptimistic`, `toastAsync`), but habits page is monolithic |
+| Feature Completeness | 7.5 / 10 | Core features complete, but dangling state from removed `/write` route         |
+| Production Readiness | 6.0 / 10 | Needs OSS polish: CI hardening, contributor DX, dead code removal              |
+| Testing              | 7.0 / 10 | Solid service-layer coverage, zero component/hook tests                        |
+| Security             | 8.0 / 10 | Session token auth, CSP headers, sandboxed Electron                            |
 
 ---
 
@@ -37,18 +37,18 @@ graph TB
         M[main.ts] --> S[Nitro Server Fork]
         M --> CSP[CSP + Session Token Injection]
     end
-    
+
     subgraph "Renderer / Frontend"
         R[TanStack Router] --> Q[TanStack Query]
         Q --> SF[Server Functions<br/>createServerFn]
     end
-    
+
     subgraph "Server / Backend"
         SF --> SVC[*.service.ts]
         SVC --> DB[(SQLite / Drizzle)]
         SVC --> FS[File System<br/>Media Assets]
     end
-    
+
     subgraph "Background"
         JOBS[jobs.ts] --> PURGE[purge.ts]
         JOBS --> BACKUP[Daily JSON Backup]
@@ -97,12 +97,12 @@ src/features/{domain}/
 
 ### 2.1 TypeScript Discipline
 
-| Metric | Value | Assessment |
-|---|---|---|
-| `any` type usage | **1** instance | ✅ Excellent |
+| Metric                         | Value             | Assessment                                                                                                  |
+| ------------------------------ | ----------------- | ----------------------------------------------------------------------------------------------------------- |
+| `any` type usage               | **1** instance    | ✅ Excellent                                                                                                |
 | `console.*` in production code | **18** statements | ⚠️ Most are in `jobs.ts`/`purge.ts` — acceptable for server-side logging but should use a structured logger |
-| `TODO`/`FIXME`/`HACK` markers | **0** | ✅ Clean |
-| Explicit `null` vs `undefined` | Consistent | Types use `null` for DB fields, `undefined` for optional props |
+| `TODO`/`FIXME`/`HACK` markers  | **0**             | ✅ Clean                                                                                                    |
+| Explicit `null` vs `undefined` | Consistent        | Types use `null` for DB fields, `undefined` for optional props                                              |
 
 ### 2.2 Error Handling
 
@@ -125,13 +125,13 @@ SanctuaryError (abstract)
 
 ### 2.3 Code Smells
 
-| Smell | Location | Severity |
-|---|---|---|
-| **441-line God component** | `routes/__app/habits.tsx` | 🔴 High |
-| **Form state as 10 separate `useState` calls** | `habits.tsx` L92–101 | 🟡 Medium |
-| **IIFE in JSX** | `habits.tsx` L287 `{activeHabit && (() => { ... })()}` | 🟡 Medium |
-| **`useMemo` for side effect** | `write.tsx` L41 (now deleted, but pattern existed) | ✅ Resolved |
-| **Unused UI components** | 55 components in `components/ui/`, many unused | 🟡 Medium |
+| Smell                                          | Location                                               | Severity    |
+| ---------------------------------------------- | ------------------------------------------------------ | ----------- |
+| **441-line God component**                     | `routes/__app/habits.tsx`                              | 🔴 High     |
+| **Form state as 10 separate `useState` calls** | `habits.tsx` L92–101                                   | 🟡 Medium   |
+| **IIFE in JSX**                                | `habits.tsx` L287 `{activeHabit && (() => { ... })()}` | 🟡 Medium   |
+| **`useMemo` for side effect**                  | `write.tsx` L41 (now deleted, but pattern existed)     | ✅ Resolved |
+| **Unused UI components**                       | 55 components in `components/ui/`, many unused         | 🟡 Medium   |
 
 ---
 
@@ -152,6 +152,7 @@ codeSplitting: {
 
 > [!WARNING]
 > **Missing critical splits.** The following heavy dependencies are NOT split and will be in the main bundle:
+>
 > - `recharts` (~200KB gzipped) — only used on habits page
 > - `radix-ui` (the monolithic `radix-ui` package instead of granular `@radix-ui/*`)
 > - `react-day-picker` — only used in settings
@@ -202,22 +203,22 @@ const queryClient = new QueryClient({
 
 ### 4.1 Good Abstractions
 
-| Utility | Purpose | Used By |
-|---|---|---|
-| `withOptimistic()` | Generic snapshot/apply/restore/execute pattern | Journal, Habits mutations |
-| `toastAsync()` | Promise → toast lifecycle binding | All mutations |
-| `journalCache` | Centralized cache operations | Journal mutations |
-| `FeatureErrorBoundary` | Query-aware error boundary | Every feature section |
-| `EntryListPane` / `EntryViewerPane` | Reusable split-pane layouts | Journal, (could be used for Habits) |
+| Utility                             | Purpose                                        | Used By                             |
+| ----------------------------------- | ---------------------------------------------- | ----------------------------------- |
+| `withOptimistic()`                  | Generic snapshot/apply/restore/execute pattern | Journal, Habits mutations           |
+| `toastAsync()`                      | Promise → toast lifecycle binding              | All mutations                       |
+| `journalCache`                      | Centralized cache operations                   | Journal mutations                   |
+| `FeatureErrorBoundary`              | Query-aware error boundary                     | Every feature section               |
+| `EntryListPane` / `EntryViewerPane` | Reusable split-pane layouts                    | Journal, (could be used for Habits) |
 
 ### 4.2 DRY Violations
 
-| Violation | Description | Impact |
-|---|---|---|
-| **Duplicate editor state** | Dashboard `index.tsx` creates its own `useEntryEditor()` + `useDraft()` completely independent from `journal.tsx`. If the user starts writing on the dashboard and navigates to journal, the draft is on a different key. | 🟡 UX confusion |
-| **Habits cache is ad-hoc** | Habits mutations call `queryClient.setQueryData` inline instead of through a `habitsCache` object like journal does. | 🟡 Inconsistency |
-| **Form state not extracted** | The create-habit form in `habits.tsx` manages 10 `useState` hooks. This could be a `useHabitForm()` hook or a form library integration. | 🟡 Maintainability |
-| **Split-pane pattern not reused** | Journal uses `EntryListPane` + `EntryViewerPane`. Habits has `IdentityListPane` + `IdentityViewerPane`. These are structurally identical but implemented separately. | 🟡 Missed reuse |
+| Violation                         | Description                                                                                                                                                                                                               | Impact             |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| **Duplicate editor state**        | Dashboard `index.tsx` creates its own `useEntryEditor()` + `useDraft()` completely independent from `journal.tsx`. If the user starts writing on the dashboard and navigates to journal, the draft is on a different key. | 🟡 UX confusion    |
+| **Habits cache is ad-hoc**        | Habits mutations call `queryClient.setQueryData` inline instead of through a `habitsCache` object like journal does.                                                                                                      | 🟡 Inconsistency   |
+| **Form state not extracted**      | The create-habit form in `habits.tsx` manages 10 `useState` hooks. This could be a `useHabitForm()` hook or a form library integration.                                                                                   | 🟡 Maintainability |
+| **Split-pane pattern not reused** | Journal uses `EntryListPane` + `EntryViewerPane`. Habits has `IdentityListPane` + `IdentityViewerPane`. These are structurally identical but implemented separately.                                                      | 🟡 Missed reuse    |
 
 ---
 
@@ -225,28 +226,28 @@ const queryClient = new QueryClient({
 
 ### 5.1 Feature Matrix
 
-| Feature | CRUD | Optimistic | Validation | Cache | Tests | Error Handling | Status |
-|---|---|---|---|---|---|---|---|
-| **Journal Entries** | ✅ Full | ✅ Yes | ✅ Zod | ✅ Dedicated `cache.ts` | ✅ 3 test files | ✅ `JournalError` | 🟢 Complete |
-| **Entry Media** | ✅ Full | ⚠️ Partial | ✅ Base64 validation | ✅ Via journal cache | ✅ 2 test files | ✅ `MediaError` | 🟢 Complete |
-| **Habits** | ✅ Full | ⚠️ Inline only | ✅ Zod | ⚠️ No dedicated `cache.ts` | ✅ 1 test file | ✅ `HabitError` | 🟡 Needs polish |
-| **Prompts** | ✅ Full | ⚠️ None | ✅ Zod | ⚠️ Via direct `setQueryData` | ✅ 1 test file | ✅ `PromptsError` | 🟡 Missing optimistic |
-| **Preferences** | ✅ Full | ⚠️ None | ✅ Zod | ✅ Dedicated | ✅ 1 test file | ✅ `PreferencesError` | 🟢 Complete |
-| **Trash / Soft Delete** | ✅ Full | ✅ Yes | ✅ | ✅ | ⚠️ Via journal tests | ✅ | 🟢 Complete |
-| **Export / Backup** | ✅ Read-only | N/A | N/A | N/A | ✅ 1 test file | ⚠️ `catch(() => {})` | 🟡 Silent failures |
-| **Onboarding** | ✅ One-time | N/A | ⚠️ Basic | N/A | ❌ None | ⚠️ Basic | 🟡 No tests |
-| **Lock Screen (PIN)** | ✅ Set/Verify | N/A | ⚠️ Length only | N/A | ❌ None | ⚠️ Basic | 🟡 No tests |
+| Feature                 | CRUD          | Optimistic     | Validation           | Cache                        | Tests                | Error Handling        | Status                |
+| ----------------------- | ------------- | -------------- | -------------------- | ---------------------------- | -------------------- | --------------------- | --------------------- |
+| **Journal Entries**     | ✅ Full       | ✅ Yes         | ✅ Zod               | ✅ Dedicated `cache.ts`      | ✅ 3 test files      | ✅ `JournalError`     | 🟢 Complete           |
+| **Entry Media**         | ✅ Full       | ⚠️ Partial     | ✅ Base64 validation | ✅ Via journal cache         | ✅ 2 test files      | ✅ `MediaError`       | 🟢 Complete           |
+| **Habits**              | ✅ Full       | ⚠️ Inline only | ✅ Zod               | ⚠️ No dedicated `cache.ts`   | ✅ 1 test file       | ✅ `HabitError`       | 🟡 Needs polish       |
+| **Prompts**             | ✅ Full       | ⚠️ None        | ✅ Zod               | ⚠️ Via direct `setQueryData` | ✅ 1 test file       | ✅ `PromptsError`     | 🟡 Missing optimistic |
+| **Preferences**         | ✅ Full       | ⚠️ None        | ✅ Zod               | ✅ Dedicated                 | ✅ 1 test file       | ✅ `PreferencesError` | 🟢 Complete           |
+| **Trash / Soft Delete** | ✅ Full       | ✅ Yes         | ✅                   | ✅                           | ⚠️ Via journal tests | ✅                    | 🟢 Complete           |
+| **Export / Backup**     | ✅ Read-only  | N/A            | N/A                  | N/A                          | ✅ 1 test file       | ⚠️ `catch(() => {})`  | 🟡 Silent failures    |
+| **Onboarding**          | ✅ One-time   | N/A            | ⚠️ Basic             | N/A                          | ❌ None              | ⚠️ Basic              | 🟡 No tests           |
+| **Lock Screen (PIN)**   | ✅ Set/Verify | N/A            | ⚠️ Length only       | N/A                          | ❌ None              | ⚠️ Basic              | 🟡 No tests           |
 
 ### 5.2 Dangling State from `/write` Route Removal
 
 The `/write` route was recently deleted but several references remain:
 
-| Location | Issue |
-|---|---|
-| `prompts.tsx` L53 | `handleWriteWithPrompt()` navigates to `'/'` and sets a pending prompt — this only works if the dashboard editor picks it up |
-| `index.tsx` L80 | Dashboard save navigates to `/journal` — **but no inline creation flow exists on dashboard anymore** |
-| `JournalEditor.tsx` | `isExpandedPage` prop still exists but nothing sets it to `true` |
-| `useEditorInstance.ts` | `isExpandedPage` branch still in the ternary — dead code |
+| Location               | Issue                                                                                                                        |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `prompts.tsx` L53      | `handleWriteWithPrompt()` navigates to `'/'` and sets a pending prompt — this only works if the dashboard editor picks it up |
+| `index.tsx` L80        | Dashboard save navigates to `/journal` — **but no inline creation flow exists on dashboard anymore**                         |
+| `JournalEditor.tsx`    | `isExpandedPage` prop still exists but nothing sets it to `true`                                                             |
+| `useEditorInstance.ts` | `isExpandedPage` branch still in the ternary — dead code                                                                     |
 
 ---
 
@@ -254,28 +255,29 @@ The `/write` route was recently deleted but several references remain:
 
 ### 6.1 Checklist
 
-| Requirement | Status | Notes |
-|---|---|---|
-| **License** | ✅ MIT | Proper `LICENSE` file present |
-| **README** | ✅ Present | 2.6KB — adequate but could be richer |
-| **CONTRIBUTING.md** | ✅ Present | 6.1KB — comprehensive |
-| **CODE_OF_CONDUCT.md** | ✅ Present | Contributor Covenant |
-| **SECURITY.md** | ✅ Present | Disclosure process documented |
-| **CHANGELOG.md** | ⚠️ Minimal | Only 657 bytes — needs structured versioning |
-| **CI/CD Pipeline** | ⚠️ `.github/` exists | Needs verification of workflow files |
-| **Lint on PR** | ⚠️ Husky + lint-staged | Works locally, needs CI enforcement |
-| **Type checking in CI** | ❌ Not verified | `pnpm exec tsc --noEmit` should run in CI |
-| **Dead dependency audit** | ❌ Not done | 55 UI components, many unused |
-| **Env documentation** | ⚠️ `.env.example` | Present but minimal (351 bytes) |
-| **Structured logging** | ❌ Uses `console.*` | Should use a logger with levels for the server process |
-| **Error telemetry** | ❌ None | Acceptable for privacy-first, but opt-in crash reports would help |
-| **Accessibility** | ⚠️ Partial | `aria-label` on nav, `aria-hidden` on background, but forms lack proper labeling |
+| Requirement               | Status                 | Notes                                                                            |
+| ------------------------- | ---------------------- | -------------------------------------------------------------------------------- |
+| **License**               | ✅ MIT                 | Proper `LICENSE` file present                                                    |
+| **README**                | ✅ Present             | 2.6KB — adequate but could be richer                                             |
+| **CONTRIBUTING.md**       | ✅ Present             | 6.1KB — comprehensive                                                            |
+| **CODE_OF_CONDUCT.md**    | ✅ Present             | Contributor Covenant                                                             |
+| **SECURITY.md**           | ✅ Present             | Disclosure process documented                                                    |
+| **CHANGELOG.md**          | ⚠️ Minimal             | Only 657 bytes — needs structured versioning                                     |
+| **CI/CD Pipeline**        | ⚠️ `.github/` exists   | Needs verification of workflow files                                             |
+| **Lint on PR**            | ⚠️ Husky + lint-staged | Works locally, needs CI enforcement                                              |
+| **Type checking in CI**   | ❌ Not verified        | `pnpm exec tsc --noEmit` should run in CI                                        |
+| **Dead dependency audit** | ❌ Not done            | 55 UI components, many unused                                                    |
+| **Env documentation**     | ⚠️ `.env.example`      | Present but minimal (351 bytes)                                                  |
+| **Structured logging**    | ❌ Uses `console.*`    | Should use a logger with levels for the server process                           |
+| **Error telemetry**       | ❌ None                | Acceptable for privacy-first, but opt-in crash reports would help                |
+| **Accessibility**         | ⚠️ Partial             | `aria-label` on nav, `aria-hidden` on background, but forms lack proper labeling |
 
 ### 6.2 Dead Code / Unused Dependencies
 
 **55 UI components** are registered in `components/ui/`. Many are standard Shadcn/UI components that were scaffolded but never used:
 
 Likely unused (based on grep analysis):
+
 - `accordion.tsx`, `aspect-ratio.tsx`, `avatar.tsx`, `breadcrumb.tsx`
 - `carousel.tsx`, `chart.tsx`, `checkbox.tsx`, `collapsible.tsx`
 - `context-menu.tsx`, `direction.tsx`, `drawer.tsx`, `hover-card.tsx`
@@ -290,13 +292,13 @@ Likely unused (based on grep analysis):
 
 ### 6.3 Dependency Hygiene
 
-| Concern | Package | Notes |
-|---|---|---|
-| Beta dependency | `nitro@3.0.260522-beta` | Using a beta version in production |
-| Monolithic import | `radix-ui@1.4.3` | Should be granular `@radix-ui/react-*` imports |
-| Heavy + rarely used | `recharts@3.8.0` | ~200KB, only used on habits page |
-| Unused in code? | `react-resizable-panels` | Imported but may not be actively used |
-| `@types/mdast` in dependencies | Should be in `devDependencies` | |
+| Concern                        | Package                        | Notes                                          |
+| ------------------------------ | ------------------------------ | ---------------------------------------------- |
+| Beta dependency                | `nitro@3.0.260522-beta`        | Using a beta version in production             |
+| Monolithic import              | `radix-ui@1.4.3`               | Should be granular `@radix-ui/react-*` imports |
+| Heavy + rarely used            | `recharts@3.8.0`               | ~200KB, only used on habits page               |
+| Unused in code?                | `react-resizable-panels`       | Imported but may not be actively used          |
+| `@types/mdast` in dependencies | Should be in `devDependencies` |                                                |
 
 ---
 
@@ -304,33 +306,33 @@ Likely unused (based on grep analysis):
 
 ### 7.1 Coverage Map
 
-| Layer | Test Files | Type | Coverage |
-|---|---|---|---|
-| `journal.service.test.ts` | 1 | Unit | Core CRUD operations |
-| `journal.integration.test.ts` | 1 | Integration | Full lifecycle with DB |
-| `journal.export.test.ts` | 1 | Unit | Export format validation |
-| `habits.integration.test.ts` | 1 | Integration | Create, toggle, delete |
-| `media.service.test.ts` | 1 | Unit | Asset preparation |
-| `media.integration.test.ts` | 1 | Integration | Full upload lifecycle |
-| `preferences.integration.test.ts` | 1 | Integration | CRUD operations |
-| `prompts.integration.test.ts` | 1 | Integration | CRUD operations |
-| `database.perf.test.ts` | 1 | Performance | DB operation benchmarks |
-| `purge.test.ts` | 1 | Unit | Stale entry cleanup |
-| `consistency.test.ts` | 1 | Unit | Scheduling logic |
-| `use-draft.test.ts` | 1 | Unit | Draft hook logic |
-| `scene-registry.test.tsx` | 1 | Unit | Scene component loading |
+| Layer                             | Test Files | Type        | Coverage                 |
+| --------------------------------- | ---------- | ----------- | ------------------------ |
+| `journal.service.test.ts`         | 1          | Unit        | Core CRUD operations     |
+| `journal.integration.test.ts`     | 1          | Integration | Full lifecycle with DB   |
+| `journal.export.test.ts`          | 1          | Unit        | Export format validation |
+| `habits.integration.test.ts`      | 1          | Integration | Create, toggle, delete   |
+| `media.service.test.ts`           | 1          | Unit        | Asset preparation        |
+| `media.integration.test.ts`       | 1          | Integration | Full upload lifecycle    |
+| `preferences.integration.test.ts` | 1          | Integration | CRUD operations          |
+| `prompts.integration.test.ts`     | 1          | Integration | CRUD operations          |
+| `database.perf.test.ts`           | 1          | Performance | DB operation benchmarks  |
+| `purge.test.ts`                   | 1          | Unit        | Stale entry cleanup      |
+| `consistency.test.ts`             | 1          | Unit        | Scheduling logic         |
+| `use-draft.test.ts`               | 1          | Unit        | Draft hook logic         |
+| `scene-registry.test.tsx`         | 1          | Unit        | Scene component loading  |
 
 **Total: 13 test files, ~1,690 LOC**
 
 ### 7.2 Testing Gaps
 
-| Gap | Severity | Notes |
-|---|---|---|
-| **Zero component tests** | 🔴 High | No tests for JournalEditor, JournalView, HabitsPage, etc. |
-| **Zero hook tests** (except `use-draft`) | 🟡 Medium | `useEntryEditor`, `useEntryList`, `useEditorInstance` untested |
-| **No mutation hook tests** | 🟡 Medium | `useJournalMutations`, `useHabitsMutations` — complex optimistic logic untested |
-| **No E2E tests** | 🟡 Medium | No Playwright/Cypress for full user flows |
-| **Cache tests missing** | 🟡 Medium | `journalCache` has complex logic (togglePin sort, infinite page updates) with no tests |
+| Gap                                      | Severity  | Notes                                                                                  |
+| ---------------------------------------- | --------- | -------------------------------------------------------------------------------------- |
+| **Zero component tests**                 | 🔴 High   | No tests for JournalEditor, JournalView, HabitsPage, etc.                              |
+| **Zero hook tests** (except `use-draft`) | 🟡 Medium | `useEntryEditor`, `useEntryList`, `useEditorInstance` untested                         |
+| **No mutation hook tests**               | 🟡 Medium | `useJournalMutations`, `useHabitsMutations` — complex optimistic logic untested        |
+| **No E2E tests**                         | 🟡 Medium | No Playwright/Cypress for full user flows                                              |
+| **Cache tests missing**                  | 🟡 Medium | `journalCache` has complex logic (togglePin sort, infinite page updates) with no tests |
 
 ---
 
@@ -342,7 +344,7 @@ The current first-load waterfall looks like:
 
 ```
 1. Electron boots → forks Nitro server process (~1-2s)
-2. Wait for port to become available (~1-3s)  
+2. Wait for port to become available (~1-3s)
 3. Load HTML shell
 4. Download + parse JavaScript bundle (ALL routes in one chunk)
 5. Execute React, render root → AppShell → load preferences
@@ -361,7 +363,7 @@ The current first-load waterfall looks like:
 
 // Target: lazy route components
 export const Route = createFileRoute('/__app/habits')({
-  component: () => import('./habits-page').then(m => m.HabitsPage),
+  component: () => import('./habits-page').then((m) => m.HabitsPage),
   // or use TanStack Router's built-in lazy support
 })
 ```
@@ -385,13 +387,13 @@ The animated background scene is loaded immediately. It could be deferred:
 // Instead of rendering on mount:
 export function Background({ mood }: Props) {
   const [shouldRender, setShouldRender] = useState(false)
-  
+
   useEffect(() => {
     // Defer scene rendering until after first meaningful paint
     const id = requestIdleCallback(() => setShouldRender(true))
     return () => cancelIdleCallback(id)
   }, [])
-  
+
   if (!shouldRender) return <div className="fixed inset-0 bg-background" />
   // ... existing scene rendering
 }
@@ -414,6 +416,7 @@ mainWindow.loadURL(`http://127.0.0.1:${PORT}`)
 #### Priority 5: Remove Unused UI Components (Impact: 🟢 Low but important)
 
 Removing ~25 unused UI components would:
+
 - Reduce bundle parse time (less code to evaluate)
 - Reduce Tailwind CSS output (fewer class references to scan)
 - Improve contributor DX (less noise)
@@ -428,30 +431,30 @@ The React Compiler is already enabled via the Babel plugin. This automatically m
 
 ### 8.3 Estimated Impact
 
-| Optimization | Bundle Size Reduction | First Paint Improvement |
-|---|---|---|
-| Route-level code splitting | ~30-40% of JS | ~1-2s |
-| Vendor chunk expansion | ~15-20% of initial | ~0.5-1s |
-| Deferred background scene | ~50KB + GPU time | ~0.3-0.5s |
-| Pre-warmed server data | 0 (network) | ~0.5-1s |
-| Unused component removal | ~5-10% of CSS+JS | ~0.2-0.3s |
-| **Combined** | **~50-60%** | **~2.5-5s** |
+| Optimization               | Bundle Size Reduction | First Paint Improvement |
+| -------------------------- | --------------------- | ----------------------- |
+| Route-level code splitting | ~30-40% of JS         | ~1-2s                   |
+| Vendor chunk expansion     | ~15-20% of initial    | ~0.5-1s                 |
+| Deferred background scene  | ~50KB + GPU time      | ~0.3-0.5s               |
+| Pre-warmed server data     | 0 (network)           | ~0.5-1s                 |
+| Unused component removal   | ~5-10% of CSS+JS      | ~0.2-0.3s               |
+| **Combined**               | **~50-60%**           | **~2.5-5s**             |
 
 ---
 
 ## 9. Security Audit
 
-| Control | Status | Notes |
-|---|---|---|
-| **Content Security Policy** | ✅ Implemented | `default-src 'self'`, proper `connect-src` for localhost |
-| **Session Token Auth** | ✅ Implemented | Random 32-byte hex token, injected via Electron `onBeforeSendHeaders` |
-| **Electron Sandbox** | ✅ Enabled | `sandbox: true`, `contextIsolation: true`, `nodeIntegration: false` |
-| **Single Instance Lock** | ✅ Implemented | `app.requestSingleInstanceLock()` |
-| **Graceful Shutdown** | ✅ Implemented | 3-second timeout with force quit fallback |
-| **Input Validation** | ✅ Zod schemas | All server functions validate input |
-| **SQL Injection** | ✅ Protected | Drizzle ORM parameterizes all queries |
-| **PIN Storage** | ⚠️ Plaintext | `privacyPin` stored as plaintext in SQLite — should be hashed |
-| **`'unsafe-inline'`** | ⚠️ In CSP | Both `script-src` and `style-src` allow `unsafe-inline` |
+| Control                     | Status         | Notes                                                                 |
+| --------------------------- | -------------- | --------------------------------------------------------------------- |
+| **Content Security Policy** | ✅ Implemented | `default-src 'self'`, proper `connect-src` for localhost              |
+| **Session Token Auth**      | ✅ Implemented | Random 32-byte hex token, injected via Electron `onBeforeSendHeaders` |
+| **Electron Sandbox**        | ✅ Enabled     | `sandbox: true`, `contextIsolation: true`, `nodeIntegration: false`   |
+| **Single Instance Lock**    | ✅ Implemented | `app.requestSingleInstanceLock()`                                     |
+| **Graceful Shutdown**       | ✅ Implemented | 3-second timeout with force quit fallback                             |
+| **Input Validation**        | ✅ Zod schemas | All server functions validate input                                   |
+| **SQL Injection**           | ✅ Protected   | Drizzle ORM parameterizes all queries                                 |
+| **PIN Storage**             | ⚠️ Plaintext   | `privacyPin` stored as plaintext in SQLite — should be hashed         |
+| **`'unsafe-inline'`**       | ⚠️ In CSP      | Both `script-src` and `style-src` allow `unsafe-inline`               |
 
 ---
 
@@ -488,43 +491,43 @@ The React Compiler is already enabled via the Babel plugin. This automatically m
 
 ## Appendix A: File Distribution
 
-| Directory | Files | LOC | % of Total |
-|---|---|---|---|
-| `src/features/` | ~55 | 4,895 | 25.4% |
-| `src/components/ui/` | 55 | 6,351 | 32.9% |
-| `src/components/layout/` | ~20 | ~2,200 | 11.4% |
-| `src/routes/` | 7 | 1,249 | 6.5% |
-| `src/test/` + `**/tests/` | 13 | 1,690 | 8.8% |
-| `src/lib/` + `src/utils/` + `src/hooks/` | ~20 | ~1,500 | 7.8% |
-| Other (`database/`, `config/`, `stores/`, `types/`) | ~15 | ~1,400 | 7.3% |
-| **Total** | **~211** | **~19,300** | **100%** |
+| Directory                                           | Files    | LOC         | % of Total |
+| --------------------------------------------------- | -------- | ----------- | ---------- |
+| `src/features/`                                     | ~55      | 4,895       | 25.4%      |
+| `src/components/ui/`                                | 55       | 6,351       | 32.9%      |
+| `src/components/layout/`                            | ~20      | ~2,200      | 11.4%      |
+| `src/routes/`                                       | 7        | 1,249       | 6.5%       |
+| `src/test/` + `**/tests/`                           | 13       | 1,690       | 8.8%       |
+| `src/lib/` + `src/utils/` + `src/hooks/`            | ~20      | ~1,500      | 7.8%       |
+| Other (`database/`, `config/`, `stores/`, `types/`) | ~15      | ~1,400      | 7.3%       |
+| **Total**                                           | **~211** | **~19,300** | **100%**   |
 
 ## Appendix B: Dependency Graph (Key Flows)
 
 ```mermaid
 graph LR
     subgraph "User Action"
-        A[Click 'Save'] 
+        A[Click 'Save']
     end
-    
+
     subgraph "Mutation Layer"
         A --> B[useJournalMutations.createEntry]
         B --> C[toastAsync]
         C --> D[createEntryApi<br/>createServerFn]
     end
-    
+
     subgraph "Server Layer"
         D --> E[createEntryService]
         E --> F[prepareMediaAsset]
         E --> G[db.transaction]
         G --> H[(SQLite)]
     end
-    
+
     subgraph "Cache Layer"
         D -.->|on success| I[journalCache.insert]
         I --> J[setQueryData<br/>flat + infinite]
     end
-    
+
     subgraph "Rollback"
         D -.->|on error| K[cleanup media files]
     end

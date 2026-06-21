@@ -29,10 +29,12 @@ export const journalCache = {
   /** Restore a previously snapshotted list */
   restore(
     queryClient: QueryClient,
-    snapshot: {
-      flat?: Entry[]
-      infinite?: InfiniteData<InfiniteEntriesData>
-    } | undefined,
+    snapshot:
+      | {
+          flat?: Entry[]
+          infinite?: InfiniteData<InfiniteEntriesData>
+        }
+      | undefined,
   ) {
     if (!snapshot) return
     queryClient.setQueryData(journalKeys.entries, snapshot.flat)
@@ -46,7 +48,7 @@ export const journalCache = {
   _updateCaches(
     queryClient: QueryClient,
     flatUpdater: (old: Entry[] | undefined) => Entry[] | undefined,
-    infiniteUpdater: (pages: InfiniteEntriesData[]) => InfiniteEntriesData[]
+    infiniteUpdater: (pages: InfiniteEntriesData[]) => InfiniteEntriesData[],
   ) {
     queryClient.setQueryData<Entry[]>(journalKeys.entries, flatUpdater)
     queryClient.setQueryData<InfiniteData<InfiniteEntriesData>>(
@@ -54,7 +56,7 @@ export const journalCache = {
       (old) => {
         if (!old) return old
         return { ...old, pages: infiniteUpdater(old.pages) }
-      }
+      },
     )
   },
 
@@ -63,9 +65,10 @@ export const journalCache = {
     this._updateCaches(
       queryClient,
       (old) => (old ? [entry, ...old] : [entry]),
-      (pages) => pages.map((page, i) =>
-        i === 0 ? { ...page, items: [entry, ...page.items] } : page
-      )
+      (pages) =>
+        pages.map((page, i) =>
+          i === 0 ? { ...page, items: [entry, ...page.items] } : page,
+        ),
     )
   },
 
@@ -74,10 +77,11 @@ export const journalCache = {
     this._updateCaches(
       queryClient,
       (old) => old?.filter((e) => e.id !== id),
-      (pages) => pages.map((page) => ({
-        ...page,
-        items: page.items.filter((e) => e.id !== id),
-      }))
+      (pages) =>
+        pages.map((page) => ({
+          ...page,
+          items: page.items.filter((e) => e.id !== id),
+        })),
     )
   },
 
@@ -86,10 +90,11 @@ export const journalCache = {
     this._updateCaches(
       queryClient,
       (old) => old?.map((e) => (e.id === id ? { ...e, ...patch } : e)),
-      (pages) => pages.map((page) => ({
-        ...page,
-        items: page.items.map((e) => (e.id === id ? { ...e, ...patch } : e)),
-      }))
+      (pages) =>
+        pages.map((page) => ({
+          ...page,
+          items: page.items.map((e) => (e.id === id ? { ...e, ...patch } : e)),
+        })),
     )
   },
 
@@ -110,12 +115,13 @@ export const journalCache = {
         )
         return [...updated].sort(sortFn)
       },
-      (pages) => pages.map((page) => ({
-        ...page,
-        items: page.items
-          .map((e) => (e.id === id ? { ...e, isPinned: !e.isPinned } : e))
-          .sort(sortFn),
-      }))
+      (pages) =>
+        pages.map((page) => ({
+          ...page,
+          items: page.items
+            .map((e) => (e.id === id ? { ...e, isPinned: !e.isPinned } : e))
+            .sort(sortFn),
+        })),
     )
   },
 

@@ -1,6 +1,6 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
 
 import { infiniteEntriesQueryOptions } from '#/features/journal/journal.options'
 import { useJournalMutations } from '#/features/journal/journal.mutations'
@@ -9,6 +9,7 @@ import { useEntryEditor } from '#/features/journal/hooks/useEntryEditor'
 import { useDraft } from '#/hooks/use-draft'
 import { JournalView } from '#/features/journal/components/JournalView'
 import { FeatureErrorBoundary } from '#/components/errors/FeatureErrorBoundary'
+import { useUIStore } from '#/stores/ui-store'
 
 import {
   AlertDialog,
@@ -18,7 +19,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle
+  AlertDialogTitle,
 } from '#/components/ui/alert-dialog'
 
 export const Route = createLazyFileRoute('/__app/journal')({
@@ -40,15 +41,30 @@ function JournalEntriesPage() {
   const navigate = Route.useNavigate()
 
   const activeEntry = useMemo(
-    () => entries.find(e => e.id === search.entryId),
-    [entries, search.entryId]
+    () => entries.find((e) => e.id === search.entryId),
+    [entries, search.entryId],
   )
 
   const [deleteId, setDeleteId] = useState<number | null>(null)
 
-  // Semantic Composition
   const list = useEntryList(entries)
   const editor = useEntryEditor(activeEntry)
+
+  const setFocusMode = useUIStore((s) => s.setFocusMode)
+  const isEditing = editor.isEditing || !!search.isCreating
+
+  useEffect(() => {
+    setFocusMode(isEditing)
+    return () => setFocusMode(false)
+  }, [isEditing, setFocusMode])
+
+  // Draft: key changes depending on the current mode so drafts don't bleed
+  // across create→edit transitions
+  const draftKey = search.isCreating
+    ? 'new_entry'
+    : activeEntry && editor.isEditing
+      ? `edit_${activeEntry.id}`
+      : 'new_entry'
 
   const {
     status: draftStatus,
@@ -56,37 +72,101 @@ function JournalEntriesPage() {
     clearDraft,
     retrySave: retryDraftSave,
   } = useDraft({
-    key: search.isCreating 
-      ? 'new_entry' 
-      : activeEntry && editor.isEditing 
-        ? `edit_${activeEntry.id}` 
-        : 'new_entry',
+    key: draftKey,
     value: editor.content,
     onRestore: (val) => editor.setContent(val),
   })
 
+  // ── Handlers ────────────────────────────────────────────────────────────
+
+  const handleSelect = useCallback(
+    (id: number) => {
+      navigate({
+        search: { entryId: id, isCreating: undefined },
+        resetScroll: false,
+      })
+    },
+    [navigate],
+  )
+
+  const handleCreateNew = useCallback(
+    () =>
+      navigate({
+        search: { isCreating: true, entryId: undefined },
+        resetScroll: false,
+      }),
+    [navigate],
+  )
+
+  const handleCancelCreate = useCallback(
+    () => navigate({ search: { isCreating: undefined }, resetScroll: false }),
+    [navigate],
+  )
+
+  const handleSaveNew = useCallback(
+    (id: number) => {
+      clearDraft()
+      navigate({
+        search: { entryId: id, isCreating: undefined },
+        resetScroll: false,
+      })
+    },
+    [clearDraft, navigate],
+  )
+
+  const handleEditSave = useCallback(() => {
+    clearDraft()
+    editor.cancelEdit()
+  }, [clearDraft, editor])
+
+  const handleTogglePin = useCallback(
+    (id: number) => togglePin.mutate(id),
+    [togglePin],
+  )
+
+  const handleDeleteRequest = useCallback((id: number) => setDeleteId(id), [])
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (!deleteId) return
+
+    const isDeletingActive = activeEntry?.id === deleteId
+    const wasEditing = editor.isEditing && activeEntry?.id === deleteId
+
+    // Stop editing the entry before it disappears from the list
+    if (wasEditing) {
+      editor.cancelEdit()
+      clearDraft()
+    }
+
+    deleteEntry.mutate(deleteId)
+
+    // Navigate away from the deleted entry so the viewer doesn't show a ghost
+    if (isDeletingActive) {
+      navigate({ search: { entryId: undefined }, resetScroll: false })
+    }
+
+    setDeleteId(null)
+  }, [deleteId, activeEntry, editor, clearDraft, deleteEntry, navigate])
+
   return (
     <>
-      <FeatureErrorBoundary title="Journal" resetKeys={[search.entryId, search.isCreating]}>
+      <FeatureErrorBoundary
+        title="Journal"
+        resetKeys={[search.entryId, search.isCreating]}
+      >
         <JournalView
           entries={entries}
           activeEntry={activeEntry}
           isCreating={search.isCreating}
           list={list}
           editor={editor}
-          onSelect={(id) => navigate({ search: { entryId: id, isCreating: undefined }, resetScroll: false })}
-          onCreateNew={() => navigate({ search: { isCreating: true, entryId: undefined }, resetScroll: false })}
-          onCancelCreate={() => navigate({ search: { isCreating: undefined }, resetScroll: false })}
-          onSaveNew={(id) => {
-            clearDraft()
-            navigate({ search: { entryId: id, isCreating: undefined }, resetScroll: false })
-          }}
-          onEditSave={() => {
-            clearDraft()
-            editor.cancelEdit()
-          }}
-          onTogglePin={(id) => togglePin.mutate(id)}
-          onDelete={setDeleteId}
+          onSelect={handleSelect}
+          onCreateNew={handleCreateNew}
+          onCancelCreate={handleCancelCreate}
+          onSaveNew={handleSaveNew}
+          onEditSave={handleEditSave}
+          onTogglePin={handleTogglePin}
+          onDelete={handleDeleteRequest}
           hasNextPage={hasNextPage}
           isFetchingNextPage={isFetchingNextPage}
           onLoadMore={() => fetchNextPage()}
@@ -99,29 +179,26 @@ function JournalEntriesPage() {
         />
       </FeatureErrorBoundary>
 
-      <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
+      {/* Delete confirmation dialog */}
+      <AlertDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Entry</AlertDialogTitle>
+            <AlertDialogTitle>Move to Trash?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to move this reflection to trash?
+              This reflection will be moved to trash. You can restore it any
+              time from the Trash view, or undo immediately after deletion.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                if (deleteId) {
-                  deleteEntry.mutate(deleteId)
-                  if (activeEntry?.id === deleteId) {
-                    navigate({ search: { entryId: undefined }, resetScroll: false })
-                  }
-                  setDeleteId(null)
-                }
-              }}
+              onClick={handleDeleteConfirm}
             >
-              Delete
+              Move to Trash
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

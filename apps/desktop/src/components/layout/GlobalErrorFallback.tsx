@@ -11,7 +11,7 @@ export function GlobalErrorFallback({
   reset?: () => void
 }) {
   const parsed = parseError(error)
-  
+
   const handleReport = () => {
     const stackTrace = error.stack || 'No stack trace available'
     // Strip absolute paths up to "Sanctuary" or similar to avoid leaking system paths
@@ -49,11 +49,10 @@ export function GlobalErrorFallback({
               {parsed.code}
             </span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {parsed.title}
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight">{parsed.title}</h1>
           <p className="text-gray-600 text-sm max-w-lg mx-auto">
-            {parsed.message || "Sanctuary encountered an unexpected error. You can try reloading, or report this issue to help us fix it."}
+            {parsed.message ||
+              'Sanctuary encountered an unexpected error. You can try reloading, or report this issue to help us fix it.'}
           </p>
         </div>
 
@@ -61,7 +60,9 @@ export function GlobalErrorFallback({
           <div className="w-full p-4 rounded-xl bg-gray-50 border border-gray-200 shadow-sm">
             <div className="flex items-center gap-2 mb-2 text-gray-500">
               <Terminal className="w-3 h-3" />
-              <span className="text-[10px] font-mono uppercase font-bold tracking-widest">Diagnostic Info</span>
+              <span className="text-[10px] font-mono uppercase font-bold tracking-widest">
+                Diagnostic Info
+              </span>
             </div>
             <pre className="text-[11px] font-mono text-gray-600 whitespace-pre-wrap break-all leading-relaxed">
               {error.stack}

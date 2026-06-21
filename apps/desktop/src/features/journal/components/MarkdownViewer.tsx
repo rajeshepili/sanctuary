@@ -57,12 +57,18 @@ interface MarkdownViewerProps {
   content: string
   onTagClick?: (tag: string) => void
   className?: string
+  /**
+   * When true, skips the ScrollArea wrapper so a parent scroll container
+   * (e.g. the ReadingView overlay) can manage scrolling instead.
+   */
+  inline?: boolean
 }
 
 export function MarkdownViewer({
   content,
   onTagClick,
   className,
+  inline = false,
 }: MarkdownViewerProps) {
   const editor = useJournalEditor({
     extensions: [HashtagHighlight],
@@ -93,11 +99,13 @@ export function MarkdownViewer({
     [onTagClick],
   )
 
-  return (
-    <ScrollArea className="h-full">
-      <div onClick={handleClick}>
-        <EditorContent editor={editor} />
-      </div>
-    </ScrollArea>
+  const inner = (
+    <div onClick={handleClick}>
+      <EditorContent editor={editor} />
+    </div>
   )
+
+  if (inline) return inner
+
+  return <ScrollArea className="h-full">{inner}</ScrollArea>
 }

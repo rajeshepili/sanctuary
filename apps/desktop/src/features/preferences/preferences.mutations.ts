@@ -1,5 +1,6 @@
 import { useQueryClient, useMutation } from '@tanstack/react-query'
 import { parseError } from '#/lib/error-parser'
+import { toast } from 'sonner'
 import type { UserPreferences } from '#/types'
 import { preferencesCache } from './preferences.cache'
 import { preferencesKeys } from './preferences.keys'
@@ -25,18 +26,15 @@ export function usePreferencesMutations() {
       queryClient.setQueryData<UserPreferences>(preferencesKeys.all, confirmed)
     },
 
-    onError: (_err, _vars, context) => {
+    onError: (err, _vars, context) => {
       if (context?.previous) {
         preferencesCache.restore(queryClient, context.previous)
       }
+      toast.error(`Could not update preferences — ${parseError(err).message}`)
     },
 
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: preferencesKeys.all })
-    },
-
-    meta: {
-      errorHandler: (err: unknown) => parseError(err).message,
     },
   })
 

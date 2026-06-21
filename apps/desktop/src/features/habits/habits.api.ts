@@ -21,27 +21,29 @@ export const getAllHabits = createServerFn({ method: 'GET' }).handler(() =>
   getAllHabitsService(),
 )
 
-export const syncHabits = createServerFn({ method: 'POST' }).handler(async () => {
-  const db = await getDb()
-  await reactivateHabits(db)
-})
+export const syncHabits = createServerFn({ method: 'POST' }).handler(
+  async () => {
+    const db = await getDb()
+    await reactivateHabits(db)
+  },
+)
 
 export const createHabit = createServerFn({ method: 'POST' })
-  .inputValidator(createHabitSchema)
+  .validator(createHabitSchema)
   .handler(({ data }) => createHabitService(data))
 
 export const updateHabit = createServerFn({ method: 'POST' })
-  .inputValidator(updateHabitSchema)
+  .validator(updateHabitSchema)
   .handler(({ data }) => updateHabitService(data))
 
 export const updateHabitStatus = createServerFn({ method: 'POST' })
-  .inputValidator(updateHabitStatusSchema)
+  .validator(updateHabitStatusSchema)
   .handler(({ data }) => updateHabitStatusService(data))
 
 export const deleteHabit = createServerFn({ method: 'POST' })
-  .inputValidator(deleteHabitSchema)
+  .validator(deleteHabitSchema)
   .handler(({ data }) => deleteHabitService(data))
 
 export const toggleHabitCompletion = createServerFn({ method: 'POST' })
-  .inputValidator(toggleCompletionSchema)
+  .validator(toggleCompletionSchema)
   .handler(({ data }) => toggleHabitCompletionService(data))

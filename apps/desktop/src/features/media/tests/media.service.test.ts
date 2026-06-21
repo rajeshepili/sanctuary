@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import fs from 'fs-extra'
 import os from 'node:os'
 import path from 'node:path'
@@ -47,5 +47,69 @@ describe('prepareMediaAsset', () => {
     await expect(prepareMediaAsset(textPayload)).rejects.toThrow(
       'Only images are allowed',
     )
+  })
+
+  it('rejects images exceeding 25MB', async () => {
+    // Temporarily mock Buffer.from to return a huge buffer to trigger the check
+    const mockFrom = vi
+      .spyOn(Buffer, 'from')
+      .mockImplementationOnce(((..._args: any[]) => {
+        return { length: 26214401 } as unknown as Buffer<ArrayBuffer>
+      }) as any)
+
+    await expect(prepareMediaAsset(TINY_PNG)).rejects.toThrow(
+      'Image exceeds 25MB limit',
+    )
+
+    mockFrom.mockRestore()
+  })
+  it('throws MEDIA_PREPARATION_FAILED if processing fails', async () => {
+    const writeSpy = vi
+      .spyOn(fs, 'writeFile')
+      .mockRejectedValueOnce(new Error('Disk full'))
+    await expect(prepareMediaAsset(TINY_PNG)).rejects.toThrow(
+      'Failed to process image',
+    )
+    writeSpy.mockRestore()
+  })
+})
+
+describe('deleteMediaAssets', () => {
+  let mediaDir: string
+
+  beforeEach(async () => {
+    mediaDir = await fs.mkdtemp(path.join(os.tmpdir(), 'sanctuary-media-del-'))
+    process.env.MEDIA_STORAGE_PATH = mediaDir
+  })
+
+  afterEach(async () => {
+    delete process.env.MEDIA_STORAGE_PATH
+    await fs.remove(mediaDir).catch(() => {})
+  })
+
+  it('deletes provided media assets without throwing', async () => {
+    // Import deleteMediaAssets inline since it might not be imported at the top
+    const { deleteMediaAssets } = await import('../media.service')
+
+    const file1 = path.join(mediaDir, '1.webp')
+    const thumb1 = path.join(mediaDir, '1_thumb.webp')
+
+    await fs.writeFile(file1, 'data')
+    await fs.writeFile(thumb1, 'data')
+
+    await deleteMediaAssets([{ filePath: file1, thumbnailPath: thumb1 }])
+
+    expect(await fs.pathExists(file1)).toBe(false)
+    expect(await fs.pathExists(thumb1)).toBe(false)
+  })
+
+  it('ignores paths that do not exist', async () => {
+    const { deleteMediaAssets } = await import('../media.service')
+    const missing = path.join(mediaDir, 'missing.webp')
+
+    // Should resolve without throwing
+    await expect(
+      deleteMediaAssets([{ filePath: missing, thumbnailPath: missing }]),
+    ).resolves.toBeUndefined()
   })
 })

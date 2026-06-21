@@ -1,6 +1,5 @@
 import type {
   HabitFrequency,
-  HabitCategory,
   HabitPriority,
   HabitStatus,
 } from '#/types/index'
@@ -50,25 +49,23 @@ export const createHabitFixture = (
   overrides?: Partial<{
     name: string
     frequency: HabitFrequency
-    daysOfWeek: string | null
+    interval: number
+    daysOfWeek: number[] | null
     priority: HabitPriority
-    category: HabitCategory
+    categoryId: number | null
     status: HabitStatus
     intention: string | null
-    currentStreak: number
-    longestStreak: number
     createdAt: Date
   }>,
 ) => ({
   name: 'Test Habit',
-  frequency: 'every_day' as HabitFrequency,
-  daysOfWeek: null as string | null,
-  priority: 'medium' as HabitPriority,
-  category: 'mind' as HabitCategory,
-  status: 'active' as HabitStatus,
-  intention: null as string | null,
-  currentStreak: 0,
-  longestStreak: 0,
+  frequency: 'daily' as const,
+  interval: 1,
+  daysOfWeek: null,
+  priority: 'low' as const,
+  categoryId: null,
+  status: 'active' as const,
+  intention: null,
   createdAt: new Date(),
   ...overrides,
 })
@@ -84,32 +81,22 @@ export const createHabitCompletionFixture = (
 
 export const createUserPreferencesFixture = (
   overrides?: Partial<{
-    firstName: string | null
+    name: string | null
     onboardedAt: Date | null
     disclaimerAgreed: boolean
     privacyPin: string | null
-    showPromptInspire: boolean
-    showBreathingSpace: boolean
-    showHabits: boolean
-    showDailyIntention: boolean
+    latitude: number | null
+    longitude: number | null
+    locationLabel: string | null
   }>,
 ) => ({
-  firstName: 'Test User',
+  name: 'Test User',
   onboardedAt: new Date(),
   disclaimerAgreed: true,
   privacyPin: null as string | null,
-  showPromptInspire: true,
-  showBreathingSpace: true,
-  showHabits: true,
-  showDailyIntention: true,
-  ...overrides,
-})
-
-export const createCustomPromptFixture = (
-  overrides?: Partial<{ text: string; createdAt: Date }>,
-) => ({
-  text: 'What inspired you today?',
-  createdAt: new Date(),
+  latitude: null as number | null,
+  longitude: null as number | null,
+  locationLabel: null as string | null,
   ...overrides,
 })
 

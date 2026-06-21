@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { parseError } from '#/lib/error-parser'
+import { toast } from 'sonner'
 
-import type { HabitStatus } from '#/types'
+import type { HabitStatus, Habit } from '#/types'
 import type { CreateHabitInput, UpdateHabitInput } from './habits.schema'
 import { habitsCache } from './habits.cache'
 import { habitsKeys } from './habits.keys'
@@ -20,9 +21,10 @@ export function useHabitsMutations() {
     mutationFn: (data: CreateHabitInput) => createHabitApi({ data }),
     onSuccess: (habit) => {
       habitsCache.insertHabit(queryClient, habit)
+      toast.success('Habit created.')
     },
-    meta: {
-      errorHandler: (err: unknown) => parseError(err).message,
+    onError: (err) => {
+      toast.error(`Could not create habit — ${parseError(err).message}`)
     },
   })
 
@@ -32,27 +34,33 @@ export function useHabitsMutations() {
       await queryClient.cancelQueries({ queryKey: habitsKeys.all })
       const previous = habitsCache.snapshot(queryClient)
       // Optimistic update — merge new data into the cached habit
-      const currentHabits = queryClient.getQueryData<{ habits: unknown[] }>(habitsKeys.all)
+      const currentHabits = queryClient.getQueryData<{ habits: Habit[] }>(
+        habitsKeys.all,
+      )
       if (currentHabits) {
         const currentHabit = currentHabits.habits.find(
-          (h: unknown) => (h as { id: number }).id === data.id
+          (h) => h.id === data.id,
         )
         if (currentHabit) {
-          habitsCache.patchHabit(queryClient, { ...(currentHabit as object), ...data } as Parameters<typeof habitsCache.patchHabit>[1])
+          habitsCache.patchHabit(queryClient, {
+            ...currentHabit,
+            ...data,
+          })
         }
       }
       return { previous }
     },
-    onError: (_err, _vars, context) => {
+    onError: (err, _vars, context) => {
       if (context?.previous) {
         habitsCache.restore(queryClient, context.previous)
       }
+      toast.error(`Could not update habit — ${parseError(err).message}`)
+    },
+    onSuccess: () => {
+      toast.success('Habit updated.')
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: habitsKeys.all })
-    },
-    meta: {
-      errorHandler: (err: unknown) => parseError(err).message,
     },
   })
 
@@ -67,18 +75,23 @@ export function useHabitsMutations() {
       await queryClient.cancelQueries({ queryKey: habitsKeys.all })
       const previous = habitsCache.snapshot(queryClient)
       habitsCache.patchHabitStatus(queryClient, id, status)
-      return { previous }
+      return { previous, status }
     },
-    onError: (_err, _vars, context) => {
+    onError: (err, _vars, context) => {
       if (context?.previous) {
         habitsCache.restore(queryClient, context.previous)
       }
+      toast.error(`Could not update habit status — ${parseError(err).message}`)
+    },
+    onSuccess: (_data, _vars, context) => {
+      toast.success(
+        context?.status === 'resting'
+          ? 'Habit is resting.'
+          : 'Habit is active.',
+      )
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: habitsKeys.all })
-    },
-    meta: {
-      errorHandler: (err: unknown) => parseError(err).message,
     },
   })
 
@@ -90,16 +103,17 @@ export function useHabitsMutations() {
       habitsCache.removeHabit(queryClient, id)
       return { previous }
     },
-    onError: (_err, _vars, context) => {
+    onError: (err, _vars, context) => {
       if (context?.previous) {
         habitsCache.restore(queryClient, context.previous)
       }
+      toast.error(`Could not delete habit — ${parseError(err).message}`)
+    },
+    onSuccess: () => {
+      toast.success('Habit deleted.')
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: habitsKeys.all })
-    },
-    meta: {
-      errorHandler: (err: unknown) => parseError(err).message,
     },
   })
 
@@ -119,18 +133,22 @@ export function useHabitsMutations() {
       habitsCache.toggleCompletion(queryClient, habitId, date, tier)
       return { previous }
     },
-    onError: (_err, _vars, context) => {
+    onError: (err, _vars, context) => {
       if (context?.previous) {
         habitsCache.restore(queryClient, context.previous)
       }
+      toast.error(`Could not save completion — ${parseError(err).message}`)
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: habitsKeys.all })
     },
-    meta: {
-      errorHandler: (err: unknown) => parseError(err).message,
-    },
   })
 
-  return { createHabit, updateHabit, updateHabitStatus, deleteHabit, toggleCompletion }
+  return {
+    createHabit,
+    updateHabit,
+    updateHabitStatus,
+    deleteHabit,
+    toggleCompletion,
+  }
 }

@@ -1,4 +1,4 @@
-import type { EntryMedia } from '#/types'
+import type { EntryMedia, JournalMood } from '#/types'
 import { JournalEditor } from '#/features/journal/components/editor/JournalEditor'
 import type { DraftStatus } from '#/hooks/use-draft'
 
@@ -7,6 +7,8 @@ type PendingMedia = { file: File; url: string }
 interface EntryEditFormProps {
   content: string
   onContentChange: (v: string | ((prev: string) => string)) => void
+  mood: JournalMood | null
+  setMood: (mood: JournalMood | null) => void
   existingMedia: EntryMedia[]
   pendingMedia: PendingMedia[]
   removedMediaIds: number[]
@@ -15,6 +17,7 @@ interface EntryEditFormProps {
   onRemoveExisting: (id: number) => void
   onSave: () => void
   onCancel: () => void
+  isSaving: boolean
   isSaveDisabled: boolean
   entryId?: number
   draftStatus?: DraftStatus
@@ -26,6 +29,8 @@ interface EntryEditFormProps {
 export function EntryEditForm({
   content,
   onContentChange,
+  mood,
+  setMood,
   existingMedia,
   pendingMedia,
   removedMediaIds,
@@ -34,6 +39,7 @@ export function EntryEditForm({
   onRemoveExisting,
   onSave,
   onCancel,
+  isSaving,
   isSaveDisabled,
   draftStatus,
   draftError,
@@ -44,6 +50,8 @@ export function EntryEditForm({
     <JournalEditor
       value={content}
       setValue={onContentChange}
+      mood={mood}
+      setMood={setMood}
       onSave={onSave}
       onCancel={onCancel}
       pendingMedia={pendingMedia}
@@ -52,6 +60,7 @@ export function EntryEditForm({
       existingMedia={existingMedia}
       removedMediaIds={removedMediaIds}
       onRemoveExisting={onRemoveExisting}
+      isSaving={isSaving}
       isSaveDisabled={isSaveDisabled}
       draftStatus={draftStatus}
       draftError={draftError}

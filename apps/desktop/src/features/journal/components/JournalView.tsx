@@ -1,20 +1,39 @@
-import { BookOpen, Clock, History, Edit3, Trash2, Pin, Loader2, PenLine } from 'lucide-react'
+import {
+  BookOpen,
+  Clock,
+  History,
+  Edit3,
+  Trash2,
+  Pin,
+  Loader2,
+  PenLine,
+  Maximize2,
+} from 'lucide-react'
+import { useState } from 'react'
 import { formatEntryDate } from '#/utils/date'
 import { IconButton } from '#/components/ui/icon-button'
 import { MarkdownViewer } from '#/features/journal/components/MarkdownViewer'
 import { MediaGrid } from '#/features/journal/components/MediaGrid'
 import { PAGE_TITLES, PAGE_DESCRIPTIONS } from '#/config/branding'
 import { FocusSection } from '#/components/layout/FocusSection'
+import { getMoodDetails } from '#/features/journal/moods'
 import { Hero } from '#/components/layout/Hero'
 import { EntryEditForm } from '#/features/journal/components/editor/EntryEditForm'
 import { EntryListPane } from '#/features/journal/components/EntryListPane'
 import { EntryViewerPane } from '#/features/journal/components/EntryViewerPane'
+import { ReadingView } from '#/features/journal/components/ReadingView'
 import type { Entry } from '#/types'
 import type { EntryListViewModel } from '#/features/journal/hooks/useEntryList'
 import type { EntryEditorViewModel } from '#/features/journal/hooks/useEntryEditor'
 import { FeatureErrorBoundary } from '#/components/errors/FeatureErrorBoundary'
 import { Button } from '#/components/ui/button'
-
+import {
+  Empty,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+  EmptyDescription,
+} from '#/components/ui/empty'
 import type { DraftStatus } from '#/hooks/use-draft'
 
 interface JournalViewProps {
@@ -60,6 +79,8 @@ export function JournalView({
   retryDraftSave,
   copyDraft,
 }: JournalViewProps) {
+  const [isReadingView, setIsReadingView] = useState(false)
+
   return (
     <>
       <Hero
@@ -67,10 +88,28 @@ export function JournalView({
         description={PAGE_DESCRIPTIONS.journal}
       />
 
+      {/* Reading view overlay — mounts in a portal over everything */}
+      {activeEntry && (
+        <ReadingView
+          entry={activeEntry}
+          isOpen={isReadingView}
+          onClose={() => setIsReadingView(false)}
+          onEdit={() => {
+            editor.startEdit(activeEntry)
+            setIsReadingView(false)
+          }}
+          onTogglePin={onTogglePin}
+          onDelete={onDelete}
+        />
+      )}
+
       <FocusSection>
         <div className="flex flex-col lg:flex-row gap-4 h-[calc(100dvh-12rem)] min-h-[600px]">
-          {/* LEFT PANE */}
-          <FeatureErrorBoundary title="Reflection List" className="w-full lg:w-80 shrink-0">
+          {/* ── LEFT PANE ── */}
+          <FeatureErrorBoundary
+            title="Reflection List"
+            className="w-full lg:w-80 shrink-0"
+          >
             <EntryListPane
               searchQuery={list.searchQuery}
               onSearchChange={list.setSearchQuery}
@@ -101,6 +140,7 @@ export function JournalView({
                   onClick={() => {
                     onSelect(entry.id)
                     editor.cancelEdit()
+                    setIsReadingView(false)
                   }}
                   className={`w-full text-left p-3.5 rounded-xl border transition-all cursor-pointer ${
                     activeEntry?.id === entry.id
@@ -113,9 +153,20 @@ export function JournalView({
                       <Clock className="w-3 h-3" />
                       {formatEntryDate(entry.createdAt)}
                     </div>
-                    {entry.isPinned && (
-                      <Pin className="w-3 h-3 text-amber-500 fill-current shrink-0" />
-                    )}
+                    <div className="flex items-center gap-2">
+                      {entry.mood &&
+                        (() => {
+                          const md = getMoodDetails(entry.mood)
+                          return md ? (
+                            <span title={md.label} className="text-[11px]">
+                              {md.emoji}
+                            </span>
+                          ) : null
+                        })()}
+                      {entry.isPinned && (
+                        <Pin className="w-3 h-3 text-amber-500 fill-current shrink-0" />
+                      )}
+                    </div>
                   </div>
                   <p className="text-sm text-foreground/85 line-clamp-2 leading-relaxed">
                     {entry.content}
@@ -138,51 +189,62 @@ export function JournalView({
                   className="w-full text-[11px] font-bold text-muted-foreground uppercase tracking-widest h-12"
                 >
                   {isFetchingNextPage ? (
-                    <Loader2 className="w-3 h-3 animate-spin mr-2" />
-                  ) : null}
-                  {isFetchingNextPage ? 'Loading...' : 'Load More Reflections'}
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'Load More'
+                  )}
                 </Button>
               )}
 
               {list.filteredEntries.length === 0 && (
-                <div className="py-12 text-center text-sm text-muted-foreground">
-                  No reflections found.
-                </div>
+                <Empty className="py-12 border-none px-4">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <BookOpen />
+                    </EmptyMedia>
+                    <EmptyTitle>No reflections found</EmptyTitle>
+                  </EmptyHeader>
+                </Empty>
               )}
             </EntryListPane>
           </FeatureErrorBoundary>
 
-          {/* RIGHT PANE */}
-          <FeatureErrorBoundary title="Reflection Viewer" className="flex-1 min-w-0">
+          {/* ── RIGHT PANE ── */}
+          <FeatureErrorBoundary
+            title="Reflection Viewer"
+            className="flex-1 flex flex-col min-w-0"
+          >
             <EntryViewerPane
               hasActiveEntry={!!activeEntry || !!isCreating}
-              isEditing={editor.isEditing || !!isCreating}
+              isEditing={!!isCreating || editor.isEditing}
               activeKey={
-                isCreating 
+                isCreating
                   ? 'creating'
                   : editor.isEditing
                     ? `edit-${activeEntry?.id}`
                     : `view-${activeEntry?.id}`
               }
               emptyState={
-                <>
-                  <BookOpen className="w-12 h-12 opacity-20" />
-                  <p className="text-base font-medium mb-4">
-                    Select a reflection to read
-                  </p>
-                  <div className="flex gap-3 mt-4">
-                    <Button onClick={onCreateNew}>
-                      <PenLine className="w-4 h-4 mr-2" />
-                      Start Writing
-                    </Button>
-                  </div>
-                </>
+                <Empty className="border-none bg-transparent">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <BookOpen />
+                    </EmptyMedia>
+                    <EmptyTitle>Sanctuary awaits</EmptyTitle>
+                    <EmptyDescription>
+                      Select a reflection to read, or create a new one to clear
+                      your mind.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
               }
             >
-              {(isCreating || (activeEntry && editor.isEditing)) ? (
+              {isCreating || (activeEntry && editor.isEditing) ? (
                 <EntryEditForm
                   content={editor.content}
                   onContentChange={editor.setContent}
+                  mood={editor.mood}
+                  setMood={editor.setMood}
                   existingMedia={activeEntry?.media ?? []}
                   pendingMedia={editor.pendingMedia}
                   removedMediaIds={editor.removedMediaIds}
@@ -190,7 +252,7 @@ export function JournalView({
                   onRemovePending={editor.removePending}
                   onRemoveExisting={editor.removeExisting}
                   onSave={async () => {
-                    const newEntry = await editor.save();
+                    const newEntry = await editor.save()
                     if (newEntry && isCreating) {
                       onSaveNew(newEntry.id)
                     } else if (newEntry && !isCreating) {
@@ -199,10 +261,9 @@ export function JournalView({
                   }}
                   onCancel={() => {
                     editor.cancelEdit()
-                    if (isCreating) {
-                      onCancelCreate()
-                    }
+                    if (isCreating) onCancelCreate()
                   }}
+                  isSaving={editor.isSaving}
                   isSaveDisabled={editor.isSaveDisabled}
                   entryId={activeEntry?.id}
                   draftStatus={draftStatus}
@@ -211,56 +272,83 @@ export function JournalView({
                   copyDraft={copyDraft}
                 />
               ) : activeEntry ? (
-                  <>
-                    <div className="flex items-center justify-between border-b border-border/40 pb-4">
-                      <div className="flex items-center gap-2 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
-                        <History className="w-4 h-4" />
-                        {formatEntryDate(activeEntry.createdAt)}
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <IconButton
-                          tooltip={activeEntry.isPinned ? 'Unpin' : 'Pin to top'}
-                          onClick={() => onTogglePin(activeEntry.id)}
-                          className={
-                            activeEntry.isPinned
-                              ? 'text-amber-500 bg-amber-500/10'
-                              : 'hover:text-amber-500 hover:bg-amber-500/10'
-                          }
-                        >
-                          <Pin
-                            className={`w-4 h-4 ${activeEntry.isPinned ? 'fill-current' : ''}`}
-                          />
-                        </IconButton>
-                        <IconButton
-                          tooltip="Edit entry"
-                          onClick={() => editor.startEdit(activeEntry)}
-                          className="hover:text-primary hover:bg-primary/10"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </IconButton>
-                        <IconButton
-                          tooltip="Delete entry"
-                          variant="danger"
-                          onClick={() => onDelete(activeEntry.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </IconButton>
-                      </div>
+                <>
+                  {/* Header bar */}
+                  <div className="flex items-center justify-between border-b border-border/40 pb-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
+                      <History className="w-4 h-4" />
+                      {formatEntryDate(activeEntry.createdAt)}
+                      {activeEntry.mood &&
+                        (() => {
+                          const md = getMoodDetails(activeEntry.mood)
+                          return md ? (
+                            <>
+                              <span className="mx-1.5 opacity-30">•</span>
+                              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-border/40 text-foreground/80 text-xs capitalize">
+                                <span>{md.emoji}</span>
+                                {md.label}
+                              </span>
+                            </>
+                          ) : null
+                        })()}
                     </div>
 
-                    <MarkdownViewer
-                      content={activeEntry.content}
-                      onTagClick={list.toggleTag}
-                      className="text-base leading-relaxed"
-                    />
+                    <div className="flex items-center gap-1.5">
+                      {/* Reading view */}
+                      <IconButton
+                        tooltip="Open reading view"
+                        onClick={() => setIsReadingView(true)}
+                        className="hover:text-primary hover:bg-primary/10"
+                      >
+                        <Maximize2 className="w-4 h-4" />
+                      </IconButton>
 
-                    {activeEntry.media.length > 0 && (
-                      <div className="pt-4 border-t border-border/20">
-                        <MediaGrid media={activeEntry.media} />
-                      </div>
-                    )}
-                  </>
-                ) : null}
+                      <IconButton
+                        tooltip={activeEntry.isPinned ? 'Unpin' : 'Pin to top'}
+                        onClick={() => onTogglePin(activeEntry.id)}
+                        className={
+                          activeEntry.isPinned
+                            ? 'text-amber-500 bg-amber-500/10'
+                            : 'hover:text-amber-500 hover:bg-amber-500/10'
+                        }
+                      >
+                        <Pin
+                          className={`w-4 h-4 ${activeEntry.isPinned ? 'fill-current' : ''}`}
+                        />
+                      </IconButton>
+
+                      <IconButton
+                        tooltip="Edit entry"
+                        onClick={() => editor.startEdit(activeEntry)}
+                        className="hover:text-primary hover:bg-primary/10"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </IconButton>
+
+                      <IconButton
+                        tooltip="Delete entry"
+                        variant="danger"
+                        onClick={() => onDelete(activeEntry.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </IconButton>
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <MarkdownViewer
+                    content={activeEntry.content}
+                    onTagClick={list.toggleTag}
+                    className="text-base leading-relaxed"
+                  />
+
+                  {activeEntry.media.length > 0 && (
+                    <div className="pt-4 border-t border-border/20">
+                      <MediaGrid media={activeEntry.media} />
+                    </div>
+                  )}
+                </>
+              ) : null}
             </EntryViewerPane>
           </FeatureErrorBoundary>
         </div>

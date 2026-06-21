@@ -8,39 +8,58 @@ import {
 } from 'drizzle-orm/sqlite-core'
 import { relations, sql } from 'drizzle-orm'
 
-export const journalEntries = sqliteTable('journal_entries', {
-  id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),
-  content: text().notNull(),
-  tags: text(),
-  isPinned: integer({ mode: 'boolean' }).notNull().default(false),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`),
-  updatedAt: integer('updated_at', { mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`),
-  deletedAt: integer('deleted_at', { mode: 'timestamp' }),
-}, (t) => ({
-  deletedAtIndex: index('deleted_at_idx').on(t.deletedAt),
-  pinnedIndex: index('pinned_idx').on(t.isPinned),
-  createdAtIndex: index('created_at_idx').on(t.createdAt),
-}))
+export const journalEntries = sqliteTable(
+  'journal_entries',
+  {
+    id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),
+    content: text().notNull(),
+    tags: text(),
+    isPinned: integer({ mode: 'boolean' }).notNull().default(false),
+    mood: text({
+      enum: [
+        'happy',
+        'calm',
+        'focused',
+        'anxious',
+        'sad',
+        'energetic',
+        'tired',
+      ],
+    }),
+    createdAt: integer('created_at', { mode: 'timestamp' })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer('updated_at', { mode: 'timestamp' })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    deletedAt: integer('deleted_at', { mode: 'timestamp' }),
+  },
+  (t) => [
+    index('deleted_at_idx').on(t.deletedAt),
+    index('pinned_idx').on(t.isPinned),
+    index('created_at_idx').on(t.createdAt),
+  ],
+)
 
-export const entryMedia = sqliteTable('entry_media', {
-  id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),
-  entryId: integer('entry_id')
-    .notNull()
-    .references(() => journalEntries.id, { onDelete: 'cascade' }),
-  filePath: text('file_path').notNull(),
-  thumbnailPath: text('thumbnail_path').notNull(),
-  mimeType: text('mime_type').notNull(),
-  fileSize: integer('file_size').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`),
-}, (t) => ({
-  entryIdIndex: index('entry_id_idx').on(t.entryId),
-}))
+export const entryMedia = sqliteTable(
+  'entry_media',
+  {
+    id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),
+    entryId: integer('entry_id')
+      .notNull()
+      .references(() => journalEntries.id, { onDelete: 'cascade' }),
+    filePath: text('file_path').notNull(),
+    thumbnailPath: text('thumbnail_path').notNull(),
+    mimeType: text('mime_type').notNull(),
+    fileSize: integer('file_size').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp' })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (t) => [
+    index('entry_id_idx').on(t.entryId),
+  ],
+)
 
 export const habits = sqliteTable('habits', {
   id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),
@@ -49,16 +68,16 @@ export const habits = sqliteTable('habits', {
   miniDesc: text('mini_desc'),
   plusDesc: text('plus_desc'),
   eliteDesc: text('elite_desc'),
-  frequency: text({ enum: ['every_day', 'weekdays', 'weekends', 'custom'] })
+  frequency: text({ enum: ['daily', 'weekly', 'monthly', 'custom'] })
     .notNull()
-    .default('every_day'),
-  daysOfWeek: text('days_of_week'),
-  priority: text({ enum: ['easy', 'medium', 'hard'] })
+    .default('daily'),
+  interval: integer('interval').notNull().default(1),
+  daysOfWeek: text('days_of_week', { mode: 'json' }).$type<number[]>(),
+  priority: text({ enum: ['low', 'medium', 'high'] })
     .notNull()
     .default('medium'),
-  category: text({ enum: ['mind', 'body', 'connection', 'rest', 'growth'] })
-    .notNull()
-    .default('growth'),
+  categoryId: integer('category_id')
+    .references(() => habitCategories.id, { onDelete: 'set null' }),
   status: text({ enum: ['active', 'resting'] })
     .notNull()
     .default('active'),
@@ -67,6 +86,11 @@ export const habits = sqliteTable('habits', {
   createdAt: integer('created_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),
+})
+
+export const habitCategories = sqliteTable('habit_categories', {
+  id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),
+  name: text().notNull(),
 })
 
 export const habitCompletions = sqliteTable(
@@ -81,21 +105,17 @@ export const habitCompletions = sqliteTable(
       .notNull()
       .default('plus'),
   },
-  (t) => ({
-    uniqueCompletion: unique().on(t.habitId, t.completedAt),
-    completedAtIndex: index('completed_at_idx').on(t.completedAt),
-  }),
+  (t) => [
+    unique().on(t.habitId, t.completedAt),
+    index('completed_at_idx').on(t.completedAt),
+  ],
 )
 
 export const userPreferences = sqliteTable('user_preferences', {
   id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),
-  firstName: text('first_name'),
+  name: text('name'),
   onboardedAt: integer('onboarded_at', { mode: 'timestamp' }),
   disclaimerAgreed: integer({ mode: 'boolean' }).notNull().default(false),
-  showPromptInspire: integer({ mode: 'boolean' }).notNull().default(true),
-  showBreathingSpace: integer({ mode: 'boolean' }).notNull().default(true),
-  showHabits: integer({ mode: 'boolean' }).notNull().default(true),
-  showDailyIntention: integer({ mode: 'boolean' }).notNull().default(true),
   privacyPin: text('privacy_pin'),
   latitude: real('latitude'),
   longitude: real('longitude'),
@@ -103,14 +123,6 @@ export const userPreferences = sqliteTable('user_preferences', {
   syncDirectory: text('sync_directory'),
   syncPassphraseHash: text('sync_passphrase_hash'),
   lastSyncedAt: integer('last_synced_at', { mode: 'timestamp' }),
-})
-
-export const customPrompts = sqliteTable('custom_prompts', {
-  id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),
-  text: text().notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .notNull()
-    .default(sql`(unixepoch())`),
 })
 
 export const journalEntriesRelations = relations(
@@ -140,3 +152,7 @@ export const habitCompletionsRelations = relations(
     }),
   }),
 )
+
+export const habitCategoriesRelations = relations(habitCategories, ({ many }) => ({
+  habits: many(habits),
+}))
