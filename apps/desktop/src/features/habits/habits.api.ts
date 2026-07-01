@@ -7,43 +7,45 @@ import {
   toggleCompletionSchema,
 } from './habits.schema'
 import {
-  getAllHabitsService,
-  createHabitService,
-  updateHabitService,
-  updateHabitStatusService,
-  deleteHabitService,
-  toggleHabitCompletionService,
+  findAll,
+  create,
+  update,
+  updateStatus,
+  remove,
   reactivateHabits,
-} from './habits.service'
-import { getDb } from '#/database'
+} from './habits.repository'
+import { toggleCompletion } from './completions.repository'
 
-export const getAllHabits = createServerFn({ method: 'GET' }).handler(() =>
-  getAllHabitsService(),
-)
+// ── Read ─────────────────────────────────────────────────────────────────────
 
-export const syncHabits = createServerFn({ method: 'POST' }).handler(
-  async () => {
-    const db = await getDb()
-    await reactivateHabits(db)
-  },
-)
+export const getAllHabits = createServerFn({ method: 'GET' })
+  .handler(() => findAll())
+
+// ── Sync / Lifecycle ─────────────────────────────────────────────────────────
+
+export const syncHabits = createServerFn({ method: 'POST' })
+  .handler(() => reactivateHabits())
+
+// ── Habit CRUD ───────────────────────────────────────────────────────────────
 
 export const createHabit = createServerFn({ method: 'POST' })
   .validator(createHabitSchema)
-  .handler(({ data }) => createHabitService(data))
+  .handler(({ data }) => create(data))
 
 export const updateHabit = createServerFn({ method: 'POST' })
   .validator(updateHabitSchema)
-  .handler(({ data }) => updateHabitService(data))
+  .handler(({ data }) => update(data))
 
 export const updateHabitStatus = createServerFn({ method: 'POST' })
   .validator(updateHabitStatusSchema)
-  .handler(({ data }) => updateHabitStatusService(data))
+  .handler(({ data }) => updateStatus(data))
 
 export const deleteHabit = createServerFn({ method: 'POST' })
   .validator(deleteHabitSchema)
-  .handler(({ data }) => deleteHabitService(data))
+  .handler(({ data }) => remove(data))
+
+// ── Completions ───────────────────────────────────────────────────────────────
 
 export const toggleHabitCompletion = createServerFn({ method: 'POST' })
   .validator(toggleCompletionSchema)
-  .handler(({ data }) => toggleHabitCompletionService(data))
+  .handler(({ data }) => toggleCompletion(data))

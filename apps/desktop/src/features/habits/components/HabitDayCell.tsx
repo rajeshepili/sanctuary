@@ -29,7 +29,7 @@ const TIERS: {
   {
     value: 'plus',
     label: 'Target',
-    desc: 'Full habit done',
+    desc: 'Target action done',
     activeClass:
       'bg-primary/20 text-primary border-primary/40 ring-1 ring-primary/30',
     idleClass: 'text-primary border-primary/20 hover:bg-primary/10',

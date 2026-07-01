@@ -3,11 +3,10 @@ import { formatEntryDate } from '#/utils/date'
 import { IconButton } from '#/components/ui/icon-button'
 import { MarkdownViewer } from '#/features/journal/components/MarkdownViewer'
 import { MediaGrid } from '#/features/journal/components/MediaGrid'
-import { FocusSection } from '#/components/layout/FocusSection'
-import { Hero } from '#/components/layout/Hero'
+import { PageLayout } from '#/components/layout/PageLayout'
 import { EntryListPane } from '#/features/journal/components/EntryListPane'
 import { EntryViewerPane } from '#/features/journal/components/EntryViewerPane'
-import { getMoodDetails } from '#/features/journal/moods'
+import { getMoodDetails } from '#/features/journal/journal.moods'
 import type { Entry } from '#/types'
 import type { EntryListViewModel } from '#/features/journal/hooks/useEntryList'
 import { FeatureErrorBoundary } from '#/components/errors/FeatureErrorBoundary'
@@ -37,11 +36,8 @@ export function TrashView({
   onDeletePermanently,
 }: TrashViewProps) {
   return (
-    <>
-      <Hero title="Trash" description="View and manage deleted reflections." />
-
-      <FocusSection>
-        <div className="flex flex-col lg:flex-row gap-4 h-[calc(100dvh-12rem)] min-h-[600px]">
+    <PageLayout>
+      <div className="flex flex-col lg:flex-row gap-4 min-h-[calc(100dvh-14rem)]">
           {/* LEFT PANE */}
           <FeatureErrorBoundary
             title="Deleted Reflections"
@@ -195,7 +191,6 @@ export function TrashView({
             </EntryViewerPane>
           </FeatureErrorBoundary>
         </div>
-      </FocusSection>
-    </>
+    </PageLayout>
   )
 }

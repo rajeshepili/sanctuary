@@ -8,54 +8,54 @@ import {
   listEntriesSchema,
 } from './journal.schema'
 import {
-  getAllEntriesService,
-  getDeletedEntriesService,
-  createEntryService,
-  updateEntryService,
-  deleteEntryService,
-  permanentDeleteEntryService,
-  togglePinService,
-  undeleteEntryService,
-  getEntryService,
-  listEntriesService,
-} from './journal.service'
+  findAll,
+  findTrash,
+  create,
+  update,
+  remove,
+  permanentRemove,
+  togglePin as togglePinRepo,
+  restore,
+  findById,
+  list,
+} from './journal.repository'
 
 export const getAllEntries = createServerFn({ method: 'GET' }).handler(() =>
-  getAllEntriesService(),
+  findAll(),
 )
 
 export const listEntries = createServerFn({ method: 'GET' })
   .validator(listEntriesSchema)
-  .handler(({ data }) => listEntriesService(data))
+  .handler(({ data }) => list(data))
 
 export const getDeletedEntries = createServerFn({ method: 'GET' }).handler(() =>
-  getDeletedEntriesService(),
+  findTrash(),
 )
 
 export const getEntry = createServerFn({ method: 'GET' })
   .validator(getEntrySchema)
-  .handler(({ data }) => getEntryService(data))
+  .handler(({ data }) => findById(data))
 
 export const createEntry = createServerFn({ method: 'POST' })
   .validator(createEntrySchema)
-  .handler(({ data }) => createEntryService(data))
+  .handler(({ data }) => create(data))
 
 export const updateEntry = createServerFn({ method: 'POST' })
   .validator(updateEntrySchema)
-  .handler(({ data }) => updateEntryService(data))
+  .handler(({ data }) => update(data))
 
 export const togglePin = createServerFn({ method: 'POST' })
   .validator(togglePinSchema)
-  .handler(({ data }) => togglePinService(data))
+  .handler(({ data }) => togglePinRepo(data))
 
 export const deleteEntry = createServerFn({ method: 'POST' })
   .validator(deleteEntrySchema)
-  .handler(({ data }) => deleteEntryService(data))
+  .handler(({ data }) => remove(data))
 
 export const undeleteEntry = createServerFn({ method: 'POST' })
   .validator(deleteEntrySchema)
-  .handler(({ data }) => undeleteEntryService(data.id))
+  .handler(({ data }) => restore(data.id))
 
 export const permanentDeleteEntry = createServerFn({ method: 'POST' })
   .validator(deleteEntrySchema)
-  .handler(({ data }) => permanentDeleteEntryService(data.id))
+  .handler(({ data }) => permanentRemove(data.id))

@@ -11,7 +11,7 @@ import type {
 
 export type ThemeMood = 'morning' | 'day' | 'evening' | 'night'
 export type JournalMood = NonNullable<(typeof journalEntries.$inferSelect)['mood']>
-export type HabitCategory = typeof habitCategories.$inferSelect
+
 export type HabitFrequency = (typeof habits.$inferSelect)['frequency']
 export type HabitPriority = (typeof habits.$inferSelect)['priority']
 export type HabitStatus = (typeof habits.$inferSelect)['status']

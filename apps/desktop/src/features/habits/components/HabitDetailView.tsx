@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Target,
   Fingerprint,
@@ -16,25 +16,27 @@ import { IconButton } from '#/components/ui/icon-button'
 import { HabitDayCell } from '#/features/habits/components/HabitDayCell'
 import { isScheduledOn } from '#/utils/consistency'
 import { getDailyActivityWindow, fromLocalDateString } from '#/utils/date'
-import { formatScheduleLabel } from '#/utils/habits'
+import { formatScheduleLabel } from '../habits.utils'
 import { format } from 'date-fns'
-import type { Habit, HabitTier } from '#/types'
+import type { Habit, HabitTier, HabitFrequency, HabitPriority } from '#/types'
 import type { UpdateHabitInput } from '../habits.schema'
-import { useHabitForm } from '../hooks/useHabitForm'
-import { categoriesQueryOptions } from '../categories.options'
+import { categoriesQueryOptions } from '../subdomains/categories/categories.options'
 import { Label } from '#/components/ui/label'
 import { Input } from '#/components/ui/input'
 import { Button } from '#/components/ui/button'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useForm } from '@tanstack/react-form'
+import { Field, FieldError } from '#/components/ui/field'
+import { cn } from '#/lib/utils'
 
-const FREQUENCIES = [
+const FREQUENCIES: { value: HabitFrequency; label: string }[] = [
   { value: 'daily', label: 'Daily' },
   { value: 'weekly', label: 'Weekly' },
   { value: 'monthly', label: 'Monthly' },
   { value: 'custom', label: 'Flexible' },
-] as const
+]
 
-const PRIORITIES = [
+const PRIORITIES: { value: HabitPriority; label: string; color: string }[] = [
   {
     value: 'low',
     label: 'Low',
@@ -50,7 +52,7 @@ const PRIORITIES = [
     label: 'High',
     color: 'text-red-500 bg-red-500/10 border-red-500/30',
   },
-] as const
+]
 
 const WEEKDAYS = [
   { label: 'mon', value: 1 },
@@ -91,41 +93,66 @@ export function HabitDetailView({
   const [isEditing, setIsEditing] = useState(false)
   const { data: categories } = useSuspenseQuery(categoriesQueryOptions)
 
-  const { state, actions, getSubmitData } = useHabitForm({
-    name: habit.name,
-    identityLabel: habit.identityLabel ?? '',
-    miniDesc: habit.miniDesc ?? '',
-    plusDesc: habit.plusDesc ?? '',
-    eliteDesc: habit.eliteDesc ?? '',
-    intention: habit.intention ?? '',
-    frequency: habit.frequency,
-    interval: habit.interval,
-    customDays: habit.daysOfWeek ?? [],
-    priority: habit.priority,
-    categoryId: habit.categoryId,
+  const form = useForm({
+    defaultValues: {
+      name: habit.name,
+      identityLabel: habit.identityLabel ?? '',
+      miniDesc: habit.miniDesc ?? '',
+      plusDesc: habit.plusDesc ?? '',
+      eliteDesc: habit.eliteDesc ?? '',
+      intention: habit.intention ?? '',
+      frequency: habit.frequency,
+      interval: habit.interval,
+      customDays: habit.daysOfWeek ?? [],
+      targetCount: habit.targetCount ?? null,
+      priority: habit.priority,
+      categoryId: habit.categoryId,
+    },
+    onSubmit: ({ value }) => {
+      const { customDays, frequency, targetCount, ...rest } = value
+      const daysOfWeek =
+        frequency === 'weekly' || frequency === 'custom' || frequency === 'monthly'
+          ? customDays.length > 0
+            ? customDays
+            : null
+          : null
+      const resolvedTargetCount =
+        (frequency === 'weekly' || frequency === 'monthly') &&
+        targetCount &&
+        targetCount > 0
+          ? targetCount
+          : null
+
+      onUpdateHabit({
+        id: habit.id,
+        ...rest,
+        name: rest.name.trim(),
+        identityLabel: rest.identityLabel.trim() || null,
+        miniDesc: rest.miniDesc.trim() || null,
+        plusDesc: rest.plusDesc.trim() || null,
+        eliteDesc: rest.eliteDesc.trim() || null,
+        intention: rest.intention.trim() || null,
+        frequency,
+        daysOfWeek,
+        targetCount: resolvedTargetCount,
+      })
+      setIsEditing(false)
+    },
   })
 
+  useEffect(() => {
+    if (isEditing) {
+      form.reset() // reset to defaults which are derived from the current habit
+    }
+  }, [isEditing, habit, form])
+
   const handleSave = () => {
-    const data = getSubmitData()
-    if (!data.name) return
-    onUpdateHabit({ id: habit.id, ...data })
-    setIsEditing(false)
+    form.handleSubmit()
   }
 
   const handleCancelEdit = () => {
-    // Reset form fields back to current habit
-    actions.setName(habit.name)
-    actions.setIdentityLabel(habit.identityLabel ?? '')
-    actions.setMiniDesc(habit.miniDesc ?? '')
-    actions.setPlusDesc(habit.plusDesc ?? '')
-    actions.setEliteDesc(habit.eliteDesc ?? '')
-    actions.setIntention(habit.intention ?? '')
-    actions.setFrequency(habit.frequency)
-    actions.setInterval(habit.interval)
-    actions.setCustomDays(habit.daysOfWeek ?? [])
-    actions.setPriority(habit.priority)
-    actions.setCategoryId(habit.categoryId)
     setIsEditing(false)
+    form.reset()
   }
 
   return (
@@ -135,24 +162,52 @@ export function HabitDetailView({
         <div className="space-y-1.5 flex-1 min-w-0">
           {isEditing ? (
             <div className="space-y-2">
-              <Input
-                value={state.identityLabel}
-                onChange={(e) => actions.setIdentityLabel(e.target.value)}
-                placeholder="Identity (e.g. I am a runner)"
-                className="bg-background/60 border-border/50 text-xl font-bold"
+              <form.Field
+                name="identityLabel"
+                children={(field) => (
+                  <Input
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="Identity (e.g. I am a runner)"
+                    className="bg-background/60 border-border/50 text-xl font-bold"
+                  />
+                )}
               />
-              <Input
-                value={state.name}
-                onChange={(e) => actions.setName(e.target.value)}
-                placeholder="Daily action (required)"
-                required
-                className="bg-background/60 border-border/50 text-sm"
+              <form.Field
+                name="name"
+                validators={{
+                  onSubmit: ({ value }) =>
+                    !value.trim() ? 'Daily action is required' : undefined,
+                }}
+                children={(field) => (
+                  <Field>
+                    <Input
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="Daily action (required)"
+                      className="bg-background/60 border-border/50 text-sm"
+                      aria-invalid={field.state.meta.errors.length > 0}
+                    />
+                    <FieldError
+                      errors={field.state.meta.errors.map((e) => ({
+                        message: String(e),
+                      }))}
+                    />
+                  </Field>
+                )}
               />
             </div>
           ) : (
             <>
               <h2
-                className={`text-2xl font-bold ${habit.status === 'resting' ? 'text-muted-foreground line-through' : 'text-foreground'}`}
+                className={cn(
+                  'text-2xl font-bold',
+                  habit.status === 'resting'
+                    ? 'text-muted-foreground line-through'
+                    : 'text-foreground'
+                )}
               >
                 {habit.identityLabel ?? habit.name}
               </h2>
@@ -171,11 +226,17 @@ export function HabitDetailView({
           )}
 
           {isEditing && (
-            <Input
-              value={state.intention}
-              onChange={(e) => actions.setIntention(e.target.value)}
-              placeholder="Your 'Why' (optional)"
-              className="bg-background/60 border-border/50 text-sm italic"
+            <form.Field
+              name="intention"
+              children={(field) => (
+                <Input
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="Your 'Why' (optional)"
+                  className="bg-background/60 border-border/50 text-sm italic"
+                />
+              )}
             />
           )}
 
@@ -214,7 +275,7 @@ export function HabitDetailView({
           ) : (
             <>
               <IconButton
-                tooltip="Edit habit"
+                tooltip="Edit identity"
                 onClick={() => setIsEditing(true)}
               >
                 <Pencil className="w-4 h-4" />
@@ -222,13 +283,13 @@ export function HabitDetailView({
               <IconButton
                 tooltip={
                   habit.status === 'active'
-                    ? 'Rest this habit'
-                    : 'Resume this habit'
+                    ? 'Rest this identity'
+                    : 'Resume this identity'
                 }
                 onClick={() =>
                   onUpdateStatus(
                     habit.id,
-                    habit.status === 'active' ? 'resting' : 'active',
+                    habit.status === 'active' ? 'resting' : 'active'
                   )
                 }
               >
@@ -261,125 +322,258 @@ export function HabitDetailView({
           >
             {/* Tier descriptions */}
             <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                  2-Min Version
-                </Label>
-                <Input
-                  value={state.miniDesc}
-                  onChange={(e) => actions.setMiniDesc(e.target.value)}
-                  placeholder="Minimum effective dose"
-                  className="bg-background/60 border-border/50 text-xs"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-[10px] font-bold text-primary/70 uppercase tracking-wider">
-                  Target Action
-                </Label>
-                <Input
-                  value={state.plusDesc}
-                  onChange={(e) => actions.setPlusDesc(e.target.value)}
-                  placeholder="The full habit"
-                  className="bg-background/60 border-border/50 text-xs"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                  Bonus Action
-                </Label>
-                <Input
-                  value={state.eliteDesc}
-                  onChange={(e) => actions.setEliteDesc(e.target.value)}
-                  placeholder="Going above and beyond"
-                  className="bg-background/60 border-border/50 text-xs"
-                />
-              </div>
+              <form.Field
+                name="miniDesc"
+                children={(field) => (
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      2-Min Version
+                    </Label>
+                    <Input
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="Minimum effective dose"
+                      className="bg-background/60 border-border/50 text-xs"
+                    />
+                  </div>
+                )}
+              />
+              <form.Field
+                name="plusDesc"
+                children={(field) => (
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold text-primary/70 uppercase tracking-wider">
+                      Target Action
+                    </Label>
+                    <Input
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="The target action"
+                      className="bg-background/60 border-border/50 text-xs"
+                    />
+                  </div>
+                )}
+              />
+              <form.Field
+                name="eliteDesc"
+                children={(field) => (
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Bonus Action
+                    </Label>
+                    <Input
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="Going above and beyond"
+                      className="bg-background/60 border-border/50 text-xs"
+                    />
+                  </div>
+                )}
+              />
             </div>
 
             {/* Schedule */}
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Schedule</Label>
-              <div className="flex flex-wrap gap-2">
-                {FREQUENCIES.map((f) => (
-                  <button
-                    key={f.value}
-                    type="button"
-                    onClick={() => actions.setFrequency(f.value)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all border ${state.frequency === f.value ? 'bg-primary text-primary-foreground border-primary' : 'border-border/50 text-muted-foreground hover:border-primary/50'}`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-              {(state.frequency === 'weekly' || state.frequency === 'custom' || state.frequency === 'monthly') && (
-                <div className="flex flex-col gap-2 pt-1">
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">On specific days (optional):</span>
-                  <div className="flex flex-wrap gap-2">
-                    {WEEKDAYS.map((day) => (
-                      <button
-                        key={day.value}
-                        type="button"
-                        onClick={() => actions.toggleCustomDay(day.value)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-bold capitalize transition-all border ${state.customDays.includes(day.value) ? 'bg-primary text-primary-foreground border-primary' : 'border-border/50 text-muted-foreground hover:border-primary/50'}`}
-                      >
-                        {day.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            <form.Field
+              name="frequency"
+              children={(freqField) => (
+                <form.Field
+                  name="customDays"
+                  children={(daysField) => (
+                    <form.Field
+                      name="targetCount"
+                      children={(countField) => {
+                        const freq = freqField.state.value
+                        return (
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">
+                              Schedule
+                            </Label>
+                            <div className="flex flex-wrap gap-2">
+                              {FREQUENCIES.map((f) => (
+                                <button
+                                  key={f.value}
+                                  type="button"
+                                  onClick={() => freqField.handleChange(f.value)}
+                                  className={cn(
+                                    'px-3 py-1 rounded-lg text-xs font-bold transition-all border',
+                                    freq === f.value
+                                      ? 'bg-primary text-primary-foreground border-primary'
+                                      : 'border-border/50 text-muted-foreground hover:border-primary/50'
+                                  )}
+                                >
+                                  {f.label}
+                                </button>
+                              ))}
+                            </div>
+                            {(freq === 'weekly' ||
+                              freq === 'custom' ||
+                              freq === 'monthly') && (
+                              <div className="flex flex-col gap-2 pt-1">
+                                <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
+                                  On specific days (optional):
+                                </span>
+                                <div className="flex flex-wrap gap-2">
+                                  {WEEKDAYS.map((day) => (
+                                    <button
+                                      key={day.value}
+                                      type="button"
+                                      onClick={() => {
+                                        const prev = daysField.state.value
+                                        daysField.handleChange(
+                                          prev.includes(day.value)
+                                            ? prev.filter((d) => d !== day.value)
+                                            : [...prev, day.value]
+                                        )
+                                      }}
+                                      className={cn(
+                                        'px-2.5 py-1 rounded-lg text-xs font-bold capitalize transition-all border',
+                                        daysField.state.value.includes(day.value)
+                                          ? 'bg-primary text-primary-foreground border-primary'
+                                          : 'border-border/50 text-muted-foreground hover:border-primary/50'
+                                      )}
+                                    >
+                                      {day.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {(freq === 'weekly' || freq === 'monthly') &&
+                              daysField.state.value.length === 0 && (
+                                <div className="flex flex-col gap-2 pt-1">
+                                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
+                                    Or set a target count (e.g. 3 times a week):
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="number"
+                                      min={1}
+                                      value={countField.state.value ?? ''}
+                                      onChange={(e) =>
+                                        countField.handleChange(
+                                          e.target.value
+                                            ? parseInt(e.target.value)
+                                            : null
+                                        )
+                                      }
+                                      placeholder="Target count"
+                                      className="w-32 bg-background/60 border-border/50"
+                                    />
+                                    <span className="text-sm text-muted-foreground">
+                                      times a {freq === 'weekly' ? 'week' : 'month'}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                          </div>
+                        )
+                      }}
+                    />
+                  )}
+                />
               )}
-            </div>
+            />
 
-            {/* Category + Priority */}
+            {/* Category + Priority + Interval */}
             <div className="flex flex-wrap gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">
-                  Interval
-                </Label>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Every</span>
-                  <Input 
-                    type="number"
-                    min={1}
-                    value={state.interval}
-                    onChange={(e) => actions.setInterval(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-20 bg-background/60 border-border/50"
+              <form.Field
+                name="interval"
+                children={(field) => (
+                  <form.Field
+                    name="frequency"
+                    children={(freqField) => (
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground">
+                          Interval
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">
+                            Every
+                          </span>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={field.state.value}
+                            onChange={(e) =>
+                              field.handleChange(
+                                Math.max(1, parseInt(e.target.value) || 1)
+                              )
+                            }
+                            className="w-20 bg-background/60 border-border/50"
+                          />
+                          <span className="text-sm text-muted-foreground capitalize">
+                            {freqField.state.value === 'daily'
+                              ? 'days'
+                              : freqField.state.value === 'weekly'
+                                ? 'weeks'
+                                : freqField.state.value === 'monthly'
+                                  ? 'months'
+                                  : ''}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   />
-                  <span className="text-sm text-muted-foreground capitalize">
-                    {state.frequency === 'daily' ? 'days' : state.frequency === 'weekly' ? 'weeks' : state.frequency === 'monthly' ? 'months' : ''}
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-1.5 flex-1 min-w-[150px]">
-                <Label className="text-xs text-muted-foreground">Category</Label>
-                <select
-                  value={state.categoryId || ''}
-                  onChange={(e) => actions.setCategoryId(e.target.value ? parseInt(e.target.value) : null)}
-                  className="flex h-9 w-full rounded-md border border-border/50 bg-background/60 px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                  <option value="">No Category</option>
-                  {categories.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">
-                  Priority
-                </Label>
-                <div className="flex gap-2">
-                  {PRIORITIES.map((p) => (
-                    <button
-                      key={p.value}
-                      type="button"
-                      onClick={() => actions.setPriority(p.value)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border ${state.priority === p.value ? p.color : 'border-border/50 text-muted-foreground hover:border-primary/50'}`}
+                )}
+              />
+
+              <form.Field
+                name="categoryId"
+                children={(field) => (
+                  <div className="space-y-1.5 flex-1 min-w-[150px]">
+                    <Label className="text-xs text-muted-foreground">
+                      Category
+                    </Label>
+                    <select
+                      value={field.state.value ?? ''}
+                      onChange={(e) =>
+                        field.handleChange(
+                          e.target.value ? parseInt(e.target.value) : null
+                        )
+                      }
+                      className="flex h-9 w-full rounded-md border border-border/50 bg-background/60 px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-foreground"
                     >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                      <option value="">No Category</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              />
+
+              <form.Field
+                name="priority"
+                children={(field) => (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">
+                      Priority
+                    </Label>
+                    <div className="flex gap-2">
+                      {PRIORITIES.map((p) => (
+                        <button
+                          key={p.value}
+                          type="button"
+                          onClick={() => field.handleChange(p.value)}
+                          className={cn(
+                            'px-2.5 py-1 rounded-lg text-xs font-bold transition-all border',
+                            field.state.value === p.value
+                              ? p.color
+                              : 'border-border/50 text-muted-foreground hover:border-primary/50'
+                          )}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              />
             </div>
 
             <div className="flex gap-2 pt-1">

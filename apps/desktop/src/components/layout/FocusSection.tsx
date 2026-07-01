@@ -1,22 +1,26 @@
-import { motion } from 'framer-motion'
+import { cn } from '#/lib/utils'
 
-export function FocusSection({ children }: { children: React.ReactNode }) {
+export function FocusSection({
+  children,
+  className,
+  immersive = false,
+}: {
+  children: React.ReactNode
+  className?: string
+  immersive?: boolean
+}) {
   return (
-    <motion.div
-      className="
-        relative z-20 w-full
-        bg-background/75
-        backdrop-blur-xs
-        border-t border-border/20
-        pt-32 pb-16
-        min-h-dvh
-      "
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true, margin: '-50px' }}
-      transition={{ duration: 0.8, ease: 'easeOut' }}
+    <div
+      className={cn(
+        'relative z-20 w-full flex-1 bg-background flex flex-col overflow-y-auto',
+        'px-5 py-6 sm:px-8 sm:py-8 pb-28',
+        immersive
+          ? 'min-h-dvh'
+          : 'min-h-[calc(100dvh-3.5rem)]',
+        className,
+      )}
     >
-      <div className="max-w-[80dvw] mx-auto px-6">{children}</div>
-    </motion.div>
+      {children}
+    </div>
   )
 }

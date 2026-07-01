@@ -14,4 +14,20 @@ export const sessionStore = {
     if (v) sessionStorage.removeItem('pending_prompt')
     return v
   },
+
+  /** PIN stays unlocked until the app window is closed (sessionStorage). */
+  isPinSessionUnlocked: () => {
+    if (typeof window === 'undefined') return false
+    return sessionStorage.getItem('pin_unlocked') === '1'
+  },
+  setPinSessionUnlocked: () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('pin_unlocked', '1')
+    }
+  },
+  clearPinSession: () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('pin_unlocked')
+    }
+  },
 }

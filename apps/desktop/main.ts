@@ -9,6 +9,7 @@ import {
   Menu,
   nativeImage,
   dialog,
+  shell,
 } from 'electron'
 import { join } from 'node:path'
 import { fork } from 'node:child_process'
@@ -74,6 +75,13 @@ function getPreloadPath() {
   )
 }
 
+function getIconPath() {
+  if (isDev) {
+    return join(process.cwd(), 'public', 'favicon-32x32.png')
+  }
+  return join(__dirname, '..', 'dist', 'favicon-32x32.png')
+}
+
 function showStartupError(win: BrowserWindow | null, error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   if (win) {
@@ -108,6 +116,7 @@ const waitForPort = (port: number, timeout = isDev ? 10_000 : 45_000) => {
   })
 }
 
+// Restrict all network requests to localhost to prevent external exfiltration.
 function installContentSecurityPolicy() {
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
@@ -121,6 +130,7 @@ function installContentSecurityPolicy() {
   })
 }
 
+// Inject CSRF protection token into all local server requests.
 function installSessionTokenInjection() {
   if (!sessionToken) return
 
@@ -152,6 +162,17 @@ function registerIpcHandlers() {
 
   ipcMain.handle('auto-update:check', async () => {
     await autoUpdater.checkForUpdatesAndNotify()
+  })
+
+  ipcMain.handle('app:get-login-item-settings', () => {
+    return app.getLoginItemSettings().openAtLogin
+  })
+
+  ipcMain.handle('app:set-login-item-settings', (_event, openAtLogin: boolean) => {
+    app.setLoginItemSettings({
+      openAtLogin,
+      openAsHidden: true, // Start minimized in the tray
+    })
   })
 
   ipcMain.handle('dialog:select-directory', async () => {
@@ -201,12 +222,68 @@ function registerIpcHandlers() {
 
   ipcMain.handle('fs:read-file-base64', async (_event, filePath: string) => {
     try {
-      const { readFile } = await import('node:fs/promises')
       const buffer = await readFile(filePath)
       return buffer.toString('base64')
     } catch {
       return null
     }
+  })
+
+  ipcMain.handle('fs:read-file-text', async (_event, filePath: string) => {
+    try {
+      return await readFile(filePath, 'utf-8')
+    } catch {
+      return null
+    }
+  })
+
+  ipcMain.handle('fs:delete-file', async (_event, filePath: string) => {
+    const { unlink } = await import('node:fs/promises')
+    try {
+      await unlink(filePath)
+      return true
+    } catch {
+      return false
+    }
+  })
+
+  ipcMain.handle('dialog:select-backup-file', async () => {
+    if (!mainWindow) return null
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile'],
+      title: 'Choose a backup file',
+      buttonLabel: 'Open',
+      filters: [
+        { name: 'Sanctuary backups', extensions: ['json', 'enc'] },
+        { name: 'All files', extensions: ['*'] },
+      ],
+    })
+    if (result.canceled) return null
+    return result.filePaths[0]
+  })
+
+  ipcMain.handle('backup:get-dir', async () => {
+    // The renderer passes the user-configured path (or null for default).
+    // We resolve it here so the OS path is correct regardless of platform.
+    const { homedir } = await import('node:os')
+    return join(homedir(), 'Documents', 'Sanctuary Backups')
+  })
+
+  ipcMain.handle('backup:open-dir', async (_event, dirPath: string) => {
+    // Create the directory if it doesn't exist, then open in OS file manager.
+    await mkdir(dirPath, { recursive: true })
+    await shell.openPath(dirPath)
+  })
+
+  ipcMain.handle('backup:select-dir', async () => {
+    if (!mainWindow) return null
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory', 'createDirectory'],
+      title: 'Choose Backup Location',
+      buttonLabel: 'Save Backups Here',
+    })
+    if (result.canceled) return null
+    return result.filePaths[0]
   })
 }
 
@@ -234,6 +311,13 @@ async function createWindow() {
   })
 
   mainWindow.setBackgroundColor('#1a1a1a')
+
+  mainWindow.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault()
+      mainWindow?.hide()
+    }
+  })
 
   if (isDev) {
     const PORT = 3000
@@ -275,6 +359,8 @@ async function createWindow() {
         'index.mjs',
       )
 
+      // Fork Nitro backend server.
+      // Must run unpacked from ASAR because child_process.fork cannot execute from within ASAR.
       serverProcess = fork(serverPath, [], {
         execPath: process.execPath,
         execArgv: [],
@@ -354,6 +440,7 @@ async function createWindow() {
 
 app.on('second-instance', () => {
   if (mainWindow) {
+    if (!mainWindow.isVisible()) mainWindow.show()
     if (mainWindow.isMinimized()) mainWindow.restore()
     mainWindow.focus()
   }
@@ -375,8 +462,20 @@ app.whenReady().then(() => {
   })
 
   // System Tray
-  tray = new Tray(nativeImage.createEmpty()) // Ideally replace with actual icon path later
+  tray = new Tray(nativeImage.createFromPath(getIconPath()))
   tray.setToolTip('Sanctuary')
+  tray.on('click', () => {
+    if (mainWindow) {
+      if (mainWindow.isVisible()) {
+        mainWindow.hide()
+      } else {
+        if (mainWindow.isMinimized()) mainWindow.restore()
+        mainWindow.show()
+        mainWindow.focus()
+      }
+    }
+  })
+
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Open Sanctuary',
@@ -398,7 +497,13 @@ app.whenReady().then(() => {
   }
 
   app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow()
+    } else if (mainWindow) {
+      if (!mainWindow.isVisible()) mainWindow.show()
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    }
   })
 })
 

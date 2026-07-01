@@ -1,5 +1,4 @@
-import { useMotionValue, useSpring } from 'framer-motion'
-import { useEffect, useRef } from 'react'
+import { useNoiseValue } from './use-noise'
 
 interface ParallaxConfig {
   magnitude?: number
@@ -12,53 +11,33 @@ interface ParallaxConfig {
 }
 
 /**
- * A simple 1D noise-like function using sine waves.
- */
-function simpleNoise(t: number) {
-  return (
-    Math.sin(t) * 0.5 +
-    Math.sin(t * 1.5 + 1.2) * 0.25 +
-    Math.sin(t * 0.7 - 0.5) * 0.15 +
-    Math.sin(t * 2.1 + 2.5) * 0.1
-  )
-}
-
-/**
  * Refactored useParallax: Now performs autonomous organic drifting
- * instead of reacting to mouse movements.
+ * by composing two instances of useNoiseValue (one for X, one for Y).
  */
 export function useParallax({
   magnitude = 20,
   speed = 0.4,
   springConfig = { stiffness: 40, damping: 20, mass: 1 },
 }: ParallaxConfig = {}) {
-  const driftX = useMotionValue(0)
-  const driftY = useMotionValue(0)
+  // Use a random base offset so multiple elements don't sync up perfectly
+  const baseOffset = Math.random() * 100
 
-  const x = useSpring(driftX, springConfig)
-  const y = useSpring(driftY, springConfig)
+  // X drift
+  const x = useNoiseValue({
+    speed,
+    magnitude,
+    offset: baseOffset,
+    springConfig,
+  })
 
-  const timeRef = useRef(Math.random() * 100)
-
-  useEffect(() => {
-    let frameId: number
-
-    const update = () => {
-      timeRef.current += 0.016 * speed
-
-      // Generate two different noise values for X and Y
-      const noiseX = simpleNoise(timeRef.current)
-      const noiseY = simpleNoise(timeRef.current * 0.8 + 50)
-
-      driftX.set(noiseX * magnitude)
-      driftY.set(noiseY * magnitude)
-
-      frameId = requestAnimationFrame(update)
-    }
-
-    frameId = requestAnimationFrame(update)
-    return () => cancelAnimationFrame(frameId)
-  }, [magnitude, speed, driftX, driftY])
+  // Y drift uses a slight speed variation and a completely different offset
+  // to ensure the X and Y paths don't look perfectly diagonal or locked.
+  const y = useNoiseValue({
+    speed: speed * 0.8,
+    magnitude,
+    offset: baseOffset + 50,
+    springConfig,
+  })
 
   return { x, y }
 }

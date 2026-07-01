@@ -61,7 +61,7 @@ export function useJournalMutations() {
 
     onMutate: async ({ id, content, mood }) => {
       const previous = journalCache.snapshot(queryClient)
-      journalCache.update(queryClient, id, {
+      journalCache.patch(queryClient, id, {
         content,
         mood,
         updatedAt: new Date(),
@@ -73,7 +73,7 @@ export function useJournalMutations() {
       toast.error('Could not update entry.')
     },
     onSuccess: (updated, { id }) => {
-      journalCache.update(queryClient, id, updated)
+      journalCache.patch(queryClient, id, updated)
       toast.success('Entry updated.')
     },
   })
@@ -93,7 +93,7 @@ export function useJournalMutations() {
     },
     onSuccess: (_result, id) => {
       // Server response is authoritative — update the full entry in cache
-      journalCache.update(queryClient, id, _result)
+      journalCache.patch(queryClient, id, _result)
     },
   })
 

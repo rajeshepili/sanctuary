@@ -18,4 +18,21 @@ contextBridge.exposeInMainWorld('sanctuary', {
     ipcRenderer.invoke('fs:list-files', dirPath),
   readFileBase64: (filePath: string): Promise<string | null> =>
     ipcRenderer.invoke('fs:read-file-base64', filePath),
+  getAutoLaunch: (): Promise<boolean> =>
+    ipcRenderer.invoke('app:get-login-item-settings'),
+  setAutoLaunch: (enabled: boolean): Promise<void> =>
+    ipcRenderer.invoke('app:set-login-item-settings', enabled),
+  // Backup-related IPC
+  getBackupDir: (): Promise<string> =>
+    ipcRenderer.invoke('backup:get-dir'),
+  openBackupDir: (dirPath: string): Promise<void> =>
+    ipcRenderer.invoke('backup:open-dir', dirPath),
+  selectBackupDir: (): Promise<string | null> =>
+    ipcRenderer.invoke('backup:select-dir'),
+  selectBackupFile: (): Promise<string | null> =>
+    ipcRenderer.invoke('dialog:select-backup-file'),
+  readFileText: (filePath: string): Promise<string | null> =>
+    ipcRenderer.invoke('fs:read-file-text', filePath),
+  deleteFile: (filePath: string): Promise<boolean> =>
+    ipcRenderer.invoke('fs:delete-file', filePath),
 })

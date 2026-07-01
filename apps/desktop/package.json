@@ -38,19 +38,17 @@
     "test:watch": "node scripts/test-runner.js watch",
     "test:coverage": "node scripts/test-runner.js coverage",
     "test:ci": "node scripts/test-runner.js unit && node scripts/test-runner.js integration",
-    "test:e2e": "playwright test",
     "lint": "eslint src",
     "format": "prettier --write . && eslint --fix",
     "check": "prettier --check src main.ts preload.ts nitro.config.ts scripts tsconfig.json vite.config.ts vitest.config.ts electron-builder.yml package.json",
     "typecheck": "tsc --noEmit",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:migrate:run": "tsx src/database/migrate.ts",
-    "db:push": "drizzle-kit push",
-    "db:pull": "drizzle-kit pull",
-    "db:studio": "drizzle-kit studio",
-    "feature:create": "node scripts/feature-create.js",
-    "prepare": "husky"
+    "db:generate": "DATABASE_URL=file:dev.db drizzle-kit generate",
+    "db:migrate": "tsx src/database/migrate.ts",
+    "db:migrate:studio": "DATABASE_URL=file:dev.db drizzle-kit migrate",
+    "db:push": "DATABASE_URL=file:dev.db drizzle-kit push",
+    "db:pull": "DATABASE_URL=file:dev.db drizzle-kit pull",
+    "db:studio": "DATABASE_URL=file:dev.db drizzle-kit studio",
+    "feature:create": "node scripts/feature-create.js"
   },
   "lint-staged": {
     "*.{js,ts,tsx}": [
@@ -66,6 +64,7 @@
     "@libsql/client": "^0.17.3",
     "@tailwindcss/vite": "^4.3.0",
     "@tanstack/react-devtools": "^0.10.5",
+    "@tanstack/react-form": "^1.33.0",
     "@tanstack/react-query": "^5.101.0",
     "@tanstack/react-router": "^1.170.16",
     "@tanstack/react-router-devtools": "^1.167.0",
@@ -111,7 +110,6 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@playwright/test": "^1.50.0",
     "@rolldown/plugin-babel": "^0.2.3",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/devtools-vite": "^0.7.0",

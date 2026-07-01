@@ -1,9 +1,9 @@
-import { useEffect, useCallback, useMemo } from 'react'
+import { useEffect, useCallback, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Edit3, Pin, Trash2 } from 'lucide-react'
 import { formatEntryDate } from '#/utils/date'
-import { getMoodDetails } from '#/features/journal/moods'
+import { getMoodDetails } from '#/features/journal/journal.moods'
 import { MarkdownViewer } from '#/features/journal/components/MarkdownViewer'
 import { MediaGrid } from '#/features/journal/components/MediaGrid'
 import { IconButton } from '#/components/ui/icon-button'
@@ -57,6 +57,9 @@ export function ReadingView({
   onTogglePin,
   onDelete,
 }: ReadingViewProps) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
   // Escape key handler
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -87,6 +90,8 @@ export function ReadingView({
     [entry.content],
   )
 
+  if (!mounted) return null
+
   return createPortal(
     <AnimatePresence>
       {isOpen && (
@@ -99,7 +104,7 @@ export function ReadingView({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             onClick={onClose}
-            className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-xl"
+            className="fixed inset-0 z-60 bg-background/80 backdrop-blur-xl"
             style={
               ambient
                 ? { background: `${ambient}, hsl(var(--background) / 0.85)` }
@@ -114,7 +119,7 @@ export function ReadingView({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.99 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-[61] flex flex-col items-center overflow-y-auto"
+            className="fixed inset-0 z-61 flex flex-col items-center overflow-y-auto"
           >
             {/* Sticky toolbar */}
             <div className="sticky top-0 w-full z-10 flex justify-between items-center px-6 py-4 max-w-3xl mx-auto">

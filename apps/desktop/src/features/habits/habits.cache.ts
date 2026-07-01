@@ -1,9 +1,12 @@
 import type { QueryClient } from '@tanstack/react-query'
-import type { Habit, HabitCompletion } from '#/types'
+import type { Habit, HabitTier, HabitsData } from '#/types'
 import { habitsKeys } from './habits.keys'
 
-type HabitsData = { habits: Habit[]; completions: HabitCompletion[] }
-
+/**
+ * All optimistic cache operations live here.
+ * Each method mutates the single `habitsKeys.all` cache entry.
+ * snapshot/restore are used by mutations for rollback on error.
+ */
 export const habitsCache = {
   snapshot(queryClient: QueryClient): HabitsData | undefined {
     return queryClient.getQueryData<HabitsData>(habitsKeys.all)
@@ -21,7 +24,7 @@ export const habitsCache = {
     })
   },
 
-  /** Replace a habit's data in the cache */
+  /** Replace a habit's full record in the cache */
   patchHabit(queryClient: QueryClient, habit: Habit) {
     queryClient.setQueryData<HabitsData>(habitsKeys.all, (old) => {
       if (!old) return old
@@ -43,27 +46,12 @@ export const habitsCache = {
     })
   },
 
-  /** Update the status of a habit */
-  patchHabitStatus(
-    queryClient: QueryClient,
-    id: number,
-    status: Habit['status'],
-  ) {
-    queryClient.setQueryData<HabitsData>(habitsKeys.all, (old) => {
-      if (!old) return old
-      return {
-        ...old,
-        habits: old.habits.map((h) => (h.id === id ? { ...h, status } : h)),
-      }
-    })
-  },
-
   /** Toggle a completion entry (add, remove, or switch tier) */
   toggleCompletion(
     queryClient: QueryClient,
     habitId: number,
     date: string,
-    tier?: 'mini' | 'plus' | 'elite' | 'skipped',
+    tier: HabitTier = 'plus',
   ) {
     queryClient.setQueryData<HabitsData>(habitsKeys.all, (old) => {
       if (!old) return old
@@ -72,23 +60,21 @@ export const habitsCache = {
       )
       let completions = [...old.completions]
       if (existing) {
-        if (tier && existing.tier !== tier) {
+        if (existing.tier !== tier) {
           // Tier switch — update in place
           completions = completions.map((c) =>
             c.id === existing.id ? { ...c, tier } : c,
           )
         } else {
-          // Same tier → remove (toggle off)
-          completions = completions.filter(
-            (c) => !(c.habitId === habitId && c.completedAt === date),
-          )
+          // Same tier → toggle off
+          completions = completions.filter((c) => c.id !== existing.id)
         }
       } else {
         completions.push({
-          id: -Date.now(),
+          id: -Date.now(), // Temporary client-side ID until server response
           habitId,
           completedAt: date,
-          tier: tier ?? 'plus',
+          tier,
         })
       }
       return { ...old, completions }

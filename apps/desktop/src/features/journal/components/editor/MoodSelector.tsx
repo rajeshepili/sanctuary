@@ -1,5 +1,5 @@
 import { useJournalEditorContext } from './JournalEditorContext'
-import { MOODS } from '#/features/journal/moods'
+import { MOODS } from '#/features/journal/journal.moods'
 
 export function MoodSelector() {
   const { mood, setMood } = useJournalEditorContext()

@@ -26,17 +26,16 @@ import { IdentityListPane } from '#/features/habits/components/IdentityListPane'
 import { IdentityViewerPane } from '#/features/habits/components/IdentityViewerPane'
 import { HabitCreateForm } from '#/features/habits/components/HabitCreateForm'
 import { HabitDetailView } from '#/features/habits/components/HabitDetailView'
-import { Hero } from '#/components/layout/Hero'
-import { FocusSection } from '#/components/layout/FocusSection'
+import { PageLayout } from '#/components/layout/PageLayout'
+import { PageSkeleton } from '#/components/layout/PageSkeleton'
 import { FeatureErrorBoundary } from '#/components/errors/FeatureErrorBoundary'
 
 import { getTodayStr } from '#/utils/date'
-
-import { PAGE_DESCRIPTIONS, PAGE_TITLES } from '#/config/branding'
 import type { HabitStatus } from '#/types'
 
 export const Route = createLazyFileRoute('/__app/habits')({
   component: HabitsPage,
+  pendingComponent: PageSkeleton,
 })
 
 function HabitsPage() {
@@ -50,7 +49,10 @@ function HabitsPage() {
   } = useHabitsMutations()
 
   useEffect(() => {
-    void syncHabits()
+    if (sessionStorage.getItem('habits_reactivated') === '1') return
+    void syncHabits().then(() => {
+      sessionStorage.setItem('habits_reactivated', '1')
+    })
   }, [])
 
   const [activeHabitId, setActiveHabitId] = useState<number | 'new' | null>(
@@ -76,7 +78,7 @@ function HabitsPage() {
     (habit: Parameters<typeof createHabit.mutate>[0]) => {
       createHabit.mutate(habit, {
         onSuccess: (created) => {
-          if (created?.id) setActiveHabitId(created.id)
+          if (created.id) setActiveHabitId(created.id)
         },
       })
     },
@@ -122,10 +124,8 @@ function HabitsPage() {
 
   return (
     <>
-      <Hero title={PAGE_TITLES.habits} description={PAGE_DESCRIPTIONS.habits} />
-
-      <FocusSection>
-        <div className="flex flex-col lg:flex-row gap-4 h-[calc(100dvh-12rem)] min-h-[600px]">
+      <PageLayout>
+        <div className="flex flex-col lg:flex-row gap-4 min-h-[calc(100dvh-14rem)]">
           <FeatureErrorBoundary
             title="Identity List"
             className="w-full lg:w-80 shrink-0"
@@ -180,7 +180,7 @@ function HabitsPage() {
             </IdentityViewerPane>
           </FeatureErrorBoundary>
         </div>
-      </FocusSection>
+      </PageLayout>
 
       <AlertDialog
         open={deleteId !== null}

@@ -9,6 +9,7 @@ import { useEntryEditor } from '#/features/journal/hooks/useEntryEditor'
 import { useDraft } from '#/hooks/use-draft'
 import { JournalView } from '#/features/journal/components/JournalView'
 import { FeatureErrorBoundary } from '#/components/errors/FeatureErrorBoundary'
+import { PageSkeleton } from '#/components/layout/PageSkeleton'
 import { useUIStore } from '#/stores/ui-store'
 
 import {
@@ -24,6 +25,7 @@ import {
 
 export const Route = createLazyFileRoute('/__app/journal')({
   component: JournalEntriesPage,
+  pendingComponent: PageSkeleton,
 })
 
 function JournalEntriesPage() {

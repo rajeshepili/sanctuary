@@ -5,6 +5,10 @@ import type { Entry, JournalMood } from '#/types'
 import { useEditorStore } from '#/stores/editor-store'
 import type { PendingMedia } from '#/stores/editor-store'
 
+/**
+ * ViewModel interface for the Journal Editor.
+ * Exposes methods to modify global editor state and save entries.
+ */
 export interface EntryEditorViewModel {
   isEditing: boolean
   content: string
@@ -24,6 +28,10 @@ export interface EntryEditorViewModel {
   wordCount: number
 }
 
+/**
+ * Bridges `useEditorStore` with React Query mutations.
+ * Editor state is kept in Zustand to preserve drafts across route navigation.
+ */
 export function useEntryEditor(activeEntry?: Entry): EntryEditorViewModel {
   const { updateEntry, createEntry } = useJournalMutations()
 

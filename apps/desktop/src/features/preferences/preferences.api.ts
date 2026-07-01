@@ -3,7 +3,7 @@ import { updatePreferencesSchema } from './preferences.schema'
 import {
   getPreferencesService,
   updatePreferencesService,
-} from './preferences.service'
+} from './preferences.repository'
 
 export const getPreferences = createServerFn({ method: 'GET' }).handler(() =>
   getPreferencesService(),

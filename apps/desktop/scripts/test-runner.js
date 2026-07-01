@@ -1,8 +1,3 @@
-/**
- * Test Runner Script
- * Runs all tests with proper setup and reporting
- */
-
 import { execSync } from 'child_process'
 import { fileURLToPath } from 'url'
 import { dirname, resolve } from 'path'

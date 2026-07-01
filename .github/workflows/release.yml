@@ -15,9 +15,6 @@ permissions:
   contents: write
 
 jobs:
-  # -----------------------------
-  # BUILD ALL PLATFORMS
-  # -----------------------------
   build:
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -33,64 +30,58 @@ jobs:
           - os: ubuntu-latest
             build_args: --linux AppImage deb
 
+    defaults:
+      run:
+        working-directory: apps/desktop
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v4
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           cache: pnpm
 
       - name: Cache Electron binaries
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/electron
             ~/AppData/Local/electron/Cache
             ~/Library/Caches/electron
-          key: electron-${{ runner.os }}-${{ hashFiles('**/package.json') }}
+          key: electron-${{ runner.os }}-${{ hashFiles('apps/desktop/package.json') }}
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+        working-directory: .
 
-      - name: Build web app
-        run: pnpm build
+      - name: Build desktop app
+        run: pnpm desktop:icon && pnpm build && pnpm desktop:build:main
 
-      - name: Build Electron main process
-        run: pnpm desktop:build:main
-
-      - name: Generate desktop icon
-        run: pnpm desktop:icon
-
-      - name: Build Electron app
+      - name: Package installer
         run: pnpm exec electron-builder ${{ matrix.build_args }} --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
       - name: Upload installer artifacts
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.os }}
           path: |
-            dist-electron/**/*.exe
-            dist-electron/**/*.dmg
-            dist-electron/**/*.AppImage
-            dist-electron/**/*.deb
-            dist-electron/**/*.yml
-            dist-electron/**/*.blockmap
+            apps/desktop/dist-electron/**/*.exe
+            apps/desktop/dist-electron/**/*.dmg
+            apps/desktop/dist-electron/**/*.AppImage
+            apps/desktop/dist-electron/**/*.deb
+            apps/desktop/dist-electron/**/*.yml
+            apps/desktop/dist-electron/**/*.blockmap
           retention-days: 3
 
-  # -----------------------------
-  # CREATE GITHUB RELEASE
-  # -----------------------------
   release:
     name: Create GitHub Release
     needs: build
@@ -98,13 +89,14 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
-          sparse-checkout: package.json
+          sparse-checkout: |
+            apps/desktop/package.json
           sparse-checkout-cone-mode: false
 
       - name: Download all build artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           path: release-files
           merge-multiple: true
@@ -118,7 +110,7 @@ jobs:
           elif [ "${{ github.event_name }}" = "push" ]; then
             echo "name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
           else
-            VERSION=$(node -p "require('./package.json').version")
+            VERSION=$(node -p "require('./apps/desktop/package.json').version")
             echo "name=v$VERSION" >> $GITHUB_OUTPUT
           fi
 

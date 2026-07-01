@@ -8,6 +8,8 @@ import {
 } from 'drizzle-orm/sqlite-core'
 import { relations, sql } from 'drizzle-orm'
 
+// SQLite schema. After modifying, run: pnpm db:generate && pnpm db:migrate
+// Note: Drizzle ORM requires mapping boolean and timestamp columns to `integer`.
 export const journalEntries = sqliteTable(
   'journal_entries',
   {
@@ -73,6 +75,7 @@ export const habits = sqliteTable('habits', {
     .default('daily'),
   interval: integer('interval').notNull().default(1),
   daysOfWeek: text('days_of_week', { mode: 'json' }).$type<number[]>(),
+  targetCount: integer('target_count'),
   priority: text({ enum: ['low', 'medium', 'high'] })
     .notNull()
     .default('medium'),
@@ -123,6 +126,15 @@ export const userPreferences = sqliteTable('user_preferences', {
   syncDirectory: text('sync_directory'),
   syncPassphraseHash: text('sync_passphrase_hash'),
   lastSyncedAt: integer('last_synced_at', { mode: 'timestamp' }),
+  // Backup configuration — set during onboarding, adjustable in Settings.
+  backupEnabled: integer('backup_enabled', { mode: 'boolean' }).notNull().default(true),
+  backupPath: text('backup_path'),
+  backupFrequency: text('backup_frequency', { enum: ['daily', 'weekly', 'manual'] }).notNull().default('daily'),
+  lastBackupAt: integer('last_backup_at', { mode: 'timestamp' }),
+  backupKeepCount: integer('backup_keep_count').notNull().default(30),
+  layoutMode: text('layout_mode', { enum: ['standard', 'immersive'] })
+    .notNull()
+    .default('standard'),
 })
 
 export const journalEntriesRelations = relations(

@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as _appRouteImport } from './routes/__app'
 import { Route as _appIndexRouteImport } from './routes/__app/index'
 import { Route as _appTrashRouteImport } from './routes/__app/trash'
-import { Route as _appPromptsRouteImport } from './routes/__app/prompts'
 import { Route as _appJournalRouteImport } from './routes/__app/journal'
 import { Route as _appHabitsRouteImport } from './routes/__app/habits'
 
@@ -34,13 +33,6 @@ const _appTrashRoute = _appTrashRouteImport
     getParentRoute: () => _appRoute,
   } as any)
   .lazy(() => import('./routes/__app/trash.lazy').then((d) => d.Route))
-const _appPromptsRoute = _appPromptsRouteImport
-  .update({
-    id: '/prompts',
-    path: '/prompts',
-    getParentRoute: () => _appRoute,
-  } as any)
-  .lazy(() => import('./routes/__app/prompts.lazy').then((d) => d.Route))
 const _appJournalRoute = _appJournalRouteImport
   .update({
     id: '/journal',
@@ -60,13 +52,11 @@ export interface FileRoutesByFullPath {
   '/': typeof _appIndexRoute
   '/habits': typeof _appHabitsRoute
   '/journal': typeof _appJournalRoute
-  '/prompts': typeof _appPromptsRoute
   '/trash': typeof _appTrashRoute
 }
 export interface FileRoutesByTo {
   '/habits': typeof _appHabitsRoute
   '/journal': typeof _appJournalRoute
-  '/prompts': typeof _appPromptsRoute
   '/trash': typeof _appTrashRoute
   '/': typeof _appIndexRoute
 }
@@ -75,21 +65,19 @@ export interface FileRoutesById {
   '/__app': typeof _appRouteWithChildren
   '/__app/habits': typeof _appHabitsRoute
   '/__app/journal': typeof _appJournalRoute
-  '/__app/prompts': typeof _appPromptsRoute
   '/__app/trash': typeof _appTrashRoute
   '/__app/': typeof _appIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/habits' | '/journal' | '/prompts' | '/trash'
+  fullPaths: '/' | '/habits' | '/journal' | '/trash'
   fileRoutesByTo: FileRoutesByTo
-  to: '/habits' | '/journal' | '/prompts' | '/trash' | '/'
+  to: '/habits' | '/journal' | '/trash' | '/'
   id:
     | '__root__'
     | '/__app'
     | '/__app/habits'
     | '/__app/journal'
-    | '/__app/prompts'
     | '/__app/trash'
     | '/__app/'
   fileRoutesById: FileRoutesById
@@ -121,13 +109,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof _appTrashRouteImport
       parentRoute: typeof _appRoute
     }
-    '/__app/prompts': {
-      id: '/__app/prompts'
-      path: '/prompts'
-      fullPath: '/prompts'
-      preLoaderRoute: typeof _appPromptsRouteImport
-      parentRoute: typeof _appRoute
-    }
     '/__app/journal': {
       id: '/__app/journal'
       path: '/journal'
@@ -148,7 +129,6 @@ declare module '@tanstack/react-router' {
 interface _appRouteChildren {
   _appHabitsRoute: typeof _appHabitsRoute
   _appJournalRoute: typeof _appJournalRoute
-  _appPromptsRoute: typeof _appPromptsRoute
   _appTrashRoute: typeof _appTrashRoute
   _appIndexRoute: typeof _appIndexRoute
 }
@@ -156,7 +136,6 @@ interface _appRouteChildren {
 const _appRouteChildren: _appRouteChildren = {
   _appHabitsRoute: _appHabitsRoute,
   _appJournalRoute: _appJournalRoute,
-  _appPromptsRoute: _appPromptsRoute,
   _appTrashRoute: _appTrashRoute,
   _appIndexRoute: _appIndexRoute,
 }

@@ -1,9 +1,10 @@
-import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent, cleanup } from '@testing-library/react'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { HabitDayCell } from '../HabitDayCell'
 import { TooltipProvider } from '#/components/ui/tooltip'
 
 describe('HabitDayCell', () => {
+  afterEach(cleanup)
   const defaultProps = {
     dayStr: '2024-01-01',
     isCompleted: false,

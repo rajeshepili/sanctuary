@@ -38,6 +38,29 @@ export function calculateConsistency(
 ) {
   const now = new Date()
   const createdAt = habit.createdAt instanceof Date ? habit.createdAt : new Date(habit.createdAt)
+  
+  // -- FREQUENCY ENGINE (Quantitative Goals e.g. "3 times a week") --
+  if (habit.targetCount) {
+    let completedCount = 0
+    for (let i = 0; i < days; i++) {
+      const d = new Date(now)
+      d.setDate(d.getDate() - i)
+      if (d < createdAt) break // Don't count before creation
+      const tier = completions.get(toLocalDateString(d))
+      if (tier && tier !== 'skipped') completedCount++
+    }
+    
+    // Calculate expected target for the rolling window
+    let periodDays = 7
+    if (habit.frequency === 'monthly') periodDays = 30
+    else if (habit.frequency === 'daily') periodDays = 1 // (daily with targetCount > 1 is unusual but possible)
+
+    const targetTotal = Math.ceil((days / periodDays) * habit.targetCount)
+    if (targetTotal === 0) return completedCount > 0 ? 100 : 0
+    return Math.min(100, Math.round((completedCount / targetTotal) * 100))
+  }
+
+  // -- IDENTITY ENGINE (Scheduled Goals e.g. "Every Day" or "Mon/Wed/Fri") --
   let completedCount = 0
   let scheduledCount = 0
 

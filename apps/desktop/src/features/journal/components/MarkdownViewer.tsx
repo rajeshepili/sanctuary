@@ -3,7 +3,7 @@ import { Plugin } from 'prosemirror-state'
 import { Decoration, DecorationSet } from 'prosemirror-view'
 import type { Node as ProseMirrorNode } from 'prosemirror-model'
 import { useEffect, useCallback } from 'react'
-import { useJournalEditor } from '#/hooks/use-journal-editor'
+import { useJournalEditor } from '../hooks/useJournalEditor'
 import { ScrollArea } from '#/components/ui/scroll-area'
 
 const HASHTAG_RE = /(^|\s)(#[a-zA-Z0-9-]+)/g

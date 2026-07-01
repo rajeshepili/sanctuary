@@ -21,7 +21,7 @@ export function getTodayStr(): LocalDateString {
 /**
  * Returns an array of local date strings for the last N days, oldest-first.
  * Uses CONSISTENCY_WINDOW_DAYS as the default, which is the canonical window
- * for all activity/streak calculations across Sanctuary.
+ * for all consistency and identity calculations across Sanctuary.
  */
 export function getDailyActivityWindow(
   days: number = CONSISTENCY_WINDOW_DAYS,

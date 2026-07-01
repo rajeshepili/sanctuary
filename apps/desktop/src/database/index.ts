@@ -5,7 +5,6 @@ import type { LibSQLDatabase } from 'drizzle-orm/libsql'
 import * as schema from './schema.ts'
 
 import { seedDatabase } from './seed'
-import { startBackgroundJobs, stopBackgroundJobs } from './jobs'
 import { DatabaseError } from '#/lib/errors'
 
 export type Database = LibSQLDatabase<typeof schema>
@@ -48,6 +47,7 @@ export async function initializeDatabase(): Promise<Database> {
       const client = createClientInstance()
       const db = drizzle(client, { schema })
 
+      // SQLite performance optimizations for local desktop usage
       await client.execute('PRAGMA journal_mode=WAL')
       await client.execute('PRAGMA synchronous=NORMAL')
       await client.execute('PRAGMA foreign_keys=ON')
@@ -62,8 +62,6 @@ export async function initializeDatabase(): Promise<Database> {
 
       dbInstance = db
       databaseStatus = 'ready'
-
-      startBackgroundJobs()
 
       return db
     } catch (error) {
@@ -99,8 +97,6 @@ export function getDatabaseStatus() {
 }
 
 export async function shutdownDatabase(): Promise<void> {
-  stopBackgroundJobs()
-
   dbInstance = null
   initPromise = null
   lastError = null

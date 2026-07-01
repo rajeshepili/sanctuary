@@ -11,6 +11,10 @@ const MD_HINTS = [
   { syntax: '#tag', label: 'Tag' },
 ]
 
+/**
+ * Displays a floating markdown syntax cheatsheet within the editor.
+ * Triggered by the command palette or help button.
+ */
 export function JournalMarkdownGuide() {
   return (
     <motion.div

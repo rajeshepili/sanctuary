@@ -3,6 +3,7 @@ import { useMood } from '#/hooks/use-mood'
 
 interface LiveClockProps {
   use24Hour?: boolean
+  variant?: 'default' | 'inline'
 }
 
 const moodStyles = {
@@ -26,8 +27,9 @@ const moodStyles = {
 
 export const LiveClock = memo(function LiveClockComponent({
   use24Hour = false,
+  variant = 'default',
 }: LiveClockProps) {
-  const [time, setTime] = useState<Date | null>(null)
+  const [time, setTime] = useState<Date>(() => new Date())
   const mood = useMood()
 
   const currentMoodStyle = moodStyles[mood]
@@ -77,19 +79,28 @@ export const LiveClock = memo(function LiveClockComponent({
     })
   }, [use24Hour])
 
-  if (!time) {
-    return <div className="h-16 w-32 animate-pulse bg-foreground/5 rounded" />
-  }
-
   const formattedTime = timeFormatter.format(time)
   const formattedDate = dateFormatter.format(time)
+
+  if (variant === 'inline') {
+    return (
+      <div className="text-right select-none">
+        <div className="text-lg font-bold tabular-nums tracking-tight text-foreground">
+          {formattedTime}
+        </div>
+        <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          {formattedDate}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col items-center text-center select-none space-y-1">
       <span
         className={`
           font-black
-          text-3xl md:text-4xl
+          text-4xl md:text-5xl
           tracking-tight
           ${currentMoodStyle.time}
         `}
@@ -99,7 +110,7 @@ export const LiveClock = memo(function LiveClockComponent({
 
       <span
         className={`
-          text-xs
+          text-sm
           font-medium
           tracking-wide
           ${currentMoodStyle.date}

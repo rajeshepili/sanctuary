@@ -5,10 +5,20 @@ import { Image as ImageIcon, HelpCircle, Feather, X } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { EditorContent } from '@tiptap/react'
+import {
+  Attachment,
+  AttachmentGroup,
+  AttachmentMedia,
+  AttachmentContent,
+  AttachmentTitle,
+  AttachmentDescription,
+  AttachmentActions,
+  AttachmentAction,
+} from '#/components/ui/attachment'
 
 import { useEditorInstance } from '#/features/journal/hooks/useEditorInstance'
 import { useMediaPicker } from '#/features/journal/hooks/useMediaPicker'
-import { getMediaAssetUrl } from '#/features/media/media.urls'
+import { getMediaAssetUrl } from '#/infrastructure/media/media.urls'
 
 import { AutoSaveIndicator } from './AutoSaveIndicator'
 import type { DraftStatus } from '#/hooks/use-draft'
@@ -163,7 +173,7 @@ function JournalEditorContent() {
         <div className="relative rounded-[1.4rem] border border-border/70 bg-background/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] overflow-hidden focus-within:border-primary/35 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
           <EditorContent
             editor={editor}
-            className="" // Styling handled by useEditorInstance
+            className=""
           />
         </div>
       )}
@@ -210,50 +220,68 @@ function JournalEditorMediaGallery() {
   if (!hasMedia) return null
 
   return (
-    <div className="flex flex-wrap gap-3 pt-3">
-      {visibleExisting?.map((m) => (
-        <div
-          key={`existing-${m.id}`}
-          className="relative group w-20 h-20 rounded-lg overflow-hidden border border-border/50"
-        >
-          <img
-            src={getMediaAssetUrl(m.id, true)}
-            className="w-full h-full object-cover"
-            alt=""
-          />
-          {onRemoveExisting && (
-            <IconButton
-              tooltip="Remove image"
-              onClick={() => onRemoveExisting(m.id)}
-              className="absolute top-1 right-1 p-0.5 w-5 h-5 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 hover:bg-black/70"
-            >
-              <X className="w-3 h-3" />
-            </IconButton>
-          )}
-        </div>
-      ))}
+    <div className="pt-3">
+      <AttachmentGroup>
+        {visibleExisting?.map((m) => {
+          const fileName = m.filePath.split(/[/\\]/).pop() || 'Attachment'
+          const mbSize = (m.fileSize / 1024 / 1024).toFixed(2)
 
-      {pendingMedia.map((item, idx) => (
-        <div
-          key={`pending-${idx}`}
-          className="relative group w-20 h-20 rounded-lg overflow-hidden border border-border/50"
-        >
-          <img
-            src={item.url}
-            alt="Pending attachment"
-            className="w-full h-full object-cover"
-          />
-          {onRemovePending && (
-            <IconButton
-              tooltip="Remove image"
-              onClick={() => onRemovePending(idx)}
-              className="absolute top-1 right-1 p-0.5 w-5 h-5 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 hover:bg-black/70"
-            >
-              <X className="w-3 h-3" />
-            </IconButton>
-          )}
-        </div>
-      ))}
+          return (
+            <Attachment key={`existing-${m.id}`} size="sm">
+              <AttachmentMedia variant="image">
+                <img
+                  src={getMediaAssetUrl(m.id, true)}
+                  className="w-full h-full"
+                  alt=""
+                />
+              </AttachmentMedia>
+              <AttachmentContent>
+                <AttachmentTitle>{fileName}</AttachmentTitle>
+                <AttachmentDescription>Image · {mbSize} MB</AttachmentDescription>
+              </AttachmentContent>
+              {onRemoveExisting && (
+                <AttachmentActions>
+                  <AttachmentAction
+                    onClick={() => onRemoveExisting(m.id)}
+                    aria-label="Remove image"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </AttachmentAction>
+                </AttachmentActions>
+              )}
+            </Attachment>
+          )
+        })}
+
+        {pendingMedia.map((item, idx) => {
+          const mbSize = (item.file.size / 1024 / 1024).toFixed(2)
+          return (
+            <Attachment key={`pending-${idx}`} size="sm" state="uploading">
+              <AttachmentMedia variant="image">
+                <img
+                  src={item.url}
+                  alt="Pending attachment"
+                  className="w-full h-full object-cover"
+                />
+              </AttachmentMedia>
+              <AttachmentContent>
+                <AttachmentTitle>{item.file.name}</AttachmentTitle>
+                <AttachmentDescription>Image · {mbSize} MB</AttachmentDescription>
+              </AttachmentContent>
+              {onRemovePending && (
+                <AttachmentActions>
+                  <AttachmentAction
+                    onClick={() => onRemovePending(idx)}
+                    aria-label="Remove image"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </AttachmentAction>
+                </AttachmentActions>
+              )}
+            </Attachment>
+          )
+        })}
+      </AttachmentGroup>
     </div>
   )
 }

@@ -7,6 +7,7 @@ import { useJournalMutations } from '#/features/journal/journal.mutations'
 import { useEntryList } from '#/features/journal/hooks/useEntryList'
 import { TrashView } from '#/features/journal/components/TrashView'
 import { FeatureErrorBoundary } from '#/components/errors/FeatureErrorBoundary'
+import { PageSkeleton } from '#/components/layout/PageSkeleton'
 
 import {
   AlertDialog,
@@ -21,6 +22,7 @@ import {
 
 export const Route = createLazyFileRoute('/__app/trash')({
   component: TrashPage,
+  pendingComponent: PageSkeleton,
 })
 
 function TrashPage() {

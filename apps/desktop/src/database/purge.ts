@@ -6,7 +6,7 @@ import fs from 'fs-extra'
 import path from 'node:path'
 import os from 'node:os'
 import { createLogger } from '#/lib/logger'
-import { deleteMediaAssets } from '#/features/media/media.service'
+import { deleteMediaAssets } from '#/infrastructure/media/media.processor'
 
 const logger = createLogger('purge')
 const SOFT_DELETE_GRACE_DAYS = 30

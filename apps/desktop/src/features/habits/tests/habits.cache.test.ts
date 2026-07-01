@@ -24,6 +24,7 @@ describe('habitsCache', () => {
       eliteDesc: null,
       intention: null,
       daysOfWeek: null,
+      targetCount: null,
       restUntil: null,
     },
   ]
@@ -81,7 +82,7 @@ describe('habitsCache', () => {
       },
     )
 
-    habitsCache.patchHabitStatus(queryClient, 1, 'resting')
+    habitsCache.patchHabit(queryClient, { ...mockHabits[0], status: 'resting' })
     const updated = capturedUpdater({ habits: mockHabits, completions: [] })
 
     expect(updated.habits[0].status).toBe('resting')

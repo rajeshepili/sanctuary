@@ -10,6 +10,15 @@ export interface SanctuaryDesktopApi {
   ) => Promise<void>
   listFiles: (dirPath: string) => Promise<string[]>
   readFileBase64: (filePath: string) => Promise<string | null>
+  getAutoLaunch: () => Promise<boolean>
+  setAutoLaunch: (enabled: boolean) => Promise<void>
+  // Backup
+  getBackupDir: () => Promise<string>
+  openBackupDir: (dirPath: string) => Promise<void>
+  selectBackupDir: () => Promise<string | null>
+  selectBackupFile: () => Promise<string | null>
+  readFileText: (filePath: string) => Promise<string | null>
+  deleteFile: (filePath: string) => Promise<boolean>
 }
 
 declare global {

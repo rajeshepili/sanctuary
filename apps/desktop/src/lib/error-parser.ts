@@ -36,7 +36,7 @@ export function parseError(error: unknown): ParsedError {
 
 function getTitleForCode(code: string): string {
   if (code.startsWith('JOURNAL_')) return 'Journal Error'
-  if (code.startsWith('HABIT_')) return 'Habit Error'
+  if (code.startsWith('HABIT_')) return 'Identity Error'
   if (code.startsWith('MEDIA_')) return 'Media Error'
   if (code.startsWith('PROMPT_')) return 'Prompt Error'
   if (code.startsWith('PREFERENCES_')) return 'Settings Error'

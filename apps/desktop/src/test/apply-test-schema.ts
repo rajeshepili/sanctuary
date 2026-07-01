@@ -37,6 +37,7 @@ export const TEST_SCHEMA_STATEMENTS = [
       frequency TEXT DEFAULT 'daily' NOT NULL,
       interval INTEGER DEFAULT 1 NOT NULL,
       days_of_week TEXT,
+      target_count INTEGER,
       priority TEXT DEFAULT 'medium' NOT NULL,
       category_id INTEGER,
       status TEXT DEFAULT 'active' NOT NULL,
@@ -63,7 +64,13 @@ export const TEST_SCHEMA_STATEMENTS = [
       location_label TEXT,
       sync_directory TEXT,
       sync_passphrase_hash TEXT,
-      last_synced_at INTEGER
+      last_synced_at INTEGER,
+      backup_enabled INTEGER DEFAULT 1 NOT NULL,
+      backup_path TEXT,
+      backup_frequency TEXT DEFAULT 'daily' NOT NULL,
+      last_backup_at INTEGER,
+      backup_keep_count INTEGER DEFAULT 30 NOT NULL,
+      layout_mode TEXT DEFAULT 'standard' NOT NULL
     )`,
   `CREATE INDEX IF NOT EXISTS idx_journal_entries_created_at ON journal_entries(created_at)`,
   `CREATE INDEX IF NOT EXISTS idx_journal_entries_deleted_at ON journal_entries(deleted_at)`,

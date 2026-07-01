@@ -14,10 +14,8 @@ import { formatEntryDate } from '#/utils/date'
 import { IconButton } from '#/components/ui/icon-button'
 import { MarkdownViewer } from '#/features/journal/components/MarkdownViewer'
 import { MediaGrid } from '#/features/journal/components/MediaGrid'
-import { PAGE_TITLES, PAGE_DESCRIPTIONS } from '#/config/branding'
-import { FocusSection } from '#/components/layout/FocusSection'
-import { getMoodDetails } from '#/features/journal/moods'
-import { Hero } from '#/components/layout/Hero'
+import { PageLayout } from '#/components/layout/PageLayout'
+import { getMoodDetails } from '#/features/journal/journal.moods'
 import { EntryEditForm } from '#/features/journal/components/editor/EntryEditForm'
 import { EntryListPane } from '#/features/journal/components/EntryListPane'
 import { EntryViewerPane } from '#/features/journal/components/EntryViewerPane'
@@ -82,13 +80,7 @@ export function JournalView({
   const [isReadingView, setIsReadingView] = useState(false)
 
   return (
-    <>
-      <Hero
-        title={PAGE_TITLES.journal}
-        description={PAGE_DESCRIPTIONS.journal}
-      />
-
-      {/* Reading view overlay — mounts in a portal over everything */}
+    <PageLayout>
       {activeEntry && (
         <ReadingView
           entry={activeEntry}
@@ -103,8 +95,7 @@ export function JournalView({
         />
       )}
 
-      <FocusSection>
-        <div className="flex flex-col lg:flex-row gap-4 h-[calc(100dvh-12rem)] min-h-[600px]">
+      <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
           {/* ── LEFT PANE ── */}
           <FeatureErrorBoundary
             title="Reflection List"
@@ -352,7 +343,6 @@ export function JournalView({
             </EntryViewerPane>
           </FeatureErrorBoundary>
         </div>
-      </FocusSection>
-    </>
+    </PageLayout>
   )
 }

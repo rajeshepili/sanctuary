@@ -6,9 +6,15 @@ vi.mock('@tanstack/react-start', async (importOriginal) => {
   const actual = await importOriginal<any>()
   return {
     ...actual,
-    createServerFn: vi.fn(() => ({
-      handler: vi.fn((fn) => fn),
-    })),
+    createServerFn: vi.fn(() => {
+      const chain = {
+        validator: vi.fn(function (this: typeof chain) {
+          return this
+        }),
+        handler: vi.fn((fn: unknown) => fn),
+      }
+      return chain
+    }),
   }
 })
 

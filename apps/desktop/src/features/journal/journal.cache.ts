@@ -86,7 +86,7 @@ export const journalCache = {
   },
 
   /** Patch specific fields on a cached entry */
-  update(queryClient: QueryClient, id: number, patch: Partial<Entry>) {
+  patch(queryClient: QueryClient, id: number, patch: Partial<Entry>) {
     this._updateCaches(
       queryClient,
       (old) => old?.map((e) => (e.id === id ? { ...e, ...patch } : e)),

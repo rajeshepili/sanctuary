@@ -1,6 +1,6 @@
 import { HTTPError, defineHandler, getQuery, getRouterParam } from 'nitro/h3'
 import { openAsBlob } from 'node:fs'
-import { resolveMediaFile } from '#/features/media/media.files'
+import { resolveMediaFile } from '#/infrastructure/media/media.files'
 
 export default defineHandler(async (event) => {
   const mediaId = Number(getRouterParam(event, 'mediaId'))
@@ -21,6 +21,7 @@ export default defineHandler(async (event) => {
 
   return new Response(blob, {
     headers: {
+      'Content-Type': resolved.mimeType,
       'Cache-Control': 'private, max-age=31536000, immutable',
     },
   })

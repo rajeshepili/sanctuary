@@ -1,22 +1,13 @@
-import { exportAllData, exportMarkdown, getExportData } from '../journal.export'
+import { exportAllData, exportMarkdown, getExportData } from '#/features/export/export.api'
 import {
   buildExportJsonPayload,
   buildExportMarkdown,
   EXPORT_VERSION,
-} from '../journal.export.lib'
-import type { ExportEntry } from '../journal.export.lib'
-import * as dbModule from '#/database'
+} from '#/features/export/export.lib'
+import { FULL_BACKUP_VERSION } from '#/features/export/export.import'
+import type { ExportEntry } from '#/features/export/export.lib'
+import * as exportRepo from '#/features/export/export.repository'
 import { describe, expect, it, vi } from 'vitest'
-
-vi.mock('@tanstack/react-start', async (importOriginal) => {
-  const actual = await importOriginal<any>()
-  return {
-    ...actual,
-    createServerFn: vi.fn(() => ({
-      handler: vi.fn((fn) => fn),
-    })),
-  }
-})
 
 const FIXTURE_ENTRIES: ExportEntry[] = [
   {
@@ -71,27 +62,22 @@ describe('journal export format', () => {
 
 describe('journal export server functions', () => {
   it('exportAllData returns valid JSON payload', async () => {
-    vi.spyOn(dbModule, 'getDb').mockResolvedValue({
-      query: {
-        journalEntries: {
-          findMany: vi.fn().mockResolvedValue(FIXTURE_ENTRIES),
-        },
-      },
-    } as any)
+    vi.spyOn(exportRepo, 'findAllExportData').mockResolvedValue({
+      entries: FIXTURE_ENTRIES as never,
+      habits: [],
+      preferences: undefined,
+      exportedAt: '2026-01-15T00:00:00.000Z',
+    })
 
     const result = await exportAllData()
-    expect(result.version).toBe(EXPORT_VERSION)
+    expect(result.version).toBe(FULL_BACKUP_VERSION)
     expect(result.entries).toEqual(FIXTURE_ENTRIES)
   })
 
   it('exportMarkdown returns generated markdown string', async () => {
-    vi.spyOn(dbModule, 'getDb').mockResolvedValue({
-      query: {
-        journalEntries: {
-          findMany: vi.fn().mockResolvedValue(FIXTURE_ENTRIES),
-        },
-      },
-    } as any)
+    vi.spyOn(exportRepo, 'findEntriesForExport').mockResolvedValue(
+      FIXTURE_ENTRIES as never,
+    )
 
     const result = await exportMarkdown()
     expect(result.count).toBe(2)
@@ -102,19 +88,12 @@ describe('journal export server functions', () => {
     const mockHabits = [{ id: 1, title: 'Read', completions: [] }]
     const mockPrefs = { theme: 'dark' }
 
-    vi.spyOn(dbModule, 'getDb').mockResolvedValue({
-      query: {
-        journalEntries: {
-          findMany: vi.fn().mockResolvedValue(FIXTURE_ENTRIES),
-        },
-        habits: {
-          findMany: vi.fn().mockResolvedValue(mockHabits),
-        },
-        userPreferences: {
-          findFirst: vi.fn().mockResolvedValue(mockPrefs),
-        },
-      },
-    } as any)
+    vi.spyOn(exportRepo, 'findAllExportData').mockResolvedValue({
+      entries: FIXTURE_ENTRIES as never,
+      habits: mockHabits as never,
+      preferences: mockPrefs as never,
+      exportedAt: '2026-01-15T00:00:00.000Z',
+    })
 
     const result = await getExportData()
     expect(result.entries).toEqual(FIXTURE_ENTRIES)

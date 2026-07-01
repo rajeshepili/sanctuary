@@ -35,7 +35,7 @@ export function EntryListPane({
   searchPlaceholder = 'Search reflections…',
 }: EntryListPaneProps) {
   return (
-    <div className="w-full lg:w-80 xl:w-96 shrink-0 flex flex-col gap-3 border border-border/40 bg-card/40 backdrop-blur-md rounded-[1.4rem] p-4 overflow-hidden">
+    <div className="w-full lg:w-80 xl:w-96 shrink-0 flex flex-col gap-3 border border-border/40 bg-card/40 backdrop-blur-md rounded-[1.4rem] p-4 overflow-hidden min-h-0">
       {header && (
         <div className="flex items-center justify-between pb-2 border-b border-border/40">
           {header}

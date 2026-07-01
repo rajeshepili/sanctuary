@@ -1,8 +1,10 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
+import { PageSkeleton } from '#/components/layout/PageSkeleton'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useState, useCallback, useMemo, useEffect } from 'react'
-import { Sparkles, PenLine, Shuffle, BarChart3 } from 'lucide-react'
+import { Sparkles, PenLine, Shuffle, BarChart3, Info } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { Tooltip, TooltipTrigger, TooltipContent } from '#/components/ui/tooltip'
 
 import {
   Empty,
@@ -12,45 +14,25 @@ import {
   EmptyDescription,
 } from '#/components/ui/empty'
 import { entriesQueryOptions } from '#/features/journal/journal.options'
-import { FocusSection } from '#/components/layout/FocusSection'
-import { Hero } from '#/components/layout/Hero'
 import { JournalEditor } from '#/features/journal/components/editor/JournalEditor'
 import { useDraft } from '#/hooks/use-draft'
 import { Card } from '#/components/ui/card'
 import { Button } from '#/components/ui/button'
-import { computeJournalConsistency } from '#/utils/journal'
+import { computeJournalConsistency } from '#/features/journal/journal.utils'
 import { formatEntryDate } from '#/utils/date'
 
-import { PAGE_TITLES, PAGE_DESCRIPTIONS } from '#/config/branding'
-import { useEntryEditor } from '#/features/journal/hooks/useEntryEditor'
+import { PageLayout } from '#/components/layout/PageLayout'
 import { FeatureErrorBoundary } from '#/components/errors/FeatureErrorBoundary'
+import { useEntryEditor } from '#/features/journal/hooks/useEntryEditor'
 
 export const Route = createLazyFileRoute('/__app/')({
   component: DashboardPage,
+  pendingComponent: PageSkeleton,
 })
 
 function DashboardPage() {
   const { data: entries } = useSuspenseQuery(entriesQueryOptions())
-
   const navigate = Route.useNavigate()
-
-  const randomPrompt = PAGE_DESCRIPTIONS.home
-
-  const personalizedGreeting = useMemo(() => {
-    const lastEntry = entries.filter((e) => !e.deletedAt)[0]
-    if (!lastEntry) return 'Welcome to your new Sanctuary.'
-
-    const lastDate = new Date(lastEntry.createdAt)
-    const now = new Date()
-    const diffTime = Math.abs(now.getTime() - lastDate.getTime())
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
-
-    if (diffDays === 0)
-      return 'Welcome back. Take a moment to reflect on your day.'
-    if (diffDays === 1)
-      return "Good to see you again. Ready for today's reflection?"
-    return `Welcome back. It's been ${diffDays} days—take a deep breath and settle in.`
-  }, [entries])
 
   const activeEntries = useMemo(
     () => entries.filter((e) => !e.deletedAt).slice(0, 3),
@@ -112,19 +94,11 @@ function DashboardPage() {
     const entry = await editor.save()
     if (entry) {
       clearDraft()
-      navigate({ to: '/journal', search: { entryId: entry.id } })
     }
-  }, [editor, clearDraft, navigate])
+  }, [editor, clearDraft])
 
   return (
-    <>
-      <Hero
-        title={PAGE_TITLES.home}
-        description={randomPrompt}
-        greeting={personalizedGreeting}
-      />
-
-      <FocusSection>
+    <PageLayout>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           <div className="lg:col-span-2 space-y-6 mx-auto w-full">
             <AnimatePresence>
@@ -259,9 +233,17 @@ function DashboardPage() {
                     <span className="font-bold">{totalActive}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      Consistency
-                    </span>
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <span>Consistency</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-3.5 h-3.5 opacity-50 hover:opacity-100 transition-opacity cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[200px] text-center">
+                          Percentage of days you journaled at least once over the last 30 days.
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                     <span className="font-bold">{journalConsistency}%</span>
                   </div>
                 </div>
@@ -269,7 +251,6 @@ function DashboardPage() {
             </FeatureErrorBoundary>
           </div>
         </div>
-      </FocusSection>
-    </>
+    </PageLayout>
   )
 }

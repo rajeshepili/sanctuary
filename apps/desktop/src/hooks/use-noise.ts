@@ -17,6 +17,7 @@ interface NoisePathConfig {
   speed?: number
   magnitude?: number
   offset?: number
+  springConfig?: { stiffness?: number; damping?: number; mass?: number }
 }
 
 /**
@@ -26,9 +27,10 @@ export function useNoiseValue({
   speed = 1,
   magnitude = 10,
   offset = 0,
+  springConfig = { stiffness: 50, damping: 20 },
 }: NoisePathConfig = {}) {
   const value = useMotionValue(0)
-  const spring = useSpring(value, { stiffness: 50, damping: 20 })
+  const spring = useSpring(value, springConfig)
   const timeRef = useRef(offset)
 
   useEffect(() => {

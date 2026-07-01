@@ -23,6 +23,7 @@ const DevTools = import.meta.env.DEV
     )
   : () => null
 
+// Global HTML document structure. Configures providers and error boundaries.
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
 }>()({
@@ -83,7 +84,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="font-sans antialiased wrap-anywhere transition-colors duration-1000 relative min-h-dvh">
+      <body className="font-sans antialiased wrap-anywhere relative min-h-dvh">
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <ErrorBoundary

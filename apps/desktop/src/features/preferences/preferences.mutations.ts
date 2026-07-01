@@ -22,7 +22,6 @@ export function usePreferencesMutations() {
     },
 
     onSuccess: (confirmed) => {
-      // Sync cache with the server-confirmed record (e.g. onboardedAt may have been stamped).
       queryClient.setQueryData<UserPreferences>(preferencesKeys.all, confirmed)
     },
 
@@ -31,10 +30,6 @@ export function usePreferencesMutations() {
         preferencesCache.restore(queryClient, context.previous)
       }
       toast.error(`Could not update preferences — ${parseError(err).message}`)
-    },
-
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: preferencesKeys.all })
     },
   })
 

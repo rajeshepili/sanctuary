@@ -27,6 +27,13 @@ const BRIGHT_STARS: [number, number, number][] = [
   [85, 65, 1.5],
 ]
 
+/**
+ * Dynamic Night Scene Background
+ * 
+ * Renders a complex, animated SVG landscape for the "Night" mood.
+ * Uses Framer Motion for continuous celestial, aurora, and water ripple animations.
+ * Coordinates (stars) are procedurally generated via a seeded PRNG for consistency.
+ */
 export function Night() {
   return (
     <SceneShell mood="night">
@@ -281,7 +288,7 @@ export function Night() {
           d="M0,520 Q200,520 400,580 T720,600 T1040,580 Q1240,520 1440,520"
         />
       </svg>
-      <div className="absolute top-[-20%] -left-[10%] w-[40%] h-[140%] bg-gradient-to-r from-[#050B14] to-transparent transform -skew-x-[25deg]" />
+      <div className="absolute top-[-20%] left-[-10%] w-[40%] h-[140%] bg-gradient-to-r from-[#050B14] to-transparent transform skew-x-[-25deg]" />
 
       <div className="absolute bottom-0 left-0 right-0 h-[30vh] bg-linear-to-t from-indigo-950/60 to-transparent" />
       <motion.div

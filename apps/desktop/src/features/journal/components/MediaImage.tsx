@@ -1,66 +1,77 @@
 import { useState } from 'react'
-import { getMediaAssetUrl } from '#/features/media/media.urls'
+import { motion } from 'framer-motion'
 import { Image as ImageIcon, Maximize2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
-  DialogTrigger,
   DialogTitle,
   DialogDescription,
 } from '#/components/ui/dialog'
+import { Skeleton } from '#/components/ui/skeleton'
+import { getMediaAssetUrl } from '#/infrastructure/media/media.urls'
 
 interface MediaImageProps {
   mediaId: number
 }
 
+/**
+ * Standalone image card with its own lightbox.
+ * Used by the read-only journal view when only 1 image is present,
+ * and by the editor's attachment gallery.
+ * For multi-image grids, MediaGrid owns the lightbox and uses Thumb internally.
+ */
 export function MediaImage({ mediaId }: MediaImageProps) {
-  const [lightboxOpen, setLightboxOpen] = useState(false)
-  const [thumbFailed, setThumbFailed] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const [open, setOpen] = useState(false)
 
-  const thumbUrl = getMediaAssetUrl(mediaId, true)
-  const fullUrl = getMediaAssetUrl(mediaId, false)
-
-  if (thumbFailed) {
+  if (failed) {
     return (
-      <div className="w-full h-32 flex flex-col items-center justify-center bg-card/50 rounded-xl border border-dashed border-border/50 text-muted-foreground">
-        <ImageIcon className="w-6 h-6 mb-2" />
-        <span className="text-xs">Image unavailable</span>
+      <div className="w-full aspect-4/3 flex flex-col items-center justify-center bg-muted/30 rounded-2xl border border-dashed border-border/40 text-muted-foreground/50 gap-2">
+        <ImageIcon className="w-5 h-5" />
+        <span className="text-xs">Image not available</span>
       </div>
     )
   }
 
   return (
-    <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
-      <DialogTrigger asChild>
-        <div className="relative group cursor-pointer overflow-hidden rounded-xl border border-border/50 shadow-sm bg-black/5">
-          <img
-            src={thumbUrl}
-            alt="Journal attachment"
-            loading="lazy"
-            decoding="async"
-            onError={() => setThumbFailed(true)}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            style={{ maxHeight: '400px' }}
-          />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center">
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 p-2 rounded-full text-white backdrop-blur-sm">
-              <Maximize2 className="w-4 h-4" />
+    <Dialog open={open} onOpenChange={setOpen}>
+      <div
+        className="relative group cursor-pointer overflow-hidden rounded-2xl bg-black/10 aspect-4/3 w-full max-w-md"
+        onClick={() => loaded && setOpen(true)}
+      >
+        {!loaded && <Skeleton className="absolute inset-0 w-full h-full rounded-2xl" />}
+
+        <motion.img
+          src={getMediaAssetUrl(mediaId, true)}
+          alt="Journal attachment"
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+          className="w-full h-full object-cover"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: loaded ? 1 : 0 }}
+          transition={{ duration: 0.35 }}
+        />
+
+        {loaded && (
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-200 flex items-center justify-center">
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/20 backdrop-blur-md p-2 rounded-full border border-white/20 shadow-lg">
+              <Maximize2 className="w-4 h-4 text-white" />
             </div>
           </div>
-        </div>
-      </DialogTrigger>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto h-auto p-1 bg-transparent border-none shadow-none flex items-center justify-center">
-        <DialogTitle>View Image</DialogTitle>
-        <DialogDescription>
-          Full size view of the selected media image.
-        </DialogDescription>
-        {lightboxOpen && (
-          <img
-            src={fullUrl}
-            alt="Journal attachment expanded"
-            className="max-w-full max-h-[90vh] object-contain rounded-md"
-          />
         )}
+      </div>
+
+      <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto h-auto p-2 bg-black/90 border-white/10 shadow-2xl flex items-center justify-center rounded-2xl">
+        <DialogTitle className="sr-only">View Image</DialogTitle>
+        <DialogDescription className="sr-only">Full size view of the selected media image.</DialogDescription>
+        <img
+          src={getMediaAssetUrl(mediaId, false)}
+          alt="Journal attachment expanded"
+          className="max-w-full max-h-[88vh] object-contain rounded-xl"
+        />
       </DialogContent>
     </Dialog>
   )

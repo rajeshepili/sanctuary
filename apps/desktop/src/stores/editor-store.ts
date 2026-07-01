@@ -61,7 +61,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   removePending: (index) => {
     set((state) => {
       const item = state.pendingMedia[index]
-      item && URL.revokeObjectURL(item.url)
+      item.url && URL.revokeObjectURL(item.url)
       return {
         pendingMedia: state.pendingMedia.filter((_, i) => i !== index),
       }
