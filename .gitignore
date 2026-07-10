@@ -1,0 +1,35 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+dist-electron
+*.local
+.env
+.env.*
+!.env.example
+.nitro
+.tanstack
+.wrangler
+.output
+.vinxi
+__unconfig*
+todos.json
+
+# Package manager caches
+.pnpm-store/
+
+# Editor / local tooling
+.cursor/
+
+# SQLite local database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Test artifacts
+test-results/
+playwright-report/
+test-results.json
+junit-results.xml
+coverage/

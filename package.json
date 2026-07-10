@@ -1,0 +1,39 @@
+{
+  "name": "sanctuary-workspace",
+  "private": true,
+  "packageManager": "pnpm@11.8.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev:desktop": "pnpm --filter sanctuary desktop:dev",
+    "dev:renderer": "pnpm --filter sanctuary dev",
+    "dev:website": "pnpm --filter website dev",
+    "check": "prettier --check .",
+    "format": "prettier --write .",
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm --filter sanctuary test",
+    "test:ci": "pnpm --filter sanctuary test:ci",
+    "test:unit": "pnpm --filter sanctuary test:unit",
+    "test:integration": "pnpm --filter sanctuary test:integration",
+    "build": "pnpm -r build",
+    "build:check-size": "pnpm --filter sanctuary build:check-size",
+    "build:desktop": "pnpm --filter sanctuary desktop:build",
+    "build:website": "pnpm --filter website build",
+    "prepare": "husky",
+    "db:generate": "pnpm --filter sanctuary db:generate",
+    "db:migrate": "pnpm --filter sanctuary db:migrate",
+    "db:migrate:devdb": "pnpm --filter sanctuary db:migrate:devdb",
+    "db:studio": "pnpm --filter sanctuary db:studio"
+  },
+  "devDependencies": {
+    "@tanstack/eslint-config": "^0.4.0",
+    "@tanstack/eslint-plugin-query": "^5.101.0",
+    "eslint": "^10.4.1",
+    "husky": "^9.1.7",
+    "prettier": "^3.8.3",
+    "typescript": "^6.0.3"
+  }
+}
