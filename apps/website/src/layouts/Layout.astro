@@ -1,0 +1,25 @@
+---
+import '../styles/global.css';
+---
+
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/sanctuary/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Sanctuary | Private Journal & Habit Tracker</title>
+	</head>
+	<body class="selection:bg-primary/20">
+		<slot />
+		
+		<script is:inline src="https://unpkg.com/lucide@latest"></script>
+		<script is:inline>
+			// Initialize Lucide icons after astro loads the DOM
+			document.addEventListener('DOMContentLoaded', () => {
+				lucide.createIcons();
+			});
+		</script>
+	</body>
+</html>

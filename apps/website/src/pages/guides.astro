@@ -1,0 +1,189 @@
+---
+import Layout from '../layouts/Layout.astro'
+import SimpleBackground from '../components/SimpleBackground.astro'
+---
+
+<Layout>
+  <SimpleBackground />
+
+  <div class="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
+    <div
+      class="fixed top-6 left-0 right-0 z-50 px-6 flex justify-center pointer-events-none"
+    >
+      <nav
+        class="pointer-events-auto flex justify-between items-center bg-background/60 backdrop-blur-2xl border border-border/50 rounded-full px-6 py-3 shadow-2xl shadow-black/5 w-full max-w-7xl"
+      >
+        <a
+          href="/sanctuary/"
+          class="text-xl font-black tracking-tighter flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity"
+        >
+          <i data-lucide="moon-star" class="text-primary w-5 h-5"></i>
+          Sanctuary
+        </a>
+        <div class="flex items-center gap-6 md:gap-8">
+          <a
+            href="/sanctuary/guides"
+            class="text-xs font-bold uppercase tracking-widest text-primary transition-colors"
+            >Guides</a
+          >
+          <a
+            href="https://github.com/rajeshepili/sanctuary/releases"
+            class="px-5 py-2.5 rounded-full font-bold text-[10px] sm:text-xs uppercase tracking-widest bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+            >Download</a
+          >
+        </div>
+      </nav>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-16 pb-32 pt-32">
+      <aside class="lg:col-span-3">
+        <div class="sticky top-32 space-y-12">
+          <div>
+            <h2
+              class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4"
+            >
+              Using Sanctuary
+            </h2>
+            <ul class="space-y-3">
+              <li>
+                <a href="#getting-started" class="text-sm font-medium hover:text-primary transition-colors">Getting started</a>
+              </li>
+              <li>
+                <a href="#privacy" class="text-sm font-medium hover:text-primary transition-colors">Privacy & PIN</a>
+              </li>
+              <li>
+                <a href="#habits" class="text-sm font-medium hover:text-primary transition-colors">Habits</a>
+              </li>
+              <li>
+                <a href="#backups" class="text-sm font-medium hover:text-primary transition-colors">Backups & exports</a>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h2
+              class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4"
+            >
+              Developers
+            </h2>
+            <ul class="space-y-3">
+              <li>
+                <a href="#architecture" class="text-sm font-medium hover:text-primary transition-colors">How it's built</a>
+              </li>
+              <li>
+                <a href="#building" class="text-sm font-medium hover:text-primary transition-colors">Build from source</a>
+              </li>
+              <li>
+                <a href="https://github.com/rajeshepili/sanctuary/blob/main/docs/ARCHITECTURE.md" class="text-sm font-medium hover:text-primary transition-colors">Architecture doc ↗</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </aside>
+
+      <main class="lg:col-span-9 space-y-32">
+        <header>
+          <h1 class="text-6xl lg:text-8xl font-black tracking-tighter leading-[0.9] mb-8">
+            Guides
+          </h1>
+          <p class="text-2xl text-muted-foreground max-w-2xl font-serif italic">
+            How to install Sanctuary, keep your data safe, and hack on the code if you want to.
+          </p>
+        </header>
+
+        <div class="space-y-24">
+          <section id="getting-started" class="scroll-mt-24 space-y-6 max-w-3xl">
+            <div class="flex items-center gap-4 border-b border-foreground/10 pb-4 mb-8">
+              <i data-lucide="compass" class="text-primary w-6 h-6"></i>
+              <h2 class="text-3xl font-bold tracking-tight">Getting started</h2>
+            </div>
+            <p class="text-lg leading-relaxed text-muted-foreground">
+              Grab an installer from
+              <a href="https://github.com/rajeshepili/sanctuary/releases" class="text-primary hover:underline">GitHub Releases</a>
+              — AppImage or deb on Linux, dmg on macOS, exe on Windows. No account needed. The app works offline after install.
+            </p>
+            <p class="text-lg leading-relaxed text-muted-foreground">
+              First launch walks you through a few setup steps: what to show on your dashboard, the privacy disclaimer, an optional PIN, and where to store backups.
+            </p>
+          </section>
+
+          <section id="privacy" class="scroll-mt-24 space-y-6 max-w-3xl">
+            <div class="flex items-center gap-4 border-b border-foreground/10 pb-4 mb-8">
+              <i data-lucide="lock" class="text-primary w-6 h-6"></i>
+              <h2 class="text-3xl font-bold tracking-tight">Privacy & PIN</h2>
+            </div>
+            <p class="text-lg leading-relaxed text-muted-foreground">
+              Your entries live in a SQLite file on your computer. Nothing is uploaded unless you explicitly export or set up folder sync.
+            </p>
+            <p class="text-lg leading-relaxed text-muted-foreground">
+              <strong>Settings → App Lock</strong> adds a 4-digit PIN when opening the app. It is stored as a salted SHA-256 hash locally. Handy if you share a computer; not a substitute for disk encryption.
+            </p>
+          </section>
+
+          <section id="habits" class="scroll-mt-24 space-y-6 max-w-3xl">
+            <div class="flex items-center gap-4 border-b border-foreground/10 pb-4 mb-8">
+              <i data-lucide="calendar" class="text-primary w-6 h-6"></i>
+              <h2 class="text-3xl font-bold tracking-tight">Habits</h2>
+            </div>
+            <p class="text-lg leading-relaxed text-muted-foreground">
+              Sanctuary measures consistency over a rolling window (30 days by default), not a single streak counter. Missing a day lowers your percentage a bit instead of wiping progress to zero.
+            </p>
+            <p class="text-lg leading-relaxed text-muted-foreground">
+              Use rest mode when you need time off. The habit picks up again when you are ready.
+            </p>
+          </section>
+
+          <section id="backups" class="scroll-mt-24 space-y-6 max-w-3xl">
+            <div class="flex items-center gap-4 border-b border-foreground/10 pb-4 mb-8">
+              <i data-lucide="archive" class="text-primary w-6 h-6"></i>
+              <h2 class="text-3xl font-bold tracking-tight">Backups & exports</h2>
+            </div>
+            <p class="text-lg leading-relaxed text-muted-foreground">
+              Turn on scheduled backups in <strong>Settings → Backup & Data</strong>. By default files go to <code class="text-sm bg-foreground/5 px-1.5 py-0.5 rounded">~/Documents/Sanctuary Backups</code> as dated JSON files.
+            </p>
+            <p class="text-lg leading-relaxed text-muted-foreground">
+              You can also export Markdown or a full JSON snapshot from the same screen. If you leave Sanctuary, take an export with you — there is no cloud account to log back into.
+            </p>
+          </section>
+        </div>
+
+        <div class="space-y-24 pt-32">
+          <section id="architecture" class="scroll-mt-24 space-y-6 max-w-3xl">
+            <div class="flex items-center gap-4 border-b border-foreground/10 pb-4 mb-8">
+              <i data-lucide="cpu" class="text-primary w-6 h-6"></i>
+              <h2 class="text-3xl font-bold tracking-tight">How it's built</h2>
+            </div>
+            <p class="text-lg leading-relaxed text-muted-foreground">
+              Electron opens the window and starts a small Nitro server on localhost. The React UI talks to that server over HTTP. SQLite holds your data; Drizzle runs migrations on startup.
+            </p>
+            <p class="text-lg leading-relaxed text-muted-foreground">
+              Each request from the app window carries a session token generated at launch so random browser tabs cannot hit your local API.
+            </p>
+          </section>
+
+          <section id="building" class="scroll-mt-24 space-y-6 max-w-3xl">
+            <div class="flex items-center gap-4 border-b border-foreground/10 pb-4 mb-8">
+              <i data-lucide="code" class="text-primary w-6 h-6"></i>
+              <h2 class="text-3xl font-bold tracking-tight">Build from source</h2>
+            </div>
+            <p class="text-lg leading-relaxed text-muted-foreground">
+              Node 22+, pnpm, then:
+            </p>
+            <pre class="bg-foreground/5 p-6 rounded-xl overflow-x-auto font-mono text-sm leading-relaxed"><code>git clone https://github.com/rajeshepili/sanctuary
+cd sanctuary
+pnpm install
+pnpm dev:desktop</code></pre>
+            <p class="text-lg leading-relaxed text-muted-foreground">
+              See <a href="https://github.com/rajeshepili/sanctuary/blob/main/CONTRIBUTING.md" class="text-primary hover:underline">CONTRIBUTING.md</a> for tests, lint, and release builds.
+            </p>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <footer class="py-12 border-t border-foreground/10 flex justify-between items-center text-[10px] font-black tracking-[0.2em] uppercase text-muted-foreground">
+      <div>Sanctuary / Guides</div>
+      <a href="/sanctuary/" class="hover:text-primary transition-colors">Back to home</a>
+    </footer>
+  </div>
+</Layout>

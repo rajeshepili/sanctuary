@@ -1,0 +1,96 @@
+appId: io.github.rajeshepili.sanctuary
+productName: Sanctuary
+copyright: Copyright © 2026 Rajesh Epili
+
+directories:
+  output: dist-electron
+  buildResources: build
+
+files:
+  - package.json
+  - dist/**/*
+  - .output/**/*
+  - drizzle/**/*
+  - '!**/*.map'
+  - '!**/*.test.*'
+
+publish:
+  provider: github
+  releaseType: release
+
+asar: true
+asarUnpack:
+  - dist/**/*
+  - .output/**/*
+  - drizzle/**/*
+  - node_modules/@libsql/**/*
+  - node_modules/sharp/**/*
+
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+
+# icon.png (512x512) is used as the source for all platforms.
+# electron-builder auto-converts to .icns on macOS and .ico on Windows
+# using the platform's native tooling available on the CI runner.
+icon: build/icon.png
+
+mac:
+  category: public.app-category.productivity
+  minimumSystemVersion: '13.0'
+  darkModeSupport: true
+  target:
+    - dmg
+
+dmg:
+  title: Sanctuary ${version}
+  background: null
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 140
+      y: 180
+      type: file
+    - x: 400
+      y: 180
+      type: link
+      path: /Applications
+
+win:
+  target:
+    - nsis
+  requestedExecutionLevel: asInvoker
+
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Office
+  executableName: sanctuary
+  synopsis: Private local-first journal and habit tracker
+  description: >-
+    Sanctuary is a local-first journal and habit tracking app.
+    Your entries, prompts, habits, and media stay entirely on your device.
+  desktop:
+    entry:
+      Name: Sanctuary
+      GenericName: Journal & Habit Tracker
+      Comment: Private local-first journal and habit tracker
+      Categories: Office;Utility;ProjectManagement;
+      Keywords: journal;diary;habits;productivity;notes;mindfulness;
+      StartupWMClass: sanctuary
+
+deb:
+  packageName: sanctuary
+  maintainer: Rajesh Epili
+  depends:
+    - libnotify4
+    - libxtst6
+    - libnss3
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Sanctuary

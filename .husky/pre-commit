@@ -1,0 +1,2 @@
+pnpm typecheck
+pnpm --filter sanctuary exec lint-staged

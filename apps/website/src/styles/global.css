@@ -1,0 +1,72 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Sanctuary Warm Light Palette */
+  --background: oklch(0.99 0.005 80); /* Soft cream */
+  --foreground: oklch(0.25 0.02 30); /* Warm charcoal */
+  --card: oklch(1 0 0 / 0.4);
+  --card-foreground: var(--foreground);
+  --primary: oklch(0.45 0.05 40); /* Earthy terracotta */
+  --primary-foreground: oklch(0.99 0.005 80);
+  --secondary: oklch(0.95 0.01 60); /* Warm sand */
+  --secondary-foreground: var(--foreground);
+  --muted: oklch(0.95 0.01 60);
+  --muted-foreground: oklch(0.5 0.02 30);
+  --accent: oklch(0.92 0.03 80); /* Soft peach-gold */
+  --accent-foreground: var(--primary);
+  --border: oklch(0.9 0.01 60 / 0.5);
+  --radius: 1.5rem;
+
+  --glow-a: oklch(0.95 0.04 80 / 0.3);
+  --glow-b: oklch(0.9 0.03 40 / 0.1);
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --radius-xl: var(--radius);
+  --radius-2xl: calc(var(--radius) + 0.5rem);
+  --radius-3xl: calc(var(--radius) + 1.5rem);
+}
+
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply tracking-tight;
+  }
+}
+
+.subtle-noise {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  opacity: 0.03;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+.glass {
+  @apply bg-card backdrop-blur-xl border border-border shadow-sm;
+}

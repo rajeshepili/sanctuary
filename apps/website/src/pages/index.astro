@@ -1,0 +1,210 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SimpleBackground from '../components/SimpleBackground.astro';
+import { ShapeMorphism } from '../components/react/ShapeMorphism';
+import { StaggeredList } from '../components/react/StaggeredList';
+---
+
+<Layout>
+    <SimpleBackground />
+
+    <div class="max-w-6xl mx-auto px-6 relative z-10">
+        <!-- Floating Glassmorphic Nav -->
+        <div class="fixed top-6 left-0 right-0 z-50 px-6 flex justify-center pointer-events-none">
+            <nav class="pointer-events-auto flex justify-between items-center bg-background/60 backdrop-blur-2xl border border-border/50 rounded-full px-6 py-3 shadow-2xl shadow-black/5 w-full max-w-5xl">
+                <a href="/sanctuary/" class="text-xl font-black tracking-tighter flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity">
+                    <i data-lucide="moon-star" class="text-primary w-5 h-5"></i>
+                    Sanctuary
+                </a>
+                <div class="flex items-center gap-6 md:gap-8">
+                    <a href="#philosophy" class="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors hidden sm:block">Philosophy</a>
+                    <a href="#features" class="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors hidden sm:block">Features</a>
+                    <a href="/sanctuary/guides" class="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors hidden sm:block">Guides</a>
+                    <a href="https://github.com/rajeshepili/sanctuary/releases" class="px-5 py-2.5 rounded-full font-bold text-[10px] sm:text-xs uppercase tracking-widest bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all">Download</a>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Hero Section -->
+        <section class="pt-40 pb-32 flex flex-col items-center text-center relative">
+            <ShapeMorphism client:load />
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest mb-8 animate-in fade-in slide-in-from-bottom-2 duration-1000 relative z-10">
+                <i data-lucide="sparkles" class="w-3 h-3"></i>
+                Local-First & Private
+            </div>
+            <h1 class="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9] mb-8 max-w-4xl">
+                A simple, private <br class="hidden md:block"> journal.
+            </h1>
+            <p class="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-12 font-medium leading-relaxed">
+                Sanctuary is an offline journal and habit tracker. No cloud sync, no tracking, just your data on your device.
+            </p>
+            
+            <!-- App Preview Frame -->
+            <div class="w-full max-w-5xl mt-12 group relative">
+                <!-- Ambient Glow Behind Frame -->
+                <div class="absolute inset-0 bg-primary/30 blur-[120px] -z-10 rounded-full scale-75 opacity-0 group-hover:opacity-60 transition-opacity duration-1000"></div>
+                
+                <div class="relative p-2 rounded-[2.5rem] bg-linear-to-b from-border/50 to-transparent border border-border/30 shadow-2xl">
+                    <div class="rounded-4xl overflow-hidden border border-border bg-background/80 backdrop-blur-2xl aspect-[16/10] relative">
+                         <!-- Premium App Mockup Image -->
+                         <div class="absolute inset-0 bg-linear-to-br from-primary/20 to-secondary/20 mix-blend-overlay z-10 pointer-events-none transition-opacity duration-700 opacity-50 group-hover:opacity-0"></div>
+                         <img src="/sanctuary/mockup.png" alt="Sanctuary Desktop Experience" class="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-1000 ease-out" />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Philosophy Section -->
+        <section id="philosophy" class="py-32 border-y border-border/30">
+            <div class="max-w-3xl mx-auto space-y-12 px-4">
+                <h2 class="text-xs font-black uppercase tracking-[0.3em] text-primary text-center">Why I built this</h2>
+                <p class="text-lg md:text-xl text-center leading-relaxed text-muted-foreground">
+                    I wanted a habit tracker and journal I actually own — on my machine, with landscapes that make opening the app feel calm. 
+                    <a href="https://github.com/rajeshepili/sanctuary/blob/main/MOTIVATION.md" class="text-primary hover:underline">Read the full story →</a>
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8">
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-lg">Local Data</h3>
+                        <p class="text-muted-foreground leading-relaxed">Sanctuary doesn't sync to the cloud. Your data lives on your device in a standard SQLite database.</p>
+                    </div>
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-lg">Zero Distraction</h3>
+                        <p class="text-muted-foreground leading-relaxed">No ads, no subscriptions, and no notifications. A peaceful environment without social features, letting you go at your own pace.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dynamic Content Section -->
+        <section id="features" class="py-32 space-y-48 max-w-5xl mx-auto">
+            <!-- Feature 1: The Editor -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+                <div class="order-2 lg:order-1 relative">
+                    <!-- Unboxed expressive element -->
+                    <div class="absolute -inset-10 bg-primary/10 rounded-full blur-3xl -z-10 mix-blend-screen animate-pulse duration-1000"></div>
+                    <h3 class="text-[200px] leading-none font-black text-foreground/5 italic -ml-10 select-none">01.</h3>
+                    <div class="absolute inset-0 flex flex-col justify-center items-start pl-10">
+                        <i data-lucide="pen-tool" class="w-16 h-16 text-primary mb-6"></i>
+                    </div>
+                </div>
+                <div class="space-y-6 order-1 lg:order-2">
+                    <h2 class="text-5xl font-black tracking-tighter">A simple writing <br> experience.</h2>
+                    <p class="text-xl text-muted-foreground leading-relaxed font-serif italic">
+                        Markdown support, inline images, and a clean interface help you focus on what actually matters: your writing.
+                    </p>
+                    <div class="pt-4 border-l-2 border-primary/20 pl-6">
+                        <StaggeredList client:visible items={[
+                            'Auto-save as you type',
+                            'Distraction-free focus mode',
+                            'Optional writing prompts'
+                        ]} />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature 2: Habits -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+                <div class="space-y-6">
+                    <h2 class="text-5xl font-black tracking-tighter">Track habits <br> without pressure.</h2>
+                    <p class="text-xl text-muted-foreground leading-relaxed font-serif italic">
+                        Track your habits on your own schedule. Rest modes and rolling windows keep you consistent without the pressure of streaks.
+                    </p>
+                    <div class="flex gap-12 pt-6">
+                        <div>
+                            <div class="text-5xl font-black text-primary mb-2">30</div>
+                            <div class="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Day rolling window</div>
+                        </div>
+                        <div>
+                            <div class="text-5xl font-black text-foreground mb-2">Local</div>
+                            <div class="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Your data only</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="absolute -inset-10 bg-secondary/20 rounded-full blur-3xl -z-10 mix-blend-screen animate-pulse duration-1000 delay-500"></div>
+                    <h3 class="text-[200px] leading-none font-black text-foreground/5 italic -ml-10 select-none">02.</h3>
+                    <div class="absolute inset-0 flex flex-col justify-center items-start pl-10">
+                        <i data-lucide="calendar" class="w-16 h-16 text-foreground mb-6"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature 3: Mindful Environment -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+                <div class="order-2 lg:order-1 relative">
+                    <div class="absolute -inset-10 bg-primary/10 rounded-full blur-3xl -z-10 mix-blend-screen animate-pulse duration-1000"></div>
+                    <h3 class="text-[200px] leading-none font-black text-foreground/5 italic -ml-10 select-none">03.</h3>
+                    <div class="absolute inset-0 flex flex-col justify-center items-start pl-10">
+                        <i data-lucide="wind" class="w-16 h-16 text-primary mb-6"></i>
+                    </div>
+                </div>
+                <div class="space-y-6 order-1 lg:order-2">
+                    <h2 class="text-5xl font-black tracking-tighter">A mindful <br> environment.</h2>
+                    <p class="text-xl text-muted-foreground leading-relaxed font-serif italic">
+                        Sanctuary adapts to your day with dynamic, time-based scenes and built-in tools to help you ground yourself.
+                    </p>
+                    <div class="pt-4 border-l-2 border-primary/20 pl-6">
+                        <StaggeredList client:visible items={[
+                            'Dynamic sunrise & sunset scenes',
+                            'Interactive box-breathing tool',
+                            'Daily intentions widget'
+                        ]} />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Privacy Section: Bold & Simple -->
+            <div class="py-24 rounded-[3rem] bg-foreground text-background text-center px-12 space-y-8">
+                <i data-lucide="lock" class="w-12 h-12 mx-auto text-primary"></i>
+                <h2 class="text-4xl md:text-6xl font-black tracking-tighter">Your Data is Yours.</h2>
+                <p class="text-background/60 text-lg max-w-2xl mx-auto font-medium">
+                    No analytics, no telemetry, and no cloud accounts. Your data is protected by an optional PIN shield.
+                </p>
+                <div class="flex flex-wrap justify-center gap-8 pt-8">
+                    <div class="group text-center cursor-default">
+                        <div class="text-xl font-bold group-hover:-translate-y-1 transition-transform duration-300">SQLite</div>
+                        <div class="text-[9px] uppercase tracking-widest opacity-50 group-hover:opacity-100 transition-opacity duration-300 group-hover:text-primary">Local Engine</div>
+                    </div>
+                    <div class="group text-center cursor-default">
+                        <div class="text-xl font-bold group-hover:-translate-y-1 transition-transform duration-300">SHA-256</div>
+                        <div class="text-[9px] uppercase tracking-widest opacity-50 group-hover:opacity-100 transition-opacity duration-300 group-hover:text-primary">Salted PIN hash</div>
+                    </div>
+                    <div class="group text-center cursor-default">
+                        <div class="text-xl font-bold group-hover:-translate-y-1 transition-transform duration-300">JSON</div>
+                        <div class="text-[9px] uppercase tracking-widest opacity-50 group-hover:opacity-100 transition-opacity duration-300 group-hover:text-primary">Exportable</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Final Call to Action -->
+        <section class="py-32 flex flex-col items-center text-center space-y-8">
+            <h2 class="text-4xl md:text-5xl font-black tracking-tighter">Download Sanctuary</h2>
+            <p class="text-muted-foreground text-lg max-w-xl mx-auto">
+                Get the distraction-free desktop app today.
+            </p>
+            <div class="flex gap-4 flex-wrap justify-center">
+                <a href="https://github.com/rajeshepili/sanctuary/releases" class="px-10 py-4 rounded-full font-bold bg-primary text-primary-foreground shadow-xl shadow-primary/20 hover:scale-105 transition-transform">
+                    Download for your OS
+                </a>
+            </div>
+            <p class="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
+                Windows • macOS • Linux
+            </p>
+        </section>
+
+        <!-- Minimal Footer -->
+        <footer class="py-20 border-t border-border/30 flex flex-col items-center gap-6">
+            <div class="flex items-center gap-2 text-lg font-black text-foreground tracking-tighter">
+                <i data-lucide="moon-star" class="w-5 h-5 text-primary"></i>
+                Sanctuary
+            </div>
+            <div class="flex gap-8">
+                <a href="https://github.com/rajeshepili/sanctuary" class="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">GitHub</a>
+                <a href="https://github.com/rajeshepili/sanctuary/blob/main/LICENSE" class="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">MIT License</a>
+                <a href="/sanctuary/guides" class="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors">Documentation & Guides</a>
+            </div>
+            <p class="text-[10px] text-muted-foreground/40 font-medium">© 2026 Sanctuary.</p>
+        </footer>
+    </div>
+</Layout>

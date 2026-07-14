@@ -1,0 +1,19 @@
+{
+  "buildCommand": "pnpm --filter sanctuary build:demo",
+  "outputDirectory": "apps/desktop/dist-demo",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cross-Origin-Resource-Policy",
+          "value": "same-origin"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

@@ -1,0 +1,12 @@
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Generated
+drizzle/meta/
+dist/
+dist-demo/
+dist-electron/
+node_modules/
+routeTree.gen.ts
+.astro/

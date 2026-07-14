@@ -1,0 +1,27 @@
+{
+  "short_name": "Sanctuary",
+  "name": "Sanctuary",
+  "description": "A local, private journal and habit tracker. Your data stays on your device.",
+  "icons": [
+    {
+      "src": "/logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#1f1f1f",
+  "background_color": "#0a0a0a",
+  "categories": ["lifestyle", "health", "productivity"],
+  "dir": "ltr",
+  "lang": "en-US"
+}
