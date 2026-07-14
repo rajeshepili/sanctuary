@@ -1,7 +1,7 @@
 {
   "framework": null,
-  "buildCommand": "pnpm --filter sanctuary build:demo",
-  "outputDirectory": "apps/desktop/dist-demo",
+  "buildCommand": "pnpm build:vercel",
+  "outputDirectory": "dist-demo",
   "installCommand": "pnpm install --frozen-lockfile",
   "headers": [
     {

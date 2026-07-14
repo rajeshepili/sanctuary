@@ -21,6 +21,7 @@
     "test:integration": "pnpm --filter sanctuary test:integration",
     "build": "pnpm -r build",
     "build:demo": "pnpm --filter sanctuary build:demo",
+    "build:vercel": "pnpm --filter sanctuary build:demo && rm -rf dist-demo && mv apps/desktop/dist-demo dist-demo",
     "build:check-size": "pnpm --filter sanctuary build:check-size",
     "build:desktop": "pnpm --filter sanctuary desktop:build",
     "build:website": "pnpm --filter website build",
