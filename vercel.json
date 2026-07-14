@@ -1,6 +1,6 @@
 {
   "framework": null,
-  "buildCommand": "pnpm build:vercel",
+  "buildCommand": "pnpm build:demo",
   "outputDirectory": "dist-demo",
   "installCommand": "pnpm install --frozen-lockfile",
   "headers": [
