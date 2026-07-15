@@ -1,6 +1,6 @@
 {
   "framework": null,
-  "buildCommand": "pnpm db:migrate && pnpm build",
+  "buildCommand": "pnpm build",
   "env": {
     "VITE_DEMO_MODE": "true"
   }

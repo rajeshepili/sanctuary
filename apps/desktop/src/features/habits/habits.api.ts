@@ -6,51 +6,63 @@ import {
   deleteHabitSchema,
   toggleCompletionSchema,
 } from './habits.schema'
-import {
-  findAll,
-  create,
-  update,
-  updateStatus,
-  remove,
-  reactivateHabits,
-} from './habits.repository'
-import { toggleCompletion } from './completions.repository'
 
 // ── Read ─────────────────────────────────────────────────────────────────────
 
-export const getAllHabits = createServerFn({ method: 'GET' }).handler(() =>
-  findAll(),
+export const getAllHabits = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const { findAll } = await import('./habits.repository')
+    return findAll()
+  },
 )
 
 // ── Sync / Lifecycle ─────────────────────────────────────────────────────────
 
-export const syncHabits = createServerFn({ method: 'POST' }).handler(() =>
-  reactivateHabits(),
+export const syncHabits = createServerFn({ method: 'POST' }).handler(
+  async () => {
+    const { reactivateHabits } = await import('./habits.repository')
+    return reactivateHabits()
+  },
 )
 
 // ── Habit CRUD ───────────────────────────────────────────────────────────────
 
 export const createHabit = createServerFn({ method: 'POST' })
   .validator(createHabitSchema)
-  .handler(({ data }) => create(data))
+  .handler(async ({ data }) => {
+    const { create } = await import('./habits.repository')
+    return create(data)
+  })
 
 export const updateHabit = createServerFn({ method: 'POST' })
   .validator(updateHabitSchema)
-  .handler(({ data }) => update(data))
+  .handler(async ({ data }) => {
+    const { update } = await import('./habits.repository')
+    return update(data)
+  })
 
 export const updateHabitStatus = createServerFn({ method: 'POST' })
   .validator(updateHabitStatusSchema)
-  .handler(({ data }) => updateStatus(data))
+  .handler(async ({ data }) => {
+    const { updateStatus } = await import('./habits.repository')
+    return updateStatus(data)
+  })
 
 export const deleteHabit = createServerFn({ method: 'POST' })
   .validator(deleteHabitSchema)
-  .handler(({ data }) => remove(data))
+  .handler(async ({ data }) => {
+    const { remove } = await import('./habits.repository')
+    return remove(data)
+  })
 
 // ── Completions ───────────────────────────────────────────────────────────────
 
 export const toggleHabitCompletion = createServerFn({ method: 'POST' })
   .validator(toggleCompletionSchema)
-  .handler(({ data }) => toggleCompletion(data))
+  .handler(async ({ data }) => {
+    const { toggleCompletion } = await import('./completions.repository')
+    return toggleCompletion(data)
+  })
 
 // Identity-facing aliases (storage remains `habits` for compatibility).
 export const getAllIdentities = getAllHabits

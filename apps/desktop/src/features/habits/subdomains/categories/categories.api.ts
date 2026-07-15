@@ -4,20 +4,31 @@ import {
   updateCategorySchema,
   deleteCategorySchema,
 } from './categories.schema'
-import { findAll, create, update, remove } from './categories.repository'
 
-export const getAllCategories = createServerFn({ method: 'GET' }).handler(() =>
-  findAll(),
+export const getAllCategories = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const { findAll } = await import('./categories.repository')
+    return findAll()
+  },
 )
 
 export const createCategory = createServerFn({ method: 'POST' })
   .validator(createCategorySchema)
-  .handler(({ data }) => create(data))
+  .handler(async ({ data }) => {
+    const { create } = await import('./categories.repository')
+    return create(data)
+  })
 
 export const updateCategory = createServerFn({ method: 'POST' })
   .validator(updateCategorySchema)
-  .handler(({ data }) => update(data))
+  .handler(async ({ data }) => {
+    const { update } = await import('./categories.repository')
+    return update(data)
+  })
 
 export const deleteCategory = createServerFn({ method: 'POST' })
   .validator(deleteCategorySchema)
-  .handler(({ data }) => remove(data))
+  .handler(async ({ data }) => {
+    const { remove } = await import('./categories.repository')
+    return remove(data)
+  })
