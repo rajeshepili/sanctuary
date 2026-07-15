@@ -52,6 +52,9 @@ function AppShellContent({ prefs }: { prefs: UserPreferences }) {
       <Background mood={mood} />
       <Navbar />
 
+      {/* This is the viewport-locked scroll container.
+          overflow-y-auto here + FocusSection flex-1 min-h-0
+          gives us a true "content scrolls, viewport doesn't" layout. */}
       <div
         ref={scrollAreaRef}
         className="flex-1 relative z-10 flex flex-col overflow-y-auto overflow-x-hidden"

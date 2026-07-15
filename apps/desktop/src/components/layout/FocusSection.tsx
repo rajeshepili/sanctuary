@@ -12,9 +12,12 @@ export function FocusSection({
   return (
     <div
       className={cn(
-        'relative z-20 w-full flex-1 bg-background flex flex-col overflow-y-auto',
+        // flex-1 + min-h-0 = correct flexbox shrink without overflowing the parent
+        // The parent (AppShell scroll area) is already overflow-y-auto,
+        // so this just fills available space. Never use min-h-dvh here.
+        'relative z-20 w-full flex-1 min-h-0 bg-background flex flex-col',
         'px-5 py-6 sm:px-8 sm:py-8 pb-28',
-        immersive ? 'min-h-dvh' : 'min-h-[calc(100dvh-3.5rem)]',
+        immersive && 'hidden',
         className,
       )}
     >
