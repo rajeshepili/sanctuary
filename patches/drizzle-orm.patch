@@ -1,0 +1,26 @@
+diff --git a/libsql/migrator.cjs b/libsql/migrator.cjs
+index f5235b0c821ee1253f147874e24be849f93d2ca5..e1557dad85b611823248d30ca6873edb8bed17f4 100644
+--- a/libsql/migrator.cjs
++++ b/libsql/migrator.cjs
+@@ -28,7 +28,7 @@ async function migrate(db, config) {
+   const migrationsTable = config.migrationsTable ?? "__drizzle_migrations";
+   const migrationTableCreate = import_sql.sql`
+ 		CREATE TABLE IF NOT EXISTS ${import_sql.sql.identifier(migrationsTable)} (
+-			id SERIAL PRIMARY KEY,
++			id INTEGER PRIMARY KEY AUTOINCREMENT,
+ 			hash text NOT NULL,
+ 			created_at numeric
+ 		)
+diff --git a/libsql/migrator.js b/libsql/migrator.js
+index 3fb860242be2c1a70739873bb11b41d8ab7a7843..2c8ebf2944b769b31660c6fe896264e916de4105 100644
+--- a/libsql/migrator.js
++++ b/libsql/migrator.js
+@@ -5,7 +5,7 @@ async function migrate(db, config) {
+   const migrationsTable = config.migrationsTable ?? "__drizzle_migrations";
+   const migrationTableCreate = sql`
+ 		CREATE TABLE IF NOT EXISTS ${sql.identifier(migrationsTable)} (
+-			id SERIAL PRIMARY KEY,
++			id INTEGER PRIMARY KEY AUTOINCREMENT,
+ 			hash text NOT NULL,
+ 			created_at numeric
+ 		)
