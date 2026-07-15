@@ -1,20 +1,7 @@
 {
   "framework": null,
-  "buildCommand": "pnpm build:demo",
-  "outputDirectory": "dist-demo",
-  "installCommand": "pnpm install --frozen-lockfile",
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cross-Origin-Resource-Policy",
-          "value": "same-origin"
-        }
-      ]
-    }
-  ],
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  "buildCommand": "pnpm db:migrate && pnpm build",
+  "env": {
+    "VITE_DEMO_MODE": "true"
+  }
 }

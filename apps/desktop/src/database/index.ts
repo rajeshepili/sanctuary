@@ -26,7 +26,11 @@ export type DatabaseStatus = 'idle' | 'ready' | 'error'
 export let databaseStatus: DatabaseStatus = 'idle'
 
 function createClientInstance() {
-  return createClient({ url: process.env.DATABASE_URL || 'file:dev.db' })
+  return createClient({
+    url: process.env.DATABASE_URL || 'file:dev.db',
+    // Required for Turso cloud databases; undefined is ignored for local file DBs
+    authToken: process.env.TURSO_AUTH_TOKEN,
+  })
 }
 
 export async function initializeDatabase(): Promise<Database> {
@@ -47,17 +51,26 @@ export async function initializeDatabase(): Promise<Database> {
       const client = createClientInstance()
       const db = drizzle(client, { schema })
 
-      // SQLite performance optimizations for local desktop usage
-      await client.execute('PRAGMA journal_mode=WAL')
-      await client.execute('PRAGMA synchronous=NORMAL')
+      // Performance PRAGMAs — local file DBs only.
+      // Turso/libsql remote connections ignore these and may error; skip them.
+      const isLocalDb = !process.env.DATABASE_URL?.startsWith('libsql://')
+      if (isLocalDb) {
+        await client.execute('PRAGMA journal_mode=WAL')
+        await client.execute('PRAGMA synchronous=NORMAL')
+        await client.execute('PRAGMA busy_timeout=5000')
+        await client.execute('PRAGMA cache_size=-20000')
+        await client.execute('PRAGMA mmap_size=2147483648')
+      }
+      // Referential integrity works on both local and Turso
       await client.execute('PRAGMA foreign_keys=ON')
-      await client.execute('PRAGMA busy_timeout=5000')
-      await client.execute('PRAGMA cache_size=-20000')
-      await client.execute('PRAGMA mmap_size=2147483648')
 
-      await migrate(db, {
-        migrationsFolder: process.env.MIGRATIONS_PATH || './drizzle',
-      })
+      // Migrations are run at build time on Vercel (via buildCommand).
+      // Skip them at runtime to avoid needing the migrations folder bundled in the function.
+      if (!process.env.VERCEL) {
+        await migrate(db, {
+          migrationsFolder: process.env.MIGRATIONS_PATH || './drizzle',
+        })
+      }
       await seedDatabase(db)
 
       dbInstance = db

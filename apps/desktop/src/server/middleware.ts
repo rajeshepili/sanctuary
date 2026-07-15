@@ -3,57 +3,37 @@ import { createMiddleware } from '@tanstack/react-start'
 // ─────────────────────────────────────────────────────────────────────────────
 // Demo Mode Protection Middleware
 //
-// Applied globally to every server function via src/start.ts when the app is
-// deployed in VITE_DEMO_MODE. Protects the shared, ephemeral demo DB from:
-//   1. Oversized payloads (50 KB hard limit)
-//   2. Obvious XSS injection in text content
-//   3. Excessive entry counts (database row cap)
+// This is a REQUEST middleware (default type — not { type: 'function' }).
+// Request middleware has access to `request` in the .server() callback,
+// allowing us to inspect raw HTTP headers like Content-Length.
+//
+// Registered globally in src/start.ts as requestMiddleware — wraps every
+// request including server function RPC calls, SSR, and server routes.
+//
+// Active only when VITE_DEMO_MODE=true.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const MAX_PAYLOAD_BYTES = 50_000 // 50 KB
-const MAX_CONTENT_LENGTH = 10_000 // 10k chars per text field
-const XSS_PATTERNS = [
-  /<script/i,
-  /javascript:/i,
-  /on\w+\s*=/i,
-  /data:text\/html/i,
-]
+const MAX_BODY_BYTES = 50_000 // 50 KB
 
-export const demoProtectionMiddleware = createMiddleware({
-  type: 'function',
-}).server(async ({ next, data }) => {
-  // Only enforce in demo mode — no-op for local/production desktop
-  if (process.env.VITE_DEMO_MODE !== 'true') {
-    return next()
-  }
+export const demoProtectionMiddleware = createMiddleware().server(
+  async ({ next, request }) => {
+    // No-op outside demo mode — zero overhead for desktop production
+    if (process.env.VITE_DEMO_MODE !== 'true') {
+      return next()
+    }
 
-  if (data !== undefined && data !== null) {
-    const serialised = JSON.stringify(data)
-
-    // 1. Hard payload size cap
-    if (serialised.length > MAX_PAYLOAD_BYTES) {
+    // Reject oversized payloads before the body is parsed.
+    // Content-Length is always set by the browser for server function RPC calls.
+    const contentLength = parseInt(
+      request.headers.get('content-length') ?? '0',
+      10,
+    )
+    if (contentLength > MAX_BODY_BYTES) {
       throw new Error(
-        `[Demo] Payload too large (${serialised.length} bytes). Maximum is ${MAX_PAYLOAD_BYTES} bytes.`,
+        `[Demo] Request body too large (${contentLength} bytes). Maximum is ${MAX_BODY_BYTES} bytes.`,
       )
     }
 
-    // 2. Per-field content length + XSS scan
-    const stringValues = serialised.match(/"[^"]{500,}"/g) ?? []
-    for (const chunk of stringValues) {
-      if (chunk.length > MAX_CONTENT_LENGTH) {
-        throw new Error(
-          '[Demo] A single field value exceeds the allowed length.',
-        )
-      }
-      for (const pattern of XSS_PATTERNS) {
-        if (pattern.test(chunk)) {
-          throw new Error(
-            '[Demo] Potentially unsafe content was detected and blocked.',
-          )
-        }
-      }
-    }
-  }
-
-  return next()
-})
+    return next()
+  },
+)

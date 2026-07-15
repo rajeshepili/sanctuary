@@ -47,7 +47,9 @@ const config = defineConfig({
   plugins: [
     devtools(),
     tailwindcss(),
-    tanstackStart(),
+    tanstackStart({
+      spa: { enabled: true },
+    }),
     nitro(),
     viteReact(),
     babel({ presets: [reactCompilerPreset()] }),
