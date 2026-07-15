@@ -12,3 +12,6 @@ allowBuilds:
 
 minimumReleaseAgeExclude:
   - astro@6.4.6
+
+patchedDependencies:
+  drizzle-orm: patches/drizzle-orm.patch
