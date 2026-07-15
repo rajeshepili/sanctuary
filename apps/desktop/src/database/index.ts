@@ -1,5 +1,4 @@
 import { drizzle } from 'drizzle-orm/libsql'
-import { migrate } from 'drizzle-orm/libsql/migrator'
 import { createClient } from '@libsql/client'
 import type { LibSQLDatabase } from 'drizzle-orm/libsql'
 import * as schema from './schema.ts'
@@ -71,9 +70,16 @@ export async function initializeDatabase(): Promise<Database> {
       // Referential integrity works on both local and Turso
       await client.execute('PRAGMA foreign_keys=ON')
 
-      // Migrations are run at build time on Vercel (via buildCommand).
-      // Skip them at runtime to avoid needing the migrations folder bundled in the function.
+      // ── Migration strategy per environment ──────────────────────────────────
+      // • Local dev (file:dev.db): runs here on every startup — fast, safe.
+      // • Electron production: runs here using MIGRATIONS_PATH injected by main.ts
+      //   pointing to the unpacked drizzle/ folder inside the app bundle.
+      // • Vercel: skipped — migrations are run by the GitHub Actions workflow
+      //   (.github/workflows/migrate.yml) before the Vercel deploy.
+      //
+      // Dynamic import keeps node:fs and node:crypto out of the browser bundle.
       if (!process.env.VERCEL) {
+        const { migrate } = await import('drizzle-orm/libsql/migrator')
         await migrate(db, {
           migrationsFolder: process.env.MIGRATIONS_PATH || './drizzle',
         })
