@@ -1,24 +1,23 @@
 import { createServerFn } from '@tanstack/react-start'
-import { findEntriesForExport, findAllExportData } from './export.repository'
-import { buildExportMarkdown } from './export.lib'
-import {
-  buildFullBackupPayload,
-  importBackupPayload,
-  parseBackupPayload,
-} from './export.import'
+
 import z from 'zod'
 
 // ── JSON / Backup ─────────────────────────────────────────────────────────────
 
 export const exportAllData = createServerFn({ method: 'GET' }).handler(
   async () => {
+    const { findAllExportData } = await import('./export.repository')
+    const { buildFullBackupPayload } = await import('./export.import')
     const data = await findAllExportData()
     return buildFullBackupPayload(data)
   },
 )
 
-export const getExportData = createServerFn({ method: 'GET' }).handler(() =>
-  findAllExportData(),
+export const getExportData = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const { findAllExportData } = await import('./export.repository')
+    return findAllExportData()
+  },
 )
 
 const importBackupSchema = z.object({
@@ -29,6 +28,8 @@ const importBackupSchema = z.object({
 export const importBackupFromJson = createServerFn({ method: 'POST' })
   .validator(importBackupSchema)
   .handler(async ({ data }) => {
+    const { parseBackupPayload, importBackupPayload } =
+      await import('./export.import')
     const parsed = parseBackupPayload(JSON.parse(data.json))
     return importBackupPayload(parsed, data.mode)
   })
@@ -37,6 +38,8 @@ export const importBackupFromJson = createServerFn({ method: 'POST' })
 
 export const exportMarkdown = createServerFn({ method: 'GET' }).handler(
   async () => {
+    const { findEntriesForExport } = await import('./export.repository')
+    const { buildExportMarkdown } = await import('./export.lib')
     const entries = await findEntriesForExport()
     return buildExportMarkdown(entries)
   },

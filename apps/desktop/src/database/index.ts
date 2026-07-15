@@ -26,8 +26,15 @@ export type DatabaseStatus = 'idle' | 'ready' | 'error'
 export let databaseStatus: DatabaseStatus = 'idle'
 
 function createClientInstance() {
+  const url = process.env.DATABASE_URL
+  if (process.env.VERCEL && !url) {
+    throw new Error(
+      'DATABASE_URL is required on Vercel for proper DB setup (e.g. Turso). Do not fallback to local file DB.',
+    )
+  }
+
   return createClient({
-    url: process.env.DATABASE_URL || 'file:dev.db',
+    url: url || 'file:dev.db',
     // Required for Turso cloud databases; undefined is ignored for local file DBs
     authToken: process.env.TURSO_AUTH_TOKEN,
   })
